@@ -8,7 +8,7 @@
  * 
  * INPUT:       click, drag, fill, fill_form, handle_dialog, hover, press_key, type_text, upload_file
  * NAVIGATION:  close_page, list_pages, navigate_page, new_page, select_page, wait_for
- * EMULATION:   emulate_cpu, emulate_network, resize_page
+ * EMULATION:   emulate, resize_page
  * PERFORMANCE: performance_start_trace, performance_stop_trace, performance_analyze_insight, take_memory_snapshot
  * NETWORK:     get_network_request, list_network_requests
  * DEBUGGING:   evaluate_script, get_console_message, list_console_messages, take_screenshot, take_snapshot
@@ -616,18 +616,20 @@ export class ChromeMCPBackend {
         return { success: true, content: ChromeMCPClient.extractText(result) };
     }
 
-    // ── EMULATION: emulate_cpu, emulate_network, resize_page ──
-    async emulateCPU(cpuThrottling: number): Promise<ToolResult> {
-        const result = await this.call("emulate_cpu", { cpuThrottling });
+    // ── EMULATION: emulate, resize_page ──
+    async emulate(options: Record<string, unknown>): Promise<ToolResult> {
+        // The `emulate` tool handles device, CPU throttling, and network emulation
+        const result = await this.call("emulate", options);
         if (!result.success) return { success: false, content: "", error: result.error };
-        return { success: true, content: `CPU throttling set to ${cpuThrottling}x` };
+        return { success: true, content: `Emulation applied: ${JSON.stringify(options)}` };
+    }
+
+    async emulateCPU(cpuThrottling: number): Promise<ToolResult> {
+        return this.emulate({ cpuThrottling });
     }
 
     async emulateNetwork(preset: string): Promise<ToolResult> {
-        // Presets: "3G", "4G", "WiFi", "offline", etc.
-        const result = await this.call("emulate_network", { preset });
-        if (!result.success) return { success: false, content: "", error: result.error };
-        return { success: true, content: `Network emulation: ${preset}` };
+        return this.emulate({ network: preset });
     }
 
     async resizePage(width: number, height: number): Promise<ToolResult> {
