@@ -302,18 +302,16 @@ Rectangle {
     Rectangle {
         id: owPanel
         visible: owPanelVisible
-        anchors.left: parent.left
-        anchors.top: parent.bottom
-        anchors.leftMargin: 10
-        anchors.topMargin: 6
+        parent: topBar.parent
+        x: 10
+        y: topBar.height + 6
         width: 360
         height: owPanelCol.height + 20
         radius: root.radiusMd
         color: root.bgElevated
         border.color: root.borderColor
         border.width: 1
-        z: 1000
-        clip: true
+        z: 1001
 
         Column {
             id: owPanelCol
