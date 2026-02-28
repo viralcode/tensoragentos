@@ -16,6 +16,9 @@ Window {
     property string sessionId: ""
     property var openWindows: []
 
+    // ── API ──
+    property string apiBase: "http://127.0.0.1:7777/dashboard/api"
+
     // ── Theme Constants ──
     readonly property color bgVoid: "#0d0d0d"
     readonly property color bgSurface: "#141414"
@@ -34,7 +37,21 @@ Window {
     readonly property int radiusMd: 10
     readonly property int radiusLg: 14
 
+    // ── Icon Fonts (Font Awesome) ──
+    property string iconFont: faLoader.name
+    property string iconFontBrands: faBrandsLoader.name
+
+    FontLoader { id: faLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2" }
+    FontLoader { id: faBrandsLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2" }
     FontLoader { id: systemFont; source: "" }
+
+    // ── Window Management ──
+    property int nextZ: 100
+
+    function bringToFront(win) {
+        nextZ++;
+        win.z = nextZ;
+    }
 
     // ── Login Screen ──
     Loader {
