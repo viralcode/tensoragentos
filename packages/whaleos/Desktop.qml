@@ -200,6 +200,70 @@ Rectangle {
         }
     }
 
+    // ── Siri-like Glow Animation ──
+    Item {
+        id: siriGlow
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: appDock.top
+        anchors.bottomMargin: 6
+        width: Math.min(parent.width - 80, 500)
+        height: 24
+        visible: chatBarItem.isSending || chatBarItem.isStreaming
+        opacity: (chatBarItem.isSending || chatBarItem.isStreaming) ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 500 } }
+
+        property real phase: 0
+
+        // Animation timer
+        Timer {
+            running: siriGlow.visible
+            interval: 30; repeat: true
+            onTriggered: { siriGlow.phase += 0.04; siriCanvas.requestPaint(); }
+        }
+
+        Canvas {
+            id: siriCanvas
+            anchors.fill: parent
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+                var cx = width / 2;
+                var cy = height / 2;
+                var p = siriGlow.phase;
+
+                // Draw multiple glowing orbs that move
+                var orbs = [
+                    { x: cx + Math.sin(p * 1.2) * width * 0.3, r: 0.35, g: 0.55, b: 1.0, size: 60 },
+                    { x: cx + Math.sin(p * 0.8 + 1) * width * 0.25, r: 0.65, g: 0.30, b: 1.0, size: 55 },
+                    { x: cx + Math.sin(p * 1.5 + 2) * width * 0.35, r: 0.20, g: 0.85, b: 0.70, size: 50 },
+                    { x: cx + Math.sin(p * 1.0 + 3.5) * width * 0.28, r: 0.85, g: 0.40, b: 0.95, size: 45 },
+                ];
+
+                for (var i = 0; i < orbs.length; i++) {
+                    var o = orbs[i];
+                    var grad = ctx.createRadialGradient(o.x, cy, 0, o.x, cy, o.size);
+                    grad.addColorStop(0, "rgba(" + Math.round(o.r * 255) + "," + Math.round(o.g * 255) + "," + Math.round(o.b * 255) + ",0.6)");
+                    grad.addColorStop(0.4, "rgba(" + Math.round(o.r * 255) + "," + Math.round(o.g * 255) + "," + Math.round(o.b * 255) + ",0.2)");
+                    grad.addColorStop(1, "rgba(0,0,0,0)");
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, width, height);
+                }
+
+                // Bright center line
+                var lineGrad = ctx.createLinearGradient(0, 0, width, 0);
+                var lp1 = 0.5 + Math.sin(p * 1.3) * 0.3;
+                var lp2 = 0.5 + Math.sin(p * 0.9 + 1.5) * 0.3;
+                lineGrad.addColorStop(0, "rgba(90,140,255,0)");
+                lineGrad.addColorStop(Math.min(lp1, lp2), "rgba(90,140,255,0.8)");
+                lineGrad.addColorStop((lp1 + lp2) / 2, "rgba(160,80,255,1)");
+                lineGrad.addColorStop(Math.max(lp1, lp2), "rgba(50,220,180,0.8)");
+                lineGrad.addColorStop(1, "rgba(90,140,255,0)");
+                ctx.fillStyle = lineGrad;
+                ctx.fillRect(0, cy - 1.5, width, 3);
+            }
+        }
+    }
+
     // ── Dock ──
     AppDock {
         id: appDock

@@ -235,52 +235,48 @@ Rectangle {
 
             delegate: Item {
                 width: messageList.width
-                height: msgBubble.height + 4
+                height: msgBubble.height + 6
 
-                // Align user messages right, AI left
                 Rectangle {
                     id: msgBubble
-                    width: Math.min(msgCol.implicitWidth + 24, parent.width * 0.85)
-                    height: msgCol.height + 16
-                    radius: 12
+                    width: modelData.role === "user" ? Math.min(parent.width * 0.75, msgContentCol.implicitHeight > 30 ? parent.width * 0.75 : userMsgMetrics.width + 40)
+                                                     : parent.width * 0.88
+                    height: msgContentCol.height + 20
+                    radius: modelData.role === "user" ? 14 : 14
                     anchors.right: modelData.role === "user" ? parent.right : undefined
                     anchors.left: modelData.role !== "user" ? parent.left : undefined
 
-                    // User = blue glass, AI = dark glass
                     color: modelData.role === "user" ?
                         Qt.rgba(0.23, 0.44, 0.96, 0.15) :
-                        Qt.rgba(1, 1, 1, 0.03)
+                        Qt.rgba(0.08, 0.10, 0.16, 0.85)
                     border.color: modelData.role === "user" ?
                         Qt.rgba(0.35, 0.55, 1.0, 0.2) :
                         Qt.rgba(1, 1, 1, 0.06)
                     border.width: 1
 
-                    Column {
-                        id: msgCol
-                        anchors.left: parent.left; anchors.right: parent.right
-                        anchors.top: parent.top; anchors.margins: 12; spacing: 4
+                    // Hidden metrics for user short messages
+                    TextMetrics {
+                        id: userMsgMetrics
+                        text: modelData.content || ""
+                        font.pixelSize: 13
+                    }
 
-                        // Role label
-                        Row { spacing: 6
-                            Text {
-                                text: modelData.role === "user" ? "You" : (modelData.agent || getAgentName())
-                                font.pixelSize: 10; font.weight: Font.Bold
-                                color: modelData.role === "user" ? "#60a5fa" : "#34d399"
-                            }
-                            Text {
-                                visible: modelData.role !== "user"
-                                text: "AI"
-                                font.pixelSize: 8; font.weight: Font.Bold
-                                color: Qt.rgba(0.2, 0.83, 0.6, 0.5)
-                            }
+                    Column {
+                        id: msgContentCol
+                        anchors.left: parent.left; anchors.right: parent.right
+                        anchors.top: parent.top; anchors.margins: 10; spacing: 3
+
+                        Text {
+                            text: modelData.role === "user" ? "You" : (modelData.agent || getAgentName())
+                            font.pixelSize: 10; font.weight: Font.Bold
+                            color: modelData.role === "user" ? "#60a5fa" : "#34d399"
                         }
 
-                        // Message content
                         Text {
                             width: parent.width
                             text: modelData.content || ""
                             font.pixelSize: 13; color: "#e4e4e7"
-                            wrapMode: Text.WordWrap; lineHeight: 1.5
+                            wrapMode: Text.Wrap; lineHeight: 1.45
                             textFormat: Text.PlainText
                         }
                     }
