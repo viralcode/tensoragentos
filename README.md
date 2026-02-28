@@ -5,8 +5,8 @@
 <h1 align="center">TensorAgent OS</h1>
 
 <p align="center">
-  <strong>The AI-Native Operating System</strong><br/>
-  A bootable Linux distro where an AI agent <em>is</em> the entire user interface.
+  <strong>The World's First AI-Native Operating System</strong><br/>
+  A fully bootable OS where an AI agent <em>is</em> the entire user interface.
 </p>
 
 <p align="center">
@@ -20,7 +20,9 @@
 
 ## What is TensorAgent OS?
 
-TensorAgent OS is a custom Linux distribution that replaces the traditional desktop with an **AI-powered agentic interface**. There is no file manager, no taskbar, no app launcher — just you and an AI that can control the entire operating system.
+TensorAgent OS is an **AI-native operating system** — not a Linux distro with an AI chatbot bolted on, but a ground-up rethinking of the desktop where an **AI agent is the primary interface**. There is no file manager, no taskbar, no traditional app launcher — just you and an AI that has deep, native access to the kernel, hardware, services, and every layer of the operating system.
+
+Think of it like Android: it uses a Linux kernel under the hood, but it's its own thing.
 
 Under the hood, TensorAgent OS combines:
 
@@ -160,7 +162,7 @@ sudo pacman -S qemu-full
 
 ## Building from Source
 
-> **Full from-scratch build.** Compiles the Linux kernel, rootfs, Chromium, and OpenWhale into a bootable ISO. Requires a **Linux x86_64** host.
+> **Full from-scratch build.** Compiles the kernel, rootfs, Chromium, and OpenWhale into a bootable ISO. Requires a **Linux x86_64** host.
 
 ### System Requirements
 
@@ -495,18 +497,22 @@ AINUX_VERSION=0.1.0
 
 ### AI System Tools
 
-TensorAgent OS exposes 8 system tools to the AI agent:
+TensorAgent OS gives the AI **deep, native access** to the operating system through the `kernel_os` tool — 50+ actions across 10 categories:
 
-| Tool | Capability |
-|------|------------|
-| `ainux_hardware_info` | CPU, GPU, RAM, storage, temps |
-| `ainux_process_control` | Start/stop/restart systemd services |
-| `ainux_network_control` | WiFi scan/connect, Bluetooth, DNS |
-| `ainux_audio_control` | Volume, mute, device switching |
-| `ainux_display_control` | Resolution, brightness |
-| `ainux_power` | Shutdown, reboot, suspend |
-| `ainux_update` | Update OpenWhale/TensorAgent OS from GitHub |
-| `ainux_system_config` | Read/write system configuration |
+| Category | Capabilities |
+|----------|-------------|
+| **Process Management** | List, kill, process tree, `/proc` inspection |
+| **Service Management** | systemd start/stop/restart/status/logs |
+| **Filesystem** | Read, write, list, find, delete, mkdir, disk usage |
+| **Network** | Interfaces, connections, ports, DNS, ping, routing, iptables |
+| **Hardware & Kernel** | CPU/RAM info, USB, PCI, storage, kernel modules, dmesg, sysctl |
+| **Users & Permissions** | List users, groups, sessions, add users, set passwords |
+| **Package Management** | apt install/remove/search/update |
+| **System Control** | Env vars, uptime, hostname, timezone, crontab, mounts, swap |
+| **Logs & Monitoring** | journalctl, syslog, auth logs |
+| **Performance** | top, iostat, vmstat, load averages |
+
+Plus 30+ additional tools: `exec`, `file`, `browser`, `git`, `docker`, `ssh`, `email`, `pdf`, `spreadsheet`, `slides`, `cron`, `image`, `tts`, `web_fetch`, `code_exec`, `memory`, `codebase`, and more.
 
 ---
 
