@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
     // Cage sets WAYLAND_DISPLAY which Qt will pick up automatically
     QGuiApplication app(argc, argv);
     app.setApplicationName("WhaleOS");
-    app.setOrganizationName("AInux");
+    app.setOrganizationName("TensorAgentOS");
 
     QQmlApplicationEngine engine;
 

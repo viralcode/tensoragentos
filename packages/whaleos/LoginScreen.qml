@@ -83,7 +83,7 @@ Rectangle {
         // Title
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "DeepOS"
+            text: "TensorAgent OS"
             font.pixelSize: 22
             font.weight: Font.DemiBold
             color: root.textPrimary

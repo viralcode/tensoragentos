@@ -67,7 +67,7 @@ Rectangle {
 
                 // Prompt
                 Text {
-                    text: "ainux@whale:~$"
+                    text: "tensoragent@os:~$"
                     font.pixelSize: 13
                     font.family: "monospace"
                     color: root.accentBlue
@@ -99,7 +99,7 @@ Rectangle {
 
         // Add command to output
         var lines = outputLines.slice();
-        lines.push("ainux@whale:~$ " + cmd);
+        lines.push("tensoragent@os:~$ " + cmd);
         outputLines = lines;
         cmdInput.text = "";
         isRunning = true;

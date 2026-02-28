@@ -7,7 +7,7 @@ Window {
     visible: true
     visibility: Window.FullScreen
     flags: Qt.FramelessWindowHint | Qt.Window
-    title: "DeepOS"
+    title: "TensorAgent OS"
     color: "#0d0d0d"
 
     // ── Global State ──

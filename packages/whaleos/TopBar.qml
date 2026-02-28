@@ -26,7 +26,7 @@ Rectangle {
     function checkOwHealth() {
         // Try helper endpoint first (port 7778), fallback to OW health
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://localhost:7778/status");
+        xhr.open("GET", "http://127.0.0.1:7778/status");
         xhr.timeout = 3000;
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -52,7 +52,7 @@ Rectangle {
         owLogsFetching = true;
         owLogs = "Fetching logs...";
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://localhost:7778/logs");
+        xhr.open("GET", "http://127.0.0.1:7778/logs");
         xhr.timeout = 8000;
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -65,7 +65,7 @@ Rectangle {
                         owLogs = xhr.responseText || "Parse error.";
                     }
                 } else {
-                    owLogs = "Helper service not running.\n\nSSH in and start it:\n  ssh ainux@localhost -p 2222\n  node /opt/ainux/whaleos/whaleos-helper.mjs &\n\nOr view logs directly:\n  journalctl -u openwhale -n 50 --no-pager";
+                    owLogs = "Helper service not available (port 7778).\n\nView logs via SSH:\n  journalctl -u openwhale -n 50 --no-pager";
                 }
             }
         };
@@ -79,7 +79,7 @@ Rectangle {
     function restartOw() {
         owRestarting = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://localhost:7778/restart");
+        xhr.open("POST", "http://127.0.0.1:7778/restart");
         xhr.timeout = 12000;
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -176,7 +176,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: "OpenWhale"
+                    text: "TensorAgent OS"
                     font.pixelSize: 13
                     font.weight: Font.Medium
                     color: root.textPrimary
@@ -363,13 +363,13 @@ Rectangle {
                     Layout.fillWidth: true
                     spacing: 1
                     Text {
-                        text: "OpenWhale Engine"
+                        text: "TensorAgent OS"
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
                         color: "#ffffff"
                     }
                     Text {
-                        text: owUptime || "AI Agent Platform"
+                        text: owUptime || "Powered by OpenWhale Engine"
                         font.pixelSize: 10
                         color: root.textMuted
                     }
