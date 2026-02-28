@@ -13,7 +13,7 @@ Rectangle {
     function loadProviders() {
         loading = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/providers");
+        xhr.open("GET", root.apiBase + "/api/providers");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -39,17 +39,26 @@ Rectangle {
     function saveProvider(providerType, apiKey, selectedModel) {
         if (!apiKey) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/providers/" + providerType);
+        xhr.open("POST", root.apiBase + "/api/providers/" + providerType + "/config");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
-        xhr.onreadystatechange = function() { if (xhr.readyState === 4 && xhr.status === 200) loadProviders(); };
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log("Provider " + providerType + " saved successfully");
+                    loadProviders();
+                } else {
+                    console.log("Save failed: " + xhr.status + " " + xhr.responseText);
+                }
+            }
+        };
         xhr.send(JSON.stringify({ apiKey: apiKey, selectedModel: selectedModel, enabled: true }));
     }
 
     function testProvider(providerType, apiKey) {
         if (!apiKey) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/setup/test-ai");
+        xhr.open("POST", root.apiBase + "/api/setup/test-ai");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {

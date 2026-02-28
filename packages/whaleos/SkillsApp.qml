@@ -18,7 +18,7 @@ Rectangle {
     function loadAllSkills() {
         loading = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/skills");
+        xhr.open("GET", root.apiBase + "/api/skills");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -43,7 +43,7 @@ Rectangle {
         xhr.send();
 
         var xhr2 = new XMLHttpRequest();
-        xhr2.open("GET", root.apiBase + "/md-skills");
+        xhr2.open("GET", root.apiBase + "/api/md-skills");
         xhr2.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr2.onreadystatechange = function() {
             if (xhr2.readyState === 4 && xhr2.status === 200) {
@@ -57,7 +57,7 @@ Rectangle {
         var key = keyInput.text;
         if (!key) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/skills/" + skillId);
+        xhr.open("POST", root.apiBase + "/api/skills/" + skillId);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
@@ -69,7 +69,7 @@ Rectangle {
     function createNewSkill() {
         var name = "new-skill-" + Date.now();
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/md-skills/create");
+        xhr.open("POST", root.apiBase + "/api/md-skills/create");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
@@ -87,7 +87,7 @@ Rectangle {
         editingSkillPath = path;
         editorOpen = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/md-skills/content?path=" + encodeURIComponent(path));
+        xhr.open("GET", root.apiBase + "/api/md-skills/content?path=" + encodeURIComponent(path));
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
@@ -99,7 +99,7 @@ Rectangle {
 
     function saveSkillFile() {
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/md-skills/save");
+        xhr.open("POST", root.apiBase + "/api/md-skills/save");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
