@@ -777,7 +777,7 @@ const browserManager = new BrowserManager();
 // ============================================================================
 
 // Get configured browser backend from settings
-async function getBrowserBackend(): Promise<"playwright" | "browseros"> {
+async function getBrowserBackend(): Promise<"playwright" | "browseros" | "chrome-mcp"> {
     try {
         // Try to get setting from raw SQLite database
         const { db } = await import("../db/index.js");
@@ -786,6 +786,25 @@ async function getBrowserBackend(): Promise<"playwright" | "browseros"> {
 
         if (row?.settings) {
             const settings = typeof row.settings === "string" ? JSON.parse(row.settings) : row.settings;
+
+            if (settings.backend === "chrome-mcp") {
+                // Try to ensure Chrome MCP is available
+                const { isChromeMCPAvailable, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
+                const status = await isChromeMCPAvailable();
+                if (status.available) {
+                    return "chrome-mcp";
+                }
+
+                // Not ready, try to launch
+                console.log("[Browser] Chrome MCP not ready, attempting to launch...");
+                const launchResult = await ensureChromeMCPRunning();
+                if (launchResult.success) {
+                    console.log(`[Browser] Chrome MCP launched with ${launchResult.tools.length} tools`);
+                    return "chrome-mcp";
+                }
+
+                console.log(`[Browser] Chrome MCP launch failed: ${launchResult.error}, falling back to Playwright`);
+            }
 
             if (settings.backend === "browseros") {
                 // Try to ensure BrowserOS is running
@@ -805,6 +824,21 @@ async function getBrowserBackend(): Promise<"playwright" | "browseros"> {
 
                 console.log(`[Browser] BrowserOS launch failed: ${launchResult.error}, falling back to Playwright`);
             }
+        }
+
+        // On TensorAgent OS (Linux), auto-detect Chrome MCP if Chromium is available
+        if (process.platform === "linux" && process.env.AINUX_MODE === "true") {
+            try {
+                const { isChromiumAvailable, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
+                const chrome = await isChromiumAvailable();
+                if (chrome.available) {
+                    const result = await ensureChromeMCPRunning();
+                    if (result.success) {
+                        console.log(`[Browser] Auto-detected Chrome MCP on TensorAgent OS (${result.tools.length} tools)`);
+                        return "chrome-mcp";
+                    }
+                }
+            } catch { /* Chrome MCP not available, use Playwright */ }
         }
 
         return "playwright";
@@ -836,9 +870,54 @@ For interactions, first take a snapshot to get refs, then use act with ref param
 
     async execute(params: BrowserAction, _context: ToolCallContext): Promise<ToolResult> {
         try {
-            // Check for BrowserOS backend
             const backend = await getBrowserBackend();
 
+            // Check for Chrome MCP backend
+            if (backend === "chrome-mcp") {
+                const { ChromeMCPBackend, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
+                console.log("[Browser] Chrome MCP backend configured, checking/launching...");
+                const launchResult = await ensureChromeMCPRunning();
+                if (launchResult.success) {
+                    const chromeMCP = new ChromeMCPBackend();
+
+                    switch (params.action) {
+                        case "start":
+                            return { success: true, content: `Chrome MCP is ready (${launchResult.tools.length} tools available)` };
+                        case "stop":
+                            chromeMCP.stop();
+                            return { success: true, content: "Chrome MCP stopped" };
+                        case "navigate":
+                            return await chromeMCP.navigate(params.url);
+                        case "open":
+                            return await chromeMCP.navigate(params.url);
+                        case "snapshot":
+                            return await chromeMCP.snapshot();
+                        case "screenshot":
+                            return await chromeMCP.screenshot();
+                        case "click":
+                            return await chromeMCP.click(params.selector);
+                        case "type":
+                            return await chromeMCP.type(params.selector, params.text);
+                        case "evaluate":
+                            return await chromeMCP.evaluate(params.script);
+                        case "console":
+                            return await chromeMCP.getConsole();
+                        case "status":
+                            const chromeMCPStatus = await chromeMCP.getStatus();
+                            return {
+                                success: true,
+                                content: JSON.stringify(chromeMCPStatus, null, 2),
+                                metadata: chromeMCPStatus,
+                            };
+                        default:
+                            console.log(`[Browser] Action '${params.action}' not supported by Chrome MCP, using Playwright`);
+                    }
+                } else {
+                    console.log(`[Browser] Chrome MCP failed: ${launchResult.error}, falling back to Playwright`);
+                }
+            }
+
+            // Check for BrowserOS backend
             if (backend === "browseros") {
                 // Auto-launch BrowserOS if not running
                 const { ensureBrowserOSRunning, BrowserOSBackend } = await import("./browser-os.js");
