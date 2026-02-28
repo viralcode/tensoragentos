@@ -12,6 +12,9 @@ const PORT = 7778;
 // Track working directory per simple session
 let cwd = '/home/ainux';
 
+// Clipboard bridge buffer
+let clipboardBuffer = '';
+
 function parseBody(req) {
     return new Promise((resolve) => {
         let body = '';
@@ -94,6 +97,14 @@ const server = createServer(async (req, res) => {
                 }));
             }
 
+        } else if (url === '/clipboard' && req.method === 'GET') {
+            res.end(JSON.stringify({ ok: true, text: clipboardBuffer }));
+
+        } else if (url === '/clipboard' && req.method === 'POST') {
+            const body = await parseBody(req);
+            clipboardBuffer = body.text || body.raw || '';
+            res.end(JSON.stringify({ ok: true, length: clipboardBuffer.length }));
+
         } else {
             res.end(JSON.stringify({ ok: true, service: 'tensoragent-helper', port: PORT }));
         }
@@ -118,6 +129,6 @@ function safeExec(cmd, execCwd) {
     });
 }
 
-server.listen(PORT, '127.0.0.1', () => {
-    console.log(`[tensoragent-helper] Listening on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`[tensoragent-helper] Listening on port ${PORT} (all interfaces)`);
 });
