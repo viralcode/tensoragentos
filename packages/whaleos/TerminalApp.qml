@@ -1,14 +1,47 @@
 import QtQuick
 import QtQuick.Layouts
-import "api.js" as API
 
 Rectangle {
     id: terminalApp
     anchors.fill: parent
     color: "#0a0a0a"
 
-    property var outputLines: ["Welcome to Whale OS Terminal", "Type a command and press Enter", ""]
+    property var outputLines: []
     property bool isRunning: false
+    property string currentCwd: "/home/ainux"
+    property var cmdHistory: []
+    property int historyIndex: -1
+    property string savedInput: ""
+
+    Component.onCompleted: {
+        appendLine("TensorAgent OS — Terminal");
+        appendLine("System shell access. Type commands and press Enter.");
+        appendLine("");
+    }
+
+    function getPrompt() {
+        var dir = currentCwd;
+        dir = dir.replace("/home/ainux", "~");
+        return "ainux@tensoragent:" + dir + "$ ";
+    }
+
+    function appendLine(text) {
+        var lines = outputLines.slice();
+        lines.push(text);
+        // Keep buffer reasonable
+        if (lines.length > 1000) lines = lines.slice(lines.length - 800);
+        outputLines = lines;
+    }
+
+    function appendLines(text) {
+        if (!text) return;
+        var parts = text.split("\n");
+        // Remove trailing empty line from split
+        if (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
+        for (var i = 0; i < parts.length; i++) {
+            appendLine(parts[i]);
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -20,22 +53,42 @@ Rectangle {
             Layout.fillHeight: true
             color: "#0a0a0a"
 
+            MouseArea {
+                anchors.fill: parent
+                onClicked: cmdInput.forceActiveFocus()
+            }
+
             Flickable {
                 id: termFlick
                 anchors.fill: parent
-                anchors.margins: 12
-                contentHeight: termOutput.height
+                anchors.margins: 10
+                contentHeight: termCol.height
                 clip: true
+                boundsBehavior: Flickable.StopAtBounds
 
-                Text {
-                    id: termOutput
+                Column {
+                    id: termCol
                     width: parent.width
-                    text: outputLines.join("\n")
-                    color: "#22c55e"
-                    font.pixelSize: 13
-                    font.family: "monospace"
-                    wrapMode: Text.WrapAnywhere
-                    lineHeight: 1.4
+                    spacing: 0
+
+                    Repeater {
+                        model: outputLines
+                        Text {
+                            width: termCol.width
+                            text: modelData
+                            color: {
+                                // Color code different line types
+                                if (modelData.indexOf("ainux@tensoragent:") === 0) return "#60a5fa";
+                                if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
+                                if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
+                                return "#d4d4d8";
+                            }
+                            font.pixelSize: 13
+                            font.family: "monospace"
+                            wrapMode: Text.WrapAnywhere
+                            height: implicitHeight + 2
+                        }
+                    }
                 }
 
                 onContentHeightChanged: {
@@ -49,28 +102,27 @@ Rectangle {
         // ── Input Bar ──
         Rectangle {
             Layout.fillWidth: true
-            height: 40
+            height: 38
             color: "#111111"
 
             Rectangle {
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                color: root.borderColor
+                width: parent.width; height: 1
+                color: Qt.rgba(1, 1, 1, 0.06)
             }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 0
 
                 // Prompt
                 Text {
-                    text: "tensoragent@os:~$"
+                    text: getPrompt()
                     font.pixelSize: 13
                     font.family: "monospace"
-                    color: root.accentBlue
+                    color: "#60a5fa"
                 }
 
                 // Input
@@ -78,77 +130,157 @@ Rectangle {
                     id: cmdInput
                     Layout.fillWidth: true
                     verticalAlignment: TextInput.AlignVCenter
-                    color: "#22c55e"
+                    color: "#d4d4d8"
+                    selectionColor: "#3b82f6"
+                    selectedTextColor: "#ffffff"
                     font.pixelSize: 13
                     font.family: "monospace"
                     clip: true
                     focus: true
 
                     Keys.onReturnPressed: executeCommand()
-                    Keys.onUpPressed: {
-                        // TODO: command history
+                    Keys.onUpPressed: navigateHistory(-1)
+                    Keys.onDownPressed: navigateHistory(1)
+
+                    Keys.onPressed: function(event) {
+                        // Ctrl+C — cancel running command
+                        if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
+                            if (isRunning) {
+                                isRunning = false;
+                                appendLine("^C");
+                                appendLine("");
+                            } else {
+                                cmdInput.text = "";
+                            }
+                            event.accepted = true;
+                        }
+                        // Ctrl+L — clear screen
+                        if (event.key === Qt.Key_L && (event.modifiers & Qt.ControlModifier)) {
+                            outputLines = [""];
+                            event.accepted = true;
+                        }
+                    }
+                }
+
+                // Busy indicator
+                Text {
+                    visible: isRunning
+                    text: " ..."
+                    font.pixelSize: 13
+                    font.family: "monospace"
+                    color: "#f59e0b"
+
+                    SequentialAnimation on opacity {
+                        running: isRunning
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.3; duration: 500 }
+                        NumberAnimation { to: 1.0; duration: 500 }
                     }
                 }
             }
         }
     }
 
+    function navigateHistory(direction) {
+        if (cmdHistory.length === 0) return;
+
+        if (historyIndex === -1 && direction === -1) {
+            savedInput = cmdInput.text;
+            historyIndex = cmdHistory.length - 1;
+        } else if (direction === -1) {
+            historyIndex = Math.max(0, historyIndex - 1);
+        } else if (direction === 1) {
+            historyIndex = historyIndex + 1;
+            if (historyIndex >= cmdHistory.length) {
+                historyIndex = -1;
+                cmdInput.text = savedInput;
+                return;
+            }
+        }
+
+        if (historyIndex >= 0 && historyIndex < cmdHistory.length) {
+            cmdInput.text = cmdHistory[historyIndex];
+            cmdInput.cursorPosition = cmdInput.text.length;
+        }
+    }
+
     function executeCommand() {
         var cmd = cmdInput.text.trim();
-        if (!cmd || isRunning) return;
-
-        // Add command to output
-        var lines = outputLines.slice();
-        lines.push("tensoragent@os:~$ " + cmd);
-        outputLines = lines;
         cmdInput.text = "";
-        isRunning = true;
+        historyIndex = -1;
 
-        // Handle built-in commands
+        // Show the prompt + command in output
+        appendLine(getPrompt() + cmd);
+
+        if (!cmd) { appendLine(""); return; }
+
+        // Add to history
+        if (cmdHistory.length === 0 || cmdHistory[cmdHistory.length - 1] !== cmd) {
+            var hist = cmdHistory.slice();
+            hist.push(cmd);
+            if (hist.length > 100) hist = hist.slice(hist.length - 100);
+            cmdHistory = hist;
+        }
+
+        // Built-in: clear
         if (cmd === "clear") {
             outputLines = [""];
-            isRunning = false;
             return;
         }
 
-        if (cmd === "help") {
-            var lines2 = outputLines.slice();
-            lines2.push("Available commands:");
-            lines2.push("  clear     - Clear terminal");
-            lines2.push("  help      - Show this help");
-            lines2.push("  <any>     - Execute via Whale AI exec tool");
-            lines2.push("");
-            outputLines = lines2;
-            isRunning = false;
+        // Built-in: exit
+        if (cmd === "exit") {
+            appendLine("Use the close button to close the terminal.");
+            appendLine("");
             return;
         }
 
-        // Execute via OpenWhale exec tool
-        var body = JSON.stringify({ tool: "exec", args: { command: cmd } });
+        isRunning = true;
+
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://localhost:7777/api/tools/execute");
+        xhr.open("POST", "http://127.0.0.1:7778/exec");
         xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.timeout = 20000;
+
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 isRunning = false;
-                var lines3 = outputLines.slice();
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    if (data.result) {
-                        var resultLines = data.result.split("\n");
-                        for (var i = 0; i < resultLines.length; i++) {
-                            lines3.push(resultLines[i]);
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+
+                        // Update working directory
+                        if (data.cwd) currentCwd = data.cwd;
+
+                        // Show stdout
+                        if (data.stdout) appendLines(data.stdout);
+
+                        // Show stderr in red (it's appended as regular text, colored by the Repeater)
+                        if (data.stderr) {
+                            var errParts = data.stderr.split("\n");
+                            for (var i = 0; i < errParts.length; i++) {
+                                if (errParts[i]) appendLine("Error: " + errParts[i]);
+                            }
                         }
-                    } else if (data.error) {
-                        lines3.push("Error: " + data.error);
+                    } catch(e) {
+                        appendLine("Error: " + (xhr.responseText || "Unknown error"));
                     }
-                } catch(e) {
-                    lines3.push("Error: " + xhr.responseText);
+                } else if (xhr.status === 0) {
+                    appendLine("Error: Helper service not reachable (port 7778)");
+                    appendLine("Start it: node /opt/ainux/whaleos/whaleos-helper.mjs &");
+                } else {
+                    appendLine("Error: HTTP " + xhr.status);
                 }
-                lines3.push("");
-                outputLines = lines3;
+                appendLine("");
             }
         };
-        xhr.send(body);
+
+        xhr.ontimeout = function() {
+            isRunning = false;
+            appendLine("Error: Command timed out (15s limit)");
+            appendLine("");
+        };
+
+        xhr.send(JSON.stringify({ command: cmd }));
     }
 }

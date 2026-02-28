@@ -1,48 +1,101 @@
 #!/usr/bin/env node
 /**
- * whaleos-helper.mjs — Tiny HTTP helper for WhaleOS QML desktop
- * Serves system logs and status directly (no AI processing needed).
+ * whaleos-helper.mjs — System helper for TensorAgent OS desktop shell
+ * Provides direct system access for QML (logs, status, restart, exec).
  * Runs on port 7778 alongside OpenWhale (port 7777).
  */
 import { createServer } from 'node:http';
-import { execSync } from 'node:child_process';
+import { exec } from 'node:child_process';
 
 const PORT = 7778;
 
-const server = createServer((req, res) => {
+// Track working directory per simple session
+let cwd = '/home/ainux';
+
+function parseBody(req) {
+    return new Promise((resolve) => {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', () => {
+            try { resolve(JSON.parse(body)); }
+            catch { resolve({ raw: body }); }
+        });
+    });
+}
+
+const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+    const url = req.url.split('?')[0];
 
     try {
-        if (req.url === '/logs') {
-            const lines = new URL(req.url, `http://localhost:${PORT}`).searchParams?.get('n') || '50';
-            const output = execSync(`journalctl -u openwhale -n ${parseInt(lines) || 50} --no-pager 2>/dev/null || echo "No logs available"`, { encoding: 'utf-8', timeout: 5000 });
-            res.end(JSON.stringify({ ok: true, logs: output }));
-        } else if (req.url === '/status') {
-            let status = 'unknown';
+        if (url === '/logs') {
+            const output = safeExec('journalctl -u openwhale -n 50 --no-pager 2>/dev/null || echo "No logs available"', '/');
+            output.then(r => res.end(JSON.stringify({ ok: true, logs: r.stdout })))
+                .catch(e => res.end(JSON.stringify({ ok: true, logs: e.stderr || e.message })));
+
+        } else if (url === '/status') {
+            let status = 'unknown', uptime = '';
             try {
-                const out = execSync('systemctl is-active openwhale 2>/dev/null', { encoding: 'utf-8', timeout: 3000 }).trim();
-                status = out; // 'active', 'inactive', 'failed', etc.
+                const r = await safeExec('systemctl is-active openwhale 2>/dev/null', '/');
+                status = r.stdout.trim();
             } catch { status = 'inactive'; }
-
-            let uptime = '';
-            try { uptime = execSync('uptime -p 2>/dev/null || uptime', { encoding: 'utf-8', timeout: 3000 }).trim(); } catch { }
-
-            res.end(JSON.stringify({ ok: true, status, uptime }));
-        } else if (req.url === '/restart') {
-            if (req.method !== 'POST') {
-                res.statusCode = 405;
-                res.end(JSON.stringify({ ok: false, error: 'POST only' }));
-                return;
-            }
             try {
-                execSync('sudo systemctl restart openwhale 2>&1', { encoding: 'utf-8', timeout: 10000 });
+                const r = await safeExec('uptime -p 2>/dev/null || uptime', '/');
+                uptime = r.stdout.trim();
+            } catch { }
+            res.end(JSON.stringify({ ok: true, status, uptime }));
+
+        } else if (url === '/restart' && req.method === 'POST') {
+            try {
+                await safeExec('sudo systemctl restart openwhale 2>&1', '/');
                 res.end(JSON.stringify({ ok: true, message: 'Restart initiated' }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.message }));
             }
+
+        } else if (url === '/exec' && req.method === 'POST') {
+            const body = await parseBody(req);
+            const cmd = (body.command || '').trim();
+            if (!cmd) {
+                res.end(JSON.stringify({ ok: false, stdout: '', stderr: 'No command provided', code: 1, cwd }));
+                return;
+            }
+
+            // Handle cd specially — update working directory
+            if (cmd === 'cd' || cmd.startsWith('cd ')) {
+                const target = cmd === 'cd' ? '/home/ainux' : cmd.slice(3).trim().replace(/^~/, '/home/ainux');
+                try {
+                    // Resolve the path and verify it exists
+                    const r = await safeExec(`cd ${JSON.stringify(target)} && pwd`, cwd);
+                    cwd = r.stdout.trim();
+                    res.end(JSON.stringify({ ok: true, stdout: '', stderr: '', code: 0, cwd }));
+                } catch (e) {
+                    res.end(JSON.stringify({ ok: false, stdout: '', stderr: `cd: ${target}: No such file or directory`, code: 1, cwd }));
+                }
+                return;
+            }
+
+            try {
+                const r = await safeExec(cmd, cwd);
+                res.end(JSON.stringify({ ok: true, stdout: r.stdout, stderr: r.stderr, code: 0, cwd }));
+            } catch (e) {
+                res.end(JSON.stringify({
+                    ok: false,
+                    stdout: e.stdout || '',
+                    stderr: e.stderr || e.message,
+                    code: e.code || 1,
+                    cwd
+                }));
+            }
+
         } else {
-            res.end(JSON.stringify({ ok: true, service: 'whaleos-helper', port: PORT }));
+            res.end(JSON.stringify({ ok: true, service: 'tensoragent-helper', port: PORT }));
         }
     } catch (e) {
         res.statusCode = 500;
@@ -50,6 +103,21 @@ const server = createServer((req, res) => {
     }
 });
 
+function safeExec(cmd, execCwd) {
+    return new Promise((resolve, reject) => {
+        exec(cmd, {
+            cwd: execCwd || cwd,
+            encoding: 'utf-8',
+            timeout: 15000,
+            maxBuffer: 1024 * 1024,
+            env: { ...process.env, HOME: '/home/ainux', TERM: 'xterm-256color' }
+        }, (err, stdout, stderr) => {
+            if (err) { err.stdout = stdout; err.stderr = stderr; reject(err); }
+            else resolve({ stdout, stderr });
+        });
+    });
+}
+
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`[whaleos-helper] Listening on port ${PORT}`);
+    console.log(`[tensoragent-helper] Listening on port ${PORT}`);
 });
