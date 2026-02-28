@@ -4,12 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TensorAgent OS — AI-Native Operating System</title>
+    <title>TensorAgent OS — The World's First AI-Native Operating System</title>
     <meta name="description"
-        content="A bootable AI-native operating system powered by OpenWhale. Your entire desktop is an AI agent.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+        content="A fully bootable operating system where an AI agent is the entire user interface. No apps. No windows. Just talk to your computer.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *,
         *::before,
@@ -19,497 +17,390 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --bg: #050510;
-            --surface: #0c0a1a;
-            --card: #111127;
-            --border: #1e1e3a;
-            --text: #e4e4f0;
-            --muted: #6b6b8d;
-            --accent: #3b82f6;
-            --accent2: #7c3aed;
-            --green: #22c55e;
-            --cyan: #06b6d4;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: #fff;
+            color: #111;
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
-        /* ── Aurora Background ── */
-        .aurora {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .aurora::before {
-            content: '';
-            position: absolute;
-            width: 120vw;
-            height: 120vh;
-            top: -20vh;
-            left: -10vw;
-            background:
-                radial-gradient(ellipse at 20% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 60% 30%, rgba(124, 58, 237, 0.06) 0%, transparent 55%),
-                radial-gradient(ellipse at 80% 60%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 40% 80%, rgba(225, 29, 72, 0.03) 0%, transparent 50%);
-            animation: auroraShift 20s ease-in-out infinite alternate;
-        }
-
-        @keyframes auroraShift {
-            0% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            100% {
-                transform: translate(-3%, 2%) scale(1.05);
-            }
+        a {
+            color: #111;
+            text-decoration: none;
         }
 
         /* ── Nav ── */
         nav {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
             z-index: 100;
-            padding: 16px 32px;
+            padding: 16px 40px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(5, 5, 16, 0.7);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #eee;
         }
 
         .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
-            color: #fff;
-            text-decoration: none;
-        }
-
-        .nav-logo span {
-            font-size: 22px;
+            letter-spacing: -0.3px;
         }
 
         .nav-links {
             display: flex;
-            gap: 28px;
+            gap: 32px;
             align-items: center;
         }
 
         .nav-links a {
-            color: var(--muted);
-            text-decoration: none;
             font-size: 14px;
             font-weight: 500;
+            color: #666;
             transition: color 0.2s;
         }
 
         .nav-links a:hover {
-            color: #fff;
+            color: #111;
         }
 
         .nav-cta {
-            background: var(--accent) !important;
+            background: #111 !important;
             color: #fff !important;
             padding: 8px 20px;
             border-radius: 8px;
-            font-weight: 600 !important;
-            transition: transform 0.2s, box-shadow 0.2s !important;
+            font-size: 13px !important;
         }
 
         .nav-cta:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            opacity: 0.85;
         }
 
         /* ── Hero ── */
         .hero {
-            position: relative;
-            z-index: 1;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            max-width: 720px;
+            margin: 0 auto;
             padding: 120px 24px 80px;
+            text-align: center;
         }
 
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            border-radius: 100px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+        .hero .tag {
+            display: inline-block;
             font-size: 12px;
             font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 28px;
-            letter-spacing: 0.5px;
-        }
-
-        .badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--green);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
+            color: #666;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
         }
 
         h1 {
-            font-size: clamp(42px, 7vw, 80px);
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -2px;
-            margin-bottom: 24px;
-            background: linear-gradient(135deg, #fff 0%, #93c5fd 50%, #7c3aed 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            color: #111;
         }
 
         .hero p {
             font-size: 18px;
-            color: var(--muted);
-            max-width: 560px;
-            margin-bottom: 40px;
+            color: #555;
+            max-width: 520px;
+            margin: 0 auto 36px;
             line-height: 1.7;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
+            gap: 12px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .btn {
-            padding: 14px 32px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.25s;
-            border: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            background: #111;
             color: #fff;
-            box-shadow: 0 4px 24px rgba(59, 130, 246, 0.25);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.35);
+            opacity: 0.85;
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text);
-            border: 1px solid var(--border);
+            background: #fff;
+            color: #111;
+            border: 1px solid #ddd;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.1);
+            border-color: #999;
         }
 
-        /* ── Terminal Preview ── */
-        .terminal-preview {
-            margin-top: 60px;
-            width: min(700px, 90vw);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
+        /* ── Terminal ── */
+        .terminal {
+            max-width: 640px;
+            margin: 48px auto 0;
+            border: 1px solid #e5e5e5;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
         }
 
-        .terminal-header {
+        .terminal-bar {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.02);
-            border-bottom: 1px solid var(--border);
+            gap: 6px;
+            padding: 10px 14px;
+            background: #fafafa;
+            border-bottom: 1px solid #e5e5e5;
         }
 
-        .terminal-dot {
-            width: 12px;
-            height: 12px;
+        .dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
         }
 
-        .terminal-dot.red {
-            background: #ef4444;
+        .dot.r {
+            background: #ff5f57;
         }
 
-        .terminal-dot.yellow {
-            background: #f59e0b;
+        .dot.y {
+            background: #febc2e;
         }
 
-        .terminal-dot.green {
-            background: #22c55e;
+        .dot.g {
+            background: #28c840;
         }
 
-        .terminal-title {
+        .terminal-bar span {
             flex: 1;
             text-align: center;
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 500;
+            font-size: 11px;
+            color: #999;
         }
 
-        .terminal-body {
-            padding: 20px 24px;
-            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        .terminal pre {
+            padding: 20px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 13px;
             line-height: 1.8;
+            color: #333;
+            overflow-x: auto;
         }
 
-        .terminal-body .comment {
-            color: #4a5568;
+        .terminal .c {
+            color: #999;
         }
 
-        .terminal-body .prompt {
-            color: var(--green);
+        .terminal .g {
+            color: #22863a;
         }
 
-        .terminal-body .cmd {
-            color: #e4e4f0;
-        }
-
-        .terminal-body .flag {
-            color: var(--cyan);
-        }
-
-        .terminal-body .output {
-            color: var(--muted);
-        }
-
-        .terminal-body .highlight {
-            color: var(--accent);
+        .terminal .b {
+            color: #0969da;
         }
 
         /* ── Sections ── */
         section {
-            position: relative;
-            z-index: 1;
-            padding: 100px 24px;
-            max-width: 1100px;
+            max-width: 900px;
             margin: 0 auto;
+            padding: 80px 24px;
+        }
+
+        section+section {
+            border-top: 1px solid #eee;
         }
 
         section h2 {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: 700;
-            letter-spacing: -1px;
-            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
         }
 
-        section .subtitle {
-            font-size: 16px;
-            color: var(--muted);
-            margin-bottom: 48px;
-            max-width: 500px;
+        section .sub {
+            font-size: 15px;
+            color: #888;
+            margin-bottom: 40px;
         }
 
-        /* ── Feature Grid ── */
-        .features-grid {
+        /* ── Feature List ── */
+        .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 32px;
         }
 
-        .feature-card {
-            padding: 28px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            transition: all 0.3s;
+        .feature h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .feature-card:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-        }
-
-        .feature-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+        .feature h3 .icon {
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
-
-        .feature-card h3 {
-            font-size: 17px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #fff;
-        }
-
-        .feature-card p {
             font-size: 14px;
-            color: var(--muted);
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        .feature p {
+            font-size: 14px;
+            color: #666;
             line-height: 1.6;
+        }
+
+        /* ── Tools Table ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table th {
+            text-align: left;
+            font-weight: 600;
+            padding: 10px 16px;
+            border-bottom: 2px solid #111;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+        }
+
+        table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            color: #444;
+        }
+
+        table td:first-child {
+            font-weight: 500;
+            color: #111;
+        }
+
+        table tr:last-child td {
+            border-bottom: none;
         }
 
         /* ── Steps ── */
         .steps {
             display: flex;
             flex-direction: column;
-            gap: 32px;
-            counter-reset: step;
+            gap: 28px;
         }
 
         .step {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             align-items: flex-start;
-            counter-increment: step;
         }
 
-        .step-num {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+        .step-n {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f5f5f5;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
-            color: var(--accent);
+            color: #111;
             flex-shrink: 0;
         }
 
-        .step-content h3 {
-            font-size: 16px;
+        .step-body h3 {
+            font-size: 15px;
             font-weight: 600;
-            color: #fff;
             margin-bottom: 4px;
         }
 
-        .step-content p {
+        .step-body p {
             font-size: 14px;
-            color: var(--muted);
+            color: #666;
         }
 
-        .step-content code {
+        .step-body code {
             display: inline-block;
             margin-top: 8px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border);
+            padding: 6px 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
             font-family: 'SF Mono', monospace;
-            font-size: 13px;
-            color: var(--cyan);
+            font-size: 12px;
+            color: #333;
+            word-break: break-all;
         }
 
-        /* ── Architecture ── */
-        .arch-row {
-            display: flex;
+        /* ── Stack ── */
+        .stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
-            flex-wrap: wrap;
-            margin-top: 32px;
         }
 
-        .arch-item {
-            flex: 1;
-            min-width: 200px;
+        .stack-item {
             padding: 20px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: #fafafa;
+            border-radius: 8px;
             text-align: center;
         }
 
-        .arch-item .emoji {
-            font-size: 28px;
-            margin-bottom: 10px;
+        .stack-item .emoji {
+            font-size: 24px;
+            margin-bottom: 8px;
         }
 
-        .arch-item h4 {
-            font-size: 14px;
+        .stack-item h4 {
+            font-size: 13px;
             font-weight: 600;
-            color: #fff;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        .arch-item p {
-            font-size: 12px;
-            color: var(--muted);
+        .stack-item p {
+            font-size: 11px;
+            color: #888;
         }
 
         /* ── Footer ── */
         footer {
-            position: relative;
-            z-index: 1;
             padding: 40px 24px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid #eee;
             text-align: center;
-        }
-
-        footer p {
             font-size: 13px;
-            color: var(--muted);
+            color: #999;
         }
 
         footer a {
-            color: var(--accent);
-            text-decoration: none;
+            color: #666;
         }
 
         footer a:hover {
-            text-decoration: underline;
+            color: #111;
         }
 
         /* ── Responsive ── */
@@ -518,12 +409,17 @@
                 padding: 12px 16px;
             }
 
-            .nav-links {
+            .nav-links a:not(.nav-cta) {
                 display: none;
             }
 
             h1 {
+                font-size: 32px;
                 letter-spacing: -1px;
+            }
+
+            .hero {
+                padding: 80px 16px 60px;
             }
 
             .hero-buttons {
@@ -535,7 +431,7 @@
                 justify-content: center;
             }
 
-            .features-grid {
+            .features {
                 grid-template-columns: 1fr;
             }
 
@@ -547,36 +443,27 @@
 </head>
 
 <body>
-    <div class="aurora"></div>
 
-    <!-- Nav -->
     <nav>
-        <a href="#" class="nav-logo">
-            <span>🐋</span> TensorAgent OS
-        </a>
+        <a href="#" class="nav-logo">TensorAgent OS</a>
         <div class="nav-links">
             <a href="#features">Features</a>
-            <a href="#usage">Get Started</a>
-            <a href="#architecture">Architecture</a>
+            <a href="#tools">Tools</a>
+            <a href="#start">Get Started</a>
             <a href="https://github.com/viralcode/tensoragentos" class="nav-cta">GitHub →</a>
         </div>
     </nav>
 
     <!-- Hero -->
     <div class="hero">
-        <div class="badge">OPEN SOURCE — v0.1.0</div>
-        <h1>Your OS is<br>an AI Agent</h1>
+        <div class="tag">Open Source · v0.1.0</div>
+        <h1>The world's first AI-native operating system</h1>
         <p>
-            A bootable Linux operating system where the entire desktop is powered by AI.
+            A fully bootable OS where an AI agent is the entire user interface.
             No apps. No windows. Just talk to your computer.
         </p>
         <div class="hero-buttons">
-            <a href="#usage" class="btn btn-primary">
-                Get Started
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-            </a>
+            <a href="#start" class="btn btn-primary">Get Started →</a>
             <a href="https://github.com/viralcode/tensoragentos" class="btn btn-secondary">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path
@@ -586,169 +473,231 @@
             </a>
         </div>
 
-        <!-- Terminal Preview -->
-        <div class="terminal-preview">
-            <div class="terminal-header">
-                <div class="terminal-dot red"></div>
-                <div class="terminal-dot yellow"></div>
-                <div class="terminal-dot green"></div>
-                <div class="terminal-title">Terminal — tensoragentos</div>
+        <div class="terminal">
+            <div class="terminal-bar">
+                <div class="dot r"></div>
+                <div class="dot y"></div>
+                <div class="dot g"></div>
+                <span>Terminal</span>
             </div>
-            <div class="terminal-body">
-                <div><span class="comment"># Clone and boot the OS</span></div>
-                <div><span class="prompt">❯</span> <span class="cmd">git clone</span> <span
-                        class="flag">https://github.com/viralcode/tensoragentos.git</span></div>
-                <div><span class="prompt">❯</span> <span class="cmd">cd</span> <span class="flag">tensoragentos</span>
-                </div>
-                <div><span class="prompt">❯</span> <span class="cmd">python3</span> <span
-                        class="flag">vm/launch-ainux.py</span></div>
-                <div><span class="output"> 🐋 AInux — Custom Linux Distro Launcher</span></div>
-                <div><span class="output"> [1/4] Creating cloud-init configuration... ✓</span></div>
-                <div><span class="output"> [2/4] Creating cloud-init seed image... ✓</span></div>
-                <div><span class="output"> [3/4] Preparing AInux disk image... ✓</span></div>
-                <div><span class="output"> [4/4] Booting AInux in QEMU...</span></div>
-                <div><span class="highlight"> 🐋 AI Desktop ready at localhost:7777</span></div>
-            </div>
+            <pre><span class="c"># Boot the OS in under 5 minutes</span>
+<span class="g">❯</span> git clone <span class="b">https://github.com/viralcode/tensoragentos.git</span>
+<span class="g">❯</span> cd tensoragentos
+<span class="g">❯</span> python3 vm/launch-ainux.py
+
+<span class="c">  TensorAgent OS — AI-Native Operating System</span>
+<span class="c">  [1/4] Creating cloud-init configuration... ✓</span>
+<span class="c">  [2/4] Preparing disk image... ✓</span>
+<span class="c">  [3/4] Booting in QEMU with HVF... ✓</span>
+<span class="c">  [4/4] Installing AI platform...</span>
+<span class="g">  ✓ Ready at localhost:7777</span></pre>
         </div>
     </div>
 
     <!-- Features -->
     <section id="features">
-        <h2>Everything is AI</h2>
-        <p class="subtitle">No traditional desktop. The entire OS interface is an AI agent that understands and
-            executes.</p>
+        <h2>Features</h2>
+        <p class="sub">Everything you'd expect from an OS, reimagined around AI.</p>
 
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(59,130,246,0.1);">🐋</div>
-                <h3>OpenWhale Engine</h3>
-                <p>Powered by OpenWhale — an autonomous AI agent with tool execution, memory, and multi-provider LLM
-                    support.</p>
+        <div class="features">
+            <div class="feature">
+                <h3><span class="icon">🧠</span> AI-First Interface</h3>
+                <p>The entire desktop is an AI agent. Chat to control your computer — run commands, manage files,
+                    install software, all through natural language.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(124,58,237,0.1);">🖥️</div>
-                <h3>Native QML Desktop</h3>
-                <p>A beautiful Wayland desktop shell built with Qt6 QML. Window management, dock, and system tray — all
-                    native.</p>
+            <div class="feature">
+                <h3><span class="icon">🖥️</span> Native Desktop Shell</h3>
+                <p>Custom Qt6 QML desktop with window management, dock, top bar, and system tray. Runs on Wayland via
+                    the Cage compositor.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(6,182,212,0.1);">⚡</div>
-                <h3>Tool Execution</h3>
-                <p>The AI can execute system commands, manage files, install packages, and control hardware directly
-                    through natural language.</p>
+            <div class="feature">
+                <h3><span class="icon">⚡</span> Deep Kernel Access</h3>
+                <p>50+ OS tools give the AI native access to processes, services, filesystem, network, hardware, users,
+                    packages, and kernel parameters.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(34,197,94,0.1);">📡</div>
-                <h3>Multi-Channel</h3>
-                <p>Connect WhatsApp, Telegram, Discord, and iMessage. Your OS agent responds across all platforms.</p>
+            <div class="feature">
+                <h3><span class="icon">🔌</span> Any AI Provider</h3>
+                <p>Works with Anthropic, OpenAI, Google, DeepSeek, Ollama, and more. Switch providers on the fly from
+                    the settings panel.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(249,115,22,0.1);">🧠</div>
-                <h3>Persistent Memory</h3>
-                <p>Remembers conversations, preferences, and context across sessions. Built-in SQLite-backed memory
-                    system.</p>
+            <div class="feature">
+                <h3><span class="icon">🤖</span> Multi-Agent</h3>
+                <p>Create specialized agents, coordinate multi-agent workflows, and delegate tasks across agents with
+                    shared context and memory.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: rgba(225,29,72,0.1);">🔌</div>
-                <h3>Provider Agnostic</h3>
-                <p>Works with Anthropic, OpenAI, Google, Ollama, and more. Switch providers on the fly from the settings
-                    panel.</p>
+            <div class="feature">
+                <h3><span class="icon">📡</span> Multi-Channel</h3>
+                <p>Connect WhatsApp, Telegram, Discord, and iMessage. Your OS agent responds across all messaging
+                    platforms.</p>
+            </div>
+            <div class="feature">
+                <h3><span class="icon">💾</span> Persistent Memory</h3>
+                <p>Remembers conversations, preferences, and context across sessions. Built-in SQLite-backed memory and
+                    vector search.</p>
+            </div>
+            <div class="feature">
+                <h3><span class="icon">🔧</span> Extensible Skills</h3>
+                <p>GitHub, Weather, Notion, Spotify, Trello, and more. Create custom skills with markdown files —
+                    hot-reloaded at runtime.</p>
+            </div>
+            <div class="feature">
+                <h3><span class="icon">🌐</span> Browser Automation</h3>
+                <p>Built-in headless Chromium for web browsing, scraping, and automation — all controllable through the
+                    AI chat.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tools -->
+    <section id="tools">
+        <h2>OS Integration</h2>
+        <p class="sub">The AI has deep, native access to every layer of the operating system.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Capabilities</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Processes</td>
+                    <td>List, kill, process tree, /proc inspection</td>
+                </tr>
+                <tr>
+                    <td>Services</td>
+                    <td>systemd start, stop, restart, status, logs</td>
+                </tr>
+                <tr>
+                    <td>Filesystem</td>
+                    <td>Read, write, list, find, delete, mkdir, disk usage</td>
+                </tr>
+                <tr>
+                    <td>Network</td>
+                    <td>Interfaces, connections, ports, DNS, ping, routing, firewall</td>
+                </tr>
+                <tr>
+                    <td>Hardware</td>
+                    <td>CPU, RAM, USB, PCI, storage, kernel modules, dmesg</td>
+                </tr>
+                <tr>
+                    <td>Users</td>
+                    <td>List, groups, sessions, add users, set passwords</td>
+                </tr>
+                <tr>
+                    <td>Packages</td>
+                    <td>apt install, remove, search, update</td>
+                </tr>
+                <tr>
+                    <td>System</td>
+                    <td>Env vars, hostname, timezone, crontab, mounts, swap</td>
+                </tr>
+                <tr>
+                    <td>Logs</td>
+                    <td>journalctl, syslog, auth logs</td>
+                </tr>
+                <tr>
+                    <td>Performance</td>
+                    <td>top, iostat, vmstat, load averages</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p style="margin-top: 20px; font-size: 13px; color: #888;">
+            Plus 30+ additional tools: exec, file, browser, git, docker, ssh, email, pdf, spreadsheet, slides, cron,
+            image, code execution, and more.
+        </p>
+    </section>
+
+    <!-- Architecture -->
+    <section>
+        <h2>Stack</h2>
+        <p class="sub">A clean architecture from hardware to AI agent.</p>
+
+        <div class="stack">
+            <div class="stack-item">
+                <div class="emoji">💻</div>
+                <h4>QEMU + HVF/KVM</h4>
+                <p>Hardware virtualization</p>
+            </div>
+            <div class="stack-item">
+                <div class="emoji">🐧</div>
+                <h4>Linux Kernel</h4>
+                <p>Debian 12 / Buildroot</p>
+            </div>
+            <div class="stack-item">
+                <div class="emoji">🪟</div>
+                <h4>Cage + Wayland</h4>
+                <p>Kiosk compositor</p>
+            </div>
+            <div class="stack-item">
+                <div class="emoji">🎨</div>
+                <h4>Qt6 QML Shell</h4>
+                <p>Native desktop UI</p>
+            </div>
+            <div class="stack-item">
+                <div class="emoji">🧠</div>
+                <h4>OpenWhale</h4>
+                <p>AI agent engine</p>
             </div>
         </div>
     </section>
 
     <!-- Get Started -->
-    <section id="usage">
+    <section id="start">
         <h2>Get Started</h2>
-        <p class="subtitle">Boot your own AI operating system in under 5 minutes.</p>
+        <p class="sub">Boot your own AI operating system in under 5 minutes.</p>
 
         <div class="steps">
             <div class="step">
-                <div class="step-num">1</div>
-                <div class="step-content">
-                    <h3>Prerequisites</h3>
-                    <p>You need QEMU and Python 3 installed. On macOS with Homebrew:</p>
-                    <code>brew install qemu python3</code>
+                <div class="step-n">1</div>
+                <div class="step-body">
+                    <h3>Install QEMU</h3>
+                    <p>On macOS with Homebrew:</p>
+                    <code>brew install qemu</code>
                 </div>
             </div>
             <div class="step">
-                <div class="step-num">2</div>
-                <div class="step-content">
-                    <h3>Download Debian Base Image</h3>
-                    <p>Download the Debian 12 ARM64 cloud image (for Apple Silicon):</p>
+                <div class="step-n">2</div>
+                <div class="step-body">
+                    <h3>Download the base image</h3>
+                    <p>Debian 12 ARM64 cloud image (for Apple Silicon):</p>
                     <code>curl -L -o vm/debian-generic.qcow2 "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-arm64.qcow2"</code>
                 </div>
             </div>
             <div class="step">
-                <div class="step-num">3</div>
-                <div class="step-content">
-                    <h3>Clone & Launch</h3>
-                    <p>Clone the repo and run the launcher. It builds and boots the OS automatically:</p>
+                <div class="step-n">3</div>
+                <div class="step-body">
+                    <h3>Clone and launch</h3>
+                    <p>Everything is automatic — cloud-init installs Node.js, Qt6, OpenWhale, and the desktop shell.</p>
                     <code>git clone https://github.com/viralcode/tensoragentos.git && cd tensoragentos && python3 vm/launch-ainux.py</code>
                 </div>
             </div>
             <div class="step">
-                <div class="step-num">4</div>
-                <div class="step-content">
-                    <h3>Wait for First Boot</h3>
-                    <p>Cloud-init installs everything automatically (Node.js, Qt6, OpenWhale, etc). Takes ~3-5 minutes.
-                        The VM reboots into the GUI on its own.</p>
+                <div class="step-n">4</div>
+                <div class="step-body">
+                    <h3>Wait ~5 minutes</h3>
+                    <p>First boot installs everything automatically then reboots into the desktop GUI.</p>
                 </div>
             </div>
             <div class="step">
-                <div class="step-num">5</div>
-                <div class="step-content">
-                    <h3>Log In & Talk</h3>
-                    <p>Login with <strong>admin / admin</strong>. Type into the chat bar at the bottom of the desktop.
-                        Your AI agent is ready.</p>
+                <div class="step-n">5</div>
+                <div class="step-body">
+                    <h3>Log in and talk</h3>
+                    <p>Login with <strong>admin / admin</strong>. Type into the chat bar. Your AI agent is ready.</p>
                     <code>SSH: ssh ainux@localhost -p 2222 (password: ainux)</code>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Architecture -->
-    <section id="architecture">
-        <h2>Architecture</h2>
-        <p class="subtitle">A clean stack from hardware to AI agent.</p>
-
-        <div class="arch-row">
-            <div class="arch-item">
-                <div class="emoji">💻</div>
-                <h4>QEMU + HVF</h4>
-                <p>ARM64 virtualization with Apple Silicon acceleration</p>
-            </div>
-            <div class="arch-item">
-                <div class="emoji">🐧</div>
-                <h4>Debian 12</h4>
-                <p>Stable Linux kernel with cloud-init provisioning</p>
-            </div>
-            <div class="arch-item">
-                <div class="emoji">🪟</div>
-                <h4>Cage + Wayland</h4>
-                <p>Minimal Wayland compositor running a single app</p>
-            </div>
-            <div class="arch-item">
-                <div class="emoji">🎨</div>
-                <h4>Qt6 QML Shell</h4>
-                <p>Native desktop shell with window management</p>
-            </div>
-            <div class="arch-item">
-                <div class="emoji">🐋</div>
-                <h4>OpenWhale</h4>
-                <p>AI agent engine with tools, skills & memory</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
     <footer>
-        <p>
-            Built with 🐋 by <a href="https://github.com/viralcode">viralcode</a>
-            · <a href="https://github.com/viralcode/tensoragentos">GitHub</a>
-            · MIT License
-        </p>
+        Built by <a href="https://github.com/viralcode">Jijo John</a>
+        · <a href="https://github.com/viralcode/tensoragentos">GitHub</a>
+        · MIT License
     </footer>
+
 </body>
 
 </html>
