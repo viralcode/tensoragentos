@@ -207,9 +207,9 @@ Rectangle {
         anchors.bottom: appDock.top
         anchors.bottomMargin: 6
         width: Math.min(parent.width - 80, 500)
-        height: 24
-        visible: chatBarItem.isSending || chatBarItem.isStreaming
-        opacity: (chatBarItem.isSending || chatBarItem.isStreaming) ? 1.0 : 0.0
+        height: 28
+        visible: chatBarItem.chatExpanded
+        opacity: (chatBarItem.isSending || chatBarItem.isStreaming) ? 1.0 : 0.35
         Behavior on opacity { NumberAnimation { duration: 500 } }
 
         property real phase: 0

@@ -24,6 +24,25 @@ Rectangle {
     property var chatHistory: []
     property int historyIndex: -1
 
+    // Strip emoji and unsupported unicode from text
+    function cleanText(text) {
+        if (!text) return "";
+        // Remove emoji/symbol unicode ranges that QML can't render
+        var cleaned = "";
+        for (var i = 0; i < text.length; i++) {
+            var code = text.charCodeAt(i);
+            // Skip surrogate pairs (emoji), and common symbol blocks
+            if (code >= 0xD800 && code <= 0xDFFF) continue;
+            if (code >= 0x2600 && code <= 0x27BF) continue; // misc symbols
+            if (code >= 0xFE00 && code <= 0xFE0F) continue; // variation selectors
+            if (code >= 0x1F000) continue; // supplementary
+            cleaned += text.charAt(i);
+        }
+        // Clean up markdown bold markers
+        cleaned = cleaned.replace(/\*\*/g, "");
+        return cleaned.trim();
+    }
+
     Component.onCompleted: loadAgents()
 
     function loadAgents() {
@@ -545,13 +564,13 @@ Rectangle {
                         content = data.choices[0].message.content;
                     }
                     if (content) {
-                        msgs2.push({ role: "assistant", content: content, agent: getAgentName() });
+                        msgs2.push({ role: "assistant", content: cleanText(content), agent: getAgentName() });
                     } else if (data.error) {
                         msgs2.push({ role: "assistant", content: "Error: " + data.error, agent: "System" });
                     }
                 } catch(e) {
                     var raw = xhr.responseText || "No response";
-                    msgs2.push({ role: "assistant", content: raw, agent: getAgentName() });
+                    msgs2.push({ role: "assistant", content: cleanText(raw), agent: getAgentName() });
                 }
                 messages = msgs2;
             }
