@@ -200,16 +200,20 @@ Rectangle {
         }
     }
 
-    // ── Dock + Chat ──
-    ColumnLayout {
-        id: dockArea
+    // ── Dock ──
+    AppDock {
+        id: appDock
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: chatBarItem.top
+        anchors.bottomMargin: 10
+    }
+
+    // ── Chat Bar (absolute positioned, expands upward) ──
+    ChatBar {
+        id: chatBarItem
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 16
-        spacing: 10
-        width: Math.min(parent.width - 32, 600)
-
-        AppDock { Layout.alignment: Qt.AlignHCenter }
-        ChatBar { Layout.fillWidth: true }
+        width: Math.min(parent.width - 32, 620)
     }
 }
