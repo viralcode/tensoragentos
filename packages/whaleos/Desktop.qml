@@ -161,7 +161,7 @@ Rectangle {
         }
 
         Text {
-            text: "D E E P O S"
+            text: "T E N S O R A G E N T   O S"
             font.pixelSize: 13
             font.weight: Font.Normal
             font.letterSpacing: 2

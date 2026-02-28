@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
     // Don't hardcode platform - let Qt auto-detect from environment
     // Cage sets WAYLAND_DISPLAY which Qt will pick up automatically
     QGuiApplication app(argc, argv);
-    app.setApplicationName("WhaleOS");
+    app.setApplicationName("TensorAgentOS");
     app.setOrganizationName("TensorAgentOS");
 
     QQmlApplicationEngine engine;
@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     // Log QML errors
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
         &app, []() {
-            qCritical() << "WhaleOS: QML object creation failed!";
+            qCritical() << "TensorAgent OS: QML object creation failed!";
         }, Qt::QueuedConnection);
 
     QObject::connect(&engine, &QQmlApplicationEngine::warnings,
@@ -24,14 +24,14 @@ int main(int argc, char *argv[]) {
                 qWarning() << "QML Warning:" << w.toString();
         });
 
-    qDebug() << "WhaleOS: Loading main.qml from /opt/ainux/whaleos/main.qml";
+    qDebug() << "TensorAgent OS: Loading main.qml from /opt/ainux/whaleos/main.qml";
     engine.load(QUrl::fromLocalFile("/opt/ainux/whaleos/main.qml"));
 
     if (engine.rootObjects().isEmpty()) {
-        qCritical() << "WhaleOS: Failed to load main.qml - no root objects!";
+        qCritical() << "TensorAgent OS: Failed to load main.qml - no root objects!";
         return -1;
     }
 
-    qDebug() << "WhaleOS: Desktop shell loaded successfully";
+    qDebug() << "TensorAgent OS: Desktop shell loaded successfully";
     return app.exec();
 }

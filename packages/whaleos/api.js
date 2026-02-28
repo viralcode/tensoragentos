@@ -1,4 +1,4 @@
-// api.js — OpenWhale API client for WhaleOS
+// api.js — OpenWhale API client for TensorAgent OS
 .pragma library
 
 var BASE_URL = "http://localhost:7777";
