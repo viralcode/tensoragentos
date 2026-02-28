@@ -13,6 +13,7 @@ Rectangle {
     property string owLogs: ""
     property bool owLogsFetching: false
     property bool owRestarting: false
+    property string owUptime: ""
 
     Component.onCompleted: { checkOwHealth(); }
 
@@ -23,32 +24,72 @@ Rectangle {
     }
 
     function checkOwHealth() {
-        API.getHealth(function(online) {
-            owOnline = online;
-        });
+        // Try helper endpoint first (port 7778), fallback to OW health
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://localhost:7778/status");
+        xhr.timeout = 3000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
+                        owOnline = (d.status === "active");
+                        if (d.uptime) owUptime = d.uptime;
+                    } catch(e) { owOnline = false; }
+                } else {
+                    // Fallback: check port 7777 directly
+                    API.getHealth(function(online) { owOnline = online; });
+                }
+            }
+        };
+        xhr.ontimeout = function() {
+            API.getHealth(function(online) { owOnline = online; });
+        };
+        xhr.send();
     }
 
     function fetchLogs() {
         owLogsFetching = true;
         owLogs = "Fetching logs...";
-        API.getLogs(50, function(status, data) {
-            owLogsFetching = false;
-            if (data && data.response) {
-                owLogs = data.response;
-            } else if (data && data.raw) {
-                owLogs = data.raw;
-            } else {
-                owLogs = "Could not retrieve logs.\nOpenWhale may be offline.";
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://localhost:7778/logs");
+        xhr.timeout = 8000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                owLogsFetching = false;
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
+                        owLogs = d.logs || "No log data returned.";
+                    } catch(e) {
+                        owLogs = xhr.responseText || "Parse error.";
+                    }
+                } else {
+                    owLogs = "Helper service not running.\n\nSSH in and start it:\n  ssh ainux@localhost -p 2222\n  node /opt/ainux/whaleos/whaleos-helper.mjs &\n\nOr view logs directly:\n  journalctl -u openwhale -n 50 --no-pager";
+                }
             }
-        });
+        };
+        xhr.ontimeout = function() {
+            owLogsFetching = false;
+            owLogs = "Request timed out.\nTry: journalctl -u openwhale -n 50 --no-pager";
+        };
+        xhr.send();
     }
 
     function restartOw() {
         owRestarting = true;
-        API.execCommand("Run this exact command: sudo systemctl restart openwhale", function(status, data) {
-            // Give it a few seconds to come back up
-            restartTimer.start();
-        });
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://localhost:7778/restart");
+        xhr.timeout = 12000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                restartTimer.start();
+            }
+        };
+        xhr.ontimeout = function() {
+            owRestarting = false;
+        };
+        xhr.send();
     }
 
     Timer {
@@ -71,7 +112,7 @@ Rectangle {
         anchors.rightMargin: 14
         spacing: 8
 
-        // ── Left: Whale Icon + OpenWhale (Clickable) ──
+        // ── Left: Whale + OpenWhale (Clickable) ──
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             width: owLeftRow.width + 16
@@ -86,10 +127,38 @@ Rectangle {
                 anchors.centerIn: parent
                 spacing: 6
 
-                Text {
-                    text: "🐋"
-                    font.pixelSize: 16
+                // Whale drawn as canvas (no emoji)
+                Canvas {
+                    width: 16; height: 16
                     anchors.verticalCenter: parent.verticalCenter
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        ctx.fillStyle = "#60a5fa";
+                        ctx.beginPath();
+                        ctx.moveTo(2, 10);
+                        ctx.quadraticCurveTo(1, 6, 4, 4);
+                        ctx.quadraticCurveTo(7, 2, 11, 3);
+                        ctx.quadraticCurveTo(14, 4, 14, 7);
+                        ctx.quadraticCurveTo(16, 9, 14, 11);
+                        ctx.quadraticCurveTo(15, 13, 16, 12);
+                        ctx.quadraticCurveTo(16, 14, 14, 13);
+                        ctx.quadraticCurveTo(10, 14, 7, 13);
+                        ctx.quadraticCurveTo(4, 12, 2, 10);
+                        ctx.fill();
+                        // eye
+                        ctx.fillStyle = "#0f172a";
+                        ctx.beginPath();
+                        ctx.arc(6, 6, 1, 0, Math.PI * 2);
+                        ctx.fill();
+                        // spout
+                        ctx.strokeStyle = "#60a5fa";
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(9, 3);
+                        ctx.lineTo(9, 0);
+                        ctx.stroke();
+                    }
                 }
 
                 // Status dot
@@ -98,7 +167,6 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     color: owOnline ? root.accentGreen : root.accentRed
 
-                    // Subtle pulse for online
                     SequentialAnimation on opacity {
                         running: owOnline
                         loops: Animation.Infinite
@@ -155,7 +223,7 @@ Rectangle {
             spacing: 10
             Layout.alignment: Qt.AlignVCenter
 
-            // Settings gear
+            // Settings gear (canvas drawn)
             Rectangle {
                 width: 26
                 height: 26
@@ -163,11 +231,32 @@ Rectangle {
                 color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 anchors.verticalCenter: parent.verticalCenter
 
-                Text {
+                Canvas {
                     anchors.centerIn: parent
-                    text: "⚙"
-                    font.pixelSize: 14
-                    color: root.textSecondary
+                    width: 14; height: 14
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        ctx.strokeStyle = "#999";
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath();
+                        var cx = 7, cy = 7;
+                        for (var i = 0; i < 8; i++) {
+                            var a1 = (i * Math.PI / 4) - 0.18;
+                            var a2 = (i * Math.PI / 4) + 0.18;
+                            ctx.lineTo(cx + 6 * Math.cos(a1), cy + 6 * Math.sin(a1));
+                            ctx.lineTo(cx + 6 * Math.cos(a2), cy + 6 * Math.sin(a2));
+                            var a3 = ((i + 0.5) * Math.PI / 4) - 0.12;
+                            var a4 = ((i + 0.5) * Math.PI / 4) + 0.12;
+                            ctx.lineTo(cx + 4.5 * Math.cos(a3), cy + 4.5 * Math.sin(a3));
+                            ctx.lineTo(cx + 4.5 * Math.cos(a4), cy + 4.5 * Math.sin(a4));
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
                 }
 
                 MouseArea {
@@ -175,7 +264,7 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: openApp("settings", "Settings", "⚙")
+                    onClicked: openApp("settings", "Settings", "settings")
                 }
             }
 
@@ -239,9 +328,35 @@ Rectangle {
                 width: parent.width
                 spacing: 8
 
-                Text {
-                    text: "🐋"
-                    font.pixelSize: 18
+                // Whale canvas (matches the topbar icon)
+                Canvas {
+                    width: 22; height: 22
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        ctx.fillStyle = "#60a5fa";
+                        ctx.beginPath();
+                        ctx.moveTo(3, 14);
+                        ctx.quadraticCurveTo(1, 8, 5, 5);
+                        ctx.quadraticCurveTo(9, 2, 15, 4);
+                        ctx.quadraticCurveTo(19, 5, 19, 10);
+                        ctx.quadraticCurveTo(22, 13, 19, 15);
+                        ctx.quadraticCurveTo(20, 18, 22, 16);
+                        ctx.quadraticCurveTo(22, 19, 19, 17);
+                        ctx.quadraticCurveTo(14, 19, 10, 18);
+                        ctx.quadraticCurveTo(5, 17, 3, 14);
+                        ctx.fill();
+                        ctx.fillStyle = "#0f172a";
+                        ctx.beginPath();
+                        ctx.arc(8, 8, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = "#60a5fa";
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath();
+                        ctx.moveTo(12, 4);
+                        ctx.lineTo(12, 0);
+                        ctx.stroke();
+                    }
                 }
 
                 Column {
@@ -254,7 +369,7 @@ Rectangle {
                         color: "#ffffff"
                     }
                     Text {
-                        text: "AI Agent Platform"
+                        text: owUptime || "AI Agent Platform"
                         font.pixelSize: 10
                         color: root.textMuted
                     }
@@ -316,10 +431,25 @@ Rectangle {
                     Row {
                         anchors.centerIn: parent
                         spacing: 6
-                        Text {
-                            text: "🔄"
-                            font.pixelSize: 11
+                        // Circular arrow icon (canvas)
+                        Canvas {
+                            width: 12; height: 12
                             anchors.verticalCenter: parent.verticalCenter
+                            onPaint: {
+                                var ctx = getContext("2d");
+                                ctx.clearRect(0, 0, width, height);
+                                ctx.strokeStyle = owRestarting ? "#f97316" : "#999";
+                                ctx.lineWidth = 1.5;
+                                ctx.beginPath();
+                                ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5);
+                                ctx.stroke();
+                                // Arrow tip
+                                ctx.beginPath();
+                                ctx.moveTo(6, 1);
+                                ctx.lineTo(9, 2.5);
+                                ctx.lineTo(6, 4);
+                                ctx.stroke();
+                            }
                         }
                         Text {
                             text: owRestarting ? "Restarting..." : "Restart"
@@ -352,10 +482,23 @@ Rectangle {
                     Row {
                         anchors.centerIn: parent
                         spacing: 6
-                        Text {
-                            text: "📋"
-                            font.pixelSize: 11
+                        // Document icon (canvas)
+                        Canvas {
+                            width: 12; height: 12
                             anchors.verticalCenter: parent.verticalCenter
+                            onPaint: {
+                                var ctx = getContext("2d");
+                                ctx.clearRect(0, 0, width, height);
+                                ctx.strokeStyle = owLogsFetching ? "#3b82f6" : "#999";
+                                ctx.lineWidth = 1.2;
+                                ctx.strokeRect(1, 0, 10, 12);
+                                ctx.beginPath();
+                                ctx.moveTo(3.5, 3); ctx.lineTo(8.5, 3); ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(3.5, 6); ctx.lineTo(8.5, 6); ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(3.5, 9); ctx.lineTo(6.5, 9); ctx.stroke();
+                            }
                         }
                         Text {
                             text: owLogsFetching ? "Fetching..." : "View Logs"
@@ -384,11 +527,23 @@ Rectangle {
                     border.color: Qt.rgba(1, 1, 1, 0.08)
                     border.width: 1
 
-                    Text {
+                    Canvas {
                         anchors.centerIn: parent
-                        text: "⟳"
-                        font.pixelSize: 16
-                        color: root.textSecondary
+                        width: 12; height: 12
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.strokeStyle = "#999";
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(6, 1);
+                            ctx.lineTo(9, 2.5);
+                            ctx.lineTo(6, 4);
+                            ctx.stroke();
+                        }
                     }
 
                     MouseArea {
@@ -427,15 +582,16 @@ Rectangle {
                         anchors.rightMargin: 8
 
                         Text {
-                            text: "LOGS — journalctl -u openwhale"
+                            text: "LOGS — openwhale.service"
                             font.pixelSize: 9
                             color: root.textMuted
                             Layout.fillWidth: true
                         }
 
                         Text {
-                            text: "✕"
+                            text: "x"
                             font.pixelSize: 10
+                            font.weight: Font.Bold
                             color: clearLogsMa.containsMouse ? root.accentRed : root.textMuted
 
                             MouseArea {
@@ -481,12 +637,12 @@ Rectangle {
         }
     }
 
-    // ── Click-outside to close OpenWhale panel ──
+    // ── Click-outside to close panels ──
     MouseArea {
         visible: owPanelVisible
+        parent: topBar.parent
         anchors.fill: parent
-        anchors.topMargin: parent.height
-        parent: topBar.parent  // cover the whole desktop
+        anchors.topMargin: topBar.height
         z: 999
         onClicked: { owPanelVisible = false; }
     }
@@ -528,7 +684,17 @@ Rectangle {
                     anchors.leftMargin: 8
                     spacing: 8
 
-                    Text { text: "👤"; font.pixelSize: 13 }
+                    Canvas {
+                        width: 13; height: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
+                            ctx.beginPath(); ctx.arc(6.5, 4.5, 3, 0, Math.PI * 2); ctx.stroke();
+                            ctx.beginPath(); ctx.arc(6.5, 15, 6, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
+                        }
+                    }
                     Text {
                         text: root.currentUser
                         font.pixelSize: 12
@@ -558,7 +724,22 @@ Rectangle {
                     anchors.leftMargin: 8
                     spacing: 8
 
-                    Text { text: "🚪"; font.pixelSize: 12 }
+                    Canvas {
+                        width: 13; height: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
+                            ctx.beginPath();
+                            ctx.moveTo(5, 1); ctx.lineTo(1, 1); ctx.lineTo(1, 12);
+                            ctx.lineTo(5, 12); ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(5, 6.5); ctx.lineTo(12, 6.5); ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(9, 3.5); ctx.lineTo(12, 6.5); ctx.lineTo(9, 9.5); ctx.stroke();
+                        }
+                    }
                     Text {
                         text: "Sign Out"
                         font.pixelSize: 12
@@ -580,7 +761,6 @@ Rectangle {
     function openApp(appId, title, icon) {
         userMenu.visible = false;
         owPanelVisible = false;
-        // Check if already open
         for (var i = 0; i < root.openWindows.length; i++) {
             if (root.openWindows[i].appId === appId) return;
         }
