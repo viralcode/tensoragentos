@@ -1,17 +1,19 @@
 /**
  * Chrome DevTools MCP Backend
  * 
- * Integrates Google's Chrome DevTools MCP server for browser automation.
+ * Integrates Google's official Chrome DevTools MCP server for browser automation.
  * Uses stdio transport to communicate with `chrome-devtools-mcp` via child process.
  * 
- * This gives the AI agent access to real Chrome DevTools capabilities:
- * - Page navigation and interaction
- * - Network request inspection
- * - Console monitoring
- * - Performance tracing
- * - Screenshot capture
- * - JavaScript evaluation
+ * Official tool names from Chrome DevTools MCP:
  * 
+ * INPUT:       click, drag, fill, fill_form, handle_dialog, hover, press_key, type_text, upload_file
+ * NAVIGATION:  close_page, list_pages, navigate_page, new_page, select_page, wait_for
+ * EMULATION:   emulate, resize_page
+ * PERFORMANCE: performance_analyze_insight, performance_start_trace, performance_stop_trace, take_memory_snapshot
+ * NETWORK:     get_network_request, list_network_requests
+ * DEBUGGING:   evaluate_script, get_console_message, list_console_messages, take_screenshot, take_snapshot
+ * 
+ * @see https://github.com/nichochar/chrome-devtools-mcp
  * @see https://www.npmjs.com/package/chrome-devtools-mcp
  */
 
@@ -23,7 +25,7 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 
 // ============================================================================
-// STDIO MCP CLIENT for Chrome DevTools
+// STDIO MCP CLIENT for Chrome DevTools MCP
 // ============================================================================
 
 interface MCPRequest {
@@ -59,7 +61,7 @@ class ChromeMCPClient {
     private tools: MCPToolDef[] = [];
 
     /**
-     * Start the chrome-devtools-mcp process
+     * Start the chrome-devtools-mcp process via npx
      */
     async start(browserUrl: string = "http://127.0.0.1:9222"): Promise<boolean> {
         if (this.process && !this.process.killed) {
@@ -68,7 +70,6 @@ class ChromeMCPClient {
 
         return new Promise<boolean>((resolve) => {
             try {
-                // Spawn the MCP server as a child process using stdio transport
                 this.process = spawn("npx", [
                     "-y",
                     "chrome-devtools-mcp@latest",
@@ -79,13 +80,11 @@ class ChromeMCPClient {
                     shell: true,
                 });
 
-                // Handle stdout (MCP responses come here)
                 this.process.stdout?.on("data", (chunk: Buffer) => {
                     this.buffer += chunk.toString();
                     this.processBuffer();
                 });
 
-                // Handle stderr (debug/error output)
                 this.process.stderr?.on("data", (chunk: Buffer) => {
                     const text = chunk.toString().trim();
                     if (text) {
@@ -103,7 +102,7 @@ class ChromeMCPClient {
                     this.cleanup();
                 });
 
-                // Give the process time to start, then initialize
+                // Wait for process to start, then initialize MCP handshake
                 setTimeout(async () => {
                     try {
                         const initResult = await this.initialize();
@@ -111,7 +110,7 @@ class ChromeMCPClient {
                     } catch {
                         resolve(false);
                     }
-                }, 2000);
+                }, 3000);
 
             } catch (err) {
                 logger.error("tool", `[ChromeMCP] Failed to spawn: ${err instanceof Error ? err.message : String(err)}`);
@@ -121,12 +120,11 @@ class ChromeMCPClient {
     }
 
     /**
-     * Process incoming buffer for complete JSON-RPC messages
+     * Process incoming buffer for complete JSON-RPC messages (newline-delimited)
      */
     private processBuffer(): void {
-        // Messages are delimited by newlines
         const lines = this.buffer.split("\n");
-        this.buffer = lines.pop() || ""; // Keep incomplete last line
+        this.buffer = lines.pop() || "";
 
         for (const line of lines) {
             const trimmed = line.trim();
@@ -143,13 +141,13 @@ class ChromeMCPClient {
                     }
                 }
             } catch {
-                // Not valid JSON, could be partial or log output
+                // Not valid JSON — could be debug output
             }
         }
     }
 
     /**
-     * Send a JSON-RPC request and wait for response
+     * Send a JSON-RPC request via stdin and wait for response on stdout
      */
     private async sendRequest(method: string, params?: Record<string, unknown>): Promise<{
         success: boolean;
@@ -199,7 +197,7 @@ class ChromeMCPClient {
     }
 
     /**
-     * Initialize MCP connection
+     * MCP initialize handshake
      */
     private async initialize(): Promise<boolean> {
         if (this.initialized) return true;
@@ -215,7 +213,7 @@ class ChromeMCPClient {
             return false;
         }
 
-        // Send initialized notification
+        // Send initialized notification (no response expected)
         if (this.process && !this.process.killed) {
             try {
                 this.process.stdin?.write(JSON.stringify({
@@ -226,12 +224,12 @@ class ChromeMCPClient {
             } catch { /* ignore */ }
         }
 
-        // Load tools
+        // Discover available tools
         const toolsResult = await this.sendRequest("tools/list", {});
         if (toolsResult.success && toolsResult.result) {
             const data = toolsResult.result as { tools?: MCPToolDef[] };
             this.tools = data.tools || [];
-            logger.info("tool", `[ChromeMCP] Initialized with ${this.tools.length} tools`);
+            logger.info("tool", `[ChromeMCP] Initialized with ${this.tools.length} tools: ${this.tools.map(t => t.name).join(", ")}`);
         }
 
         this.initialized = true;
@@ -239,7 +237,7 @@ class ChromeMCPClient {
     }
 
     /**
-     * Call a Chrome DevTools MCP tool
+     * Call a Chrome DevTools MCP tool by name
      */
     async callTool(name: string, args: Record<string, unknown> = {}): Promise<{
         success: boolean;
@@ -250,18 +248,16 @@ class ChromeMCPClient {
             return { success: false, error: "Chrome MCP not initialized" };
         }
 
-        logger.debug("tool", `[ChromeMCP] Calling tool: ${name}`, { args });
+        logger.debug("tool", `[ChromeMCP] Calling: ${name}`, { args });
 
         const result = await this.sendRequest("tools/call", {
             name,
             arguments: args,
         });
 
-        if (!result.success) {
-            return result;
-        }
+        if (!result.success) return result;
 
-        // Extract content from MCP response
+        // Check for error in MCP content
         const data = result.result as { content?: Array<{ type: string; text?: string; data?: string }>; isError?: boolean };
         if (data?.isError) {
             const errorText = data.content?.[0]?.text || "Tool execution failed";
@@ -272,15 +268,37 @@ class ChromeMCPClient {
     }
 
     /**
-     * Get available tools
+     * Extract text from MCP tool result
      */
+    static extractText(result: { result?: unknown }): string {
+        const data = result.result as { content?: Array<{ type: string; text?: string; data?: string }> };
+        if (data?.content) {
+            const textParts = data.content.filter(c => c.type === "text" && c.text).map(c => c.text);
+            if (textParts.length > 0) return textParts.join("\n") as string;
+        }
+        return JSON.stringify(result.result, null, 2);
+    }
+
+    /**
+     * Extract base64 image data from MCP tool result
+     */
+    static extractImage(result: { result?: unknown }): string | undefined {
+        const data = result.result as { content?: Array<{ type: string; data?: string; mimeType?: string }> };
+        if (data?.content) {
+            const img = data.content.find(c => c.type === "image" && c.data);
+            return img?.data;
+        }
+        return undefined;
+    }
+
     getTools(): MCPToolDef[] {
         return this.tools;
     }
 
-    /**
-     * Stop the MCP process
-     */
+    getToolNames(): string[] {
+        return this.tools.map(t => t.name);
+    }
+
     stop(): void {
         this.cleanup();
     }
@@ -302,13 +320,13 @@ class ChromeMCPClient {
 }
 
 // ============================================================================
-// CHROME MCP BACKEND
+// CHROME DETECTION & LAUNCH
 // ============================================================================
 
 let chromeMCPClient: ChromeMCPClient | null = null;
 
 /**
- * Check if Chromium/Chrome is available on the system
+ * Find Chromium/Chrome binary on the system
  */
 export async function isChromiumAvailable(): Promise<{ available: boolean; path?: string }> {
     const paths = [
@@ -332,20 +350,17 @@ export async function isChromiumAvailable(): Promise<{ available: boolean; path?
         }
     }
 
-    // Try which command
     try {
         const { stdout } = await execAsync("which chromium-browser || which chromium || which google-chrome 2>/dev/null");
         const chromePath = stdout.trim();
-        if (chromePath) {
-            return { available: true, path: chromePath };
-        }
+        if (chromePath) return { available: true, path: chromePath };
     } catch { /* not found */ }
 
     return { available: false };
 }
 
 /**
- * Launch Chrome with remote debugging enabled
+ * Launch Chrome with remote debugging on the given port
  */
 export async function launchChromeWithDebugging(port: number = 9222): Promise<{
     success: boolean;
@@ -357,25 +372,23 @@ export async function launchChromeWithDebugging(port: number = 9222): Promise<{
         return { success: false, error: "Chrome/Chromium not found. Install with: sudo apt install chromium" };
     }
 
-    // Check if already running on this port
+    // Already running?
     try {
-        const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
-            signal: AbortSignal.timeout(2000),
-        });
+        const res = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(2000) });
         if (res.ok) {
             logger.info("tool", `[ChromeMCP] Chrome already running on port ${port}`);
             return { success: true };
         }
     } catch { /* not running */ }
 
-    // Launch Chrome with remote debugging
+    // Launch headless Chrome
     const chromeProcess = spawn(chrome.path, [
         `--remote-debugging-port=${port}`,
         "--no-sandbox",
         "--disable-gpu",
         "--headless=new",
         "--disable-dev-shm-usage",
-        `--user-data-dir=/tmp/chrome-mcp-profile`,
+        "--user-data-dir=/tmp/chrome-mcp-profile",
         "--no-first-run",
         "--no-default-browser-check",
     ], {
@@ -385,13 +398,11 @@ export async function launchChromeWithDebugging(port: number = 9222): Promise<{
 
     chromeProcess.unref();
 
-    // Wait for Chrome to be ready
+    // Wait for Chrome to be ready (up to 15 seconds)
     for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 1000));
         try {
-            const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
-                signal: AbortSignal.timeout(1000),
-            });
+            const res = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(1000) });
             if (res.ok) {
                 logger.info("tool", `[ChromeMCP] Chrome launched on port ${port}`);
                 return { success: true, pid: chromeProcess.pid };
@@ -403,49 +414,49 @@ export async function launchChromeWithDebugging(port: number = 9222): Promise<{
 }
 
 /**
- * Check if Chrome DevTools MCP is available
+ * Check if Chrome MCP stack is available
  */
 export async function isChromeMCPAvailable(port: number = 9222): Promise<{
     available: boolean;
     chromeRunning: boolean;
     mcpReady: boolean;
+    toolCount: number;
     error?: string;
 }> {
-    // Check if Chrome is running with debugging
     let chromeRunning = false;
     try {
-        const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
-            signal: AbortSignal.timeout(2000),
-        });
+        const res = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(2000) });
         chromeRunning = res.ok;
     } catch { /* not running */ }
 
-    // Check if MCP client is connected
-    const mcpReady = chromeMCPClient?.getTools().length ? true : false;
+    const mcpReady = (chromeMCPClient?.getTools().length || 0) > 0;
 
     return {
         available: chromeRunning && mcpReady,
         chromeRunning,
         mcpReady,
-        error: !chromeRunning ? "Chrome not running with remote debugging" : (!mcpReady ? "MCP client not connected" : undefined),
+        toolCount: chromeMCPClient?.getTools().length || 0,
+        error: !chromeRunning
+            ? "Chrome not running with remote debugging"
+            : (!mcpReady ? "MCP client not connected" : undefined),
     };
 }
 
 /**
- * Ensure Chrome MCP is running (launch Chrome + connect MCP)
+ * Ensure Chrome + MCP are running. Returns available tool names.
  */
 export async function ensureChromeMCPRunning(port: number = 9222): Promise<{
     success: boolean;
     tools: string[];
     error?: string;
 }> {
-    // Step 1: Launch Chrome with debugging if needed
+    // Step 1: Launch Chrome with debugging
     const launchResult = await launchChromeWithDebugging(port);
     if (!launchResult.success) {
         return { success: false, tools: [], error: launchResult.error };
     }
 
-    // Step 2: Start MCP client if needed
+    // Step 2: Start the MCP client (spawns chrome-devtools-mcp as child process)
     if (!chromeMCPClient) {
         chromeMCPClient = new ChromeMCPClient();
     }
@@ -455,16 +466,20 @@ export async function ensureChromeMCPRunning(port: number = 9222): Promise<{
         return {
             success: false,
             tools: [],
-            error: "Failed to start chrome-devtools-mcp. Ensure it's installed: npx chrome-devtools-mcp@latest --help"
+            error: "Failed to start chrome-devtools-mcp. Install: npm i -g chrome-devtools-mcp"
         };
     }
 
-    const tools = chromeMCPClient.getTools().map(t => t.name);
+    const tools = chromeMCPClient.getToolNames();
     return { success: true, tools };
 }
 
 // ============================================================================
-// CHROME MCP BROWSER BACKEND (same interface as BrowserOSBackend)
+// CHROME MCP BROWSER BACKEND
+// Uses the official Google Chrome DevTools MCP tool names:
+//   navigate_page, click, type_text, press_key, hover, fill, fill_form,
+//   take_screenshot, take_snapshot, evaluate_script, list_console_messages,
+//   list_network_requests, performance_start_trace, etc.
 // ============================================================================
 
 export class ChromeMCPBackend {
@@ -474,9 +489,8 @@ export class ChromeMCPBackend {
         this.port = port;
     }
 
-    private async ensureReady(): Promise<boolean> {
-        const result = await ensureChromeMCPRunning(this.port);
-        return result.success;
+    private async ensureReady(): Promise<void> {
+        await ensureChromeMCPRunning(this.port);
     }
 
     private async call(toolName: string, args: Record<string, unknown> = {}): Promise<{
@@ -490,67 +504,114 @@ export class ChromeMCPBackend {
         return chromeMCPClient.callTool(toolName, args);
     }
 
-    async getStatus(): Promise<{ running: boolean; tools?: number; backend: string }> {
+    // ── Status ──
+    async getStatus(): Promise<{ running: boolean; tools?: number; toolNames?: string[]; backend: string }> {
         const status = await isChromeMCPAvailable(this.port);
         return {
             running: status.available,
-            tools: chromeMCPClient?.getTools().length || 0,
-            backend: "chrome-mcp",
+            tools: status.toolCount,
+            toolNames: chromeMCPClient?.getToolNames(),
+            backend: "chrome-devtools-mcp",
         };
     }
 
+    // ── Navigation ──
     async navigate(url: string): Promise<ToolResult> {
         await this.ensureReady();
-        // Chrome DevTools MCP typically has navigate or browser_navigate
-        const result = await this.call("navigate", { url })
-            || await this.call("browser_navigate", { url });
-
+        const result = await this.call("navigate_page", { url });
         if (!result.success) {
             return { success: false, content: "", error: result.error || "Navigate failed" };
         }
-        return { success: true, content: `Navigated to ${url}` };
+        return { success: true, content: `Navigated to ${url}\n${ChromeMCPClient.extractText(result)}` };
     }
 
+    async newPage(url?: string): Promise<ToolResult> {
+        await this.ensureReady();
+        const result = await this.call("new_page", url ? { url } : {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: `New page created${url ? `: ${url}` : ""}\n${ChromeMCPClient.extractText(result)}` };
+    }
+
+    async listPages(): Promise<ToolResult> {
+        const result = await this.call("list_pages", {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
+
+    async selectPage(index: number): Promise<ToolResult> {
+        const result = await this.call("select_page", { index });
+        return { success: result.success, content: result.success ? `Selected page ${index}` : "", error: result.error };
+    }
+
+    async closePage(): Promise<ToolResult> {
+        const result = await this.call("close_page", {});
+        return { success: result.success, content: result.success ? "Page closed" : "", error: result.error };
+    }
+
+    async waitFor(args: { selector?: string; timeout?: number; waitForNavigation?: boolean }): Promise<ToolResult> {
+        const result = await this.call("wait_for", args);
+        return { success: result.success, content: result.success ? ChromeMCPClient.extractText(result) : "", error: result.error };
+    }
+
+    // ── Input ──
     async click(selector: string): Promise<ToolResult> {
-        const result = await this.call("click", { selector })
-            || await this.call("browser_click", { selector });
-        return {
-            success: result.success,
-            content: result.success ? `Clicked: ${selector}` : "",
-            error: result.error,
-        };
+        const result = await this.call("click", { selector });
+        return { success: result.success, content: result.success ? `Clicked: ${selector}` : "", error: result.error };
     }
 
-    async type(selector: string, text: string): Promise<ToolResult> {
-        const result = await this.call("type", { selector, text })
-            || await this.call("browser_type", { selector, text });
-        return {
-            success: result.success,
-            content: result.success ? `Typed into: ${selector}` : "",
-            error: result.error,
-        };
+    async type(_selector: string, text: string): Promise<ToolResult> {
+        // Chrome DevTools MCP uses type_text (types into focused element)
+        const result = await this.call("type_text", { text });
+        return { success: result.success, content: result.success ? `Typed: "${text}"` : "", error: result.error };
     }
 
+    async fill(selector: string, value: string): Promise<ToolResult> {
+        const result = await this.call("fill", { selector, value });
+        return { success: result.success, content: result.success ? `Filled ${selector}` : "", error: result.error };
+    }
+
+    async fillForm(fields: Array<{ selector: string; value: string }>): Promise<ToolResult> {
+        const result = await this.call("fill_form", { fields });
+        return { success: result.success, content: result.success ? `Filled ${fields.length} fields` : "", error: result.error };
+    }
+
+    async pressKey(key: string): Promise<ToolResult> {
+        const result = await this.call("press_key", { key });
+        return { success: result.success, content: result.success ? `Pressed: ${key}` : "", error: result.error };
+    }
+
+    async hover(selector: string): Promise<ToolResult> {
+        const result = await this.call("hover", { selector });
+        return { success: result.success, content: result.success ? `Hovered: ${selector}` : "", error: result.error };
+    }
+
+    async drag(startSelector: string, endSelector: string): Promise<ToolResult> {
+        const result = await this.call("drag", { startSelector, endSelector });
+        return { success: result.success, content: result.success ? "Drag completed" : "", error: result.error };
+    }
+
+    async uploadFile(selector: string, paths: string[]): Promise<ToolResult> {
+        const result = await this.call("upload_file", { selector, paths });
+        return { success: result.success, content: result.success ? `Uploaded ${paths.length} file(s)` : "", error: result.error };
+    }
+
+    async handleDialog(accept: boolean, promptText?: string): Promise<ToolResult> {
+        const result = await this.call("handle_dialog", { accept, promptText });
+        return { success: result.success, content: result.success ? `Dialog ${accept ? "accepted" : "dismissed"}` : "", error: result.error };
+    }
+
+    // ── Debugging ──
     async screenshot(): Promise<ToolResult> {
-        const result = await this.call("screenshot", {})
-            || await this.call("browser_screenshot", {});
-
+        const result = await this.call("take_screenshot", {});
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
 
-        // Extract image data from MCP response
-        const data = result.result as {
-            content?: Array<{ type: string; data?: string; text?: string }>;
-        };
-
-        let base64: string | undefined;
-        if (data?.content) {
-            const imgContent = data.content.find(c => c.type === "image" || c.type === "image/png");
-            if (imgContent?.data) {
-                base64 = imgContent.data;
-            }
-        }
+        const base64 = ChromeMCPClient.extractImage(result);
 
         return {
             success: true,
@@ -560,75 +621,103 @@ export class ChromeMCPBackend {
     }
 
     async snapshot(): Promise<ToolResult> {
-        // Try to get accessibility snapshot or page content
-        const result = await this.call("accessibility_snapshot", {})
-            || await this.call("browser_snapshot", {})
-            || await this.call("get_page_content", {});
-
+        // take_snapshot returns accessibility tree (recommended for AI interaction)
+        const result = await this.call("take_snapshot", {});
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
-
-        const data = result.result as { content?: Array<{ text?: string }> };
-        const text = data?.content?.[0]?.text || JSON.stringify(result.result);
-
-        return { success: true, content: text };
+        return { success: true, content: ChromeMCPClient.extractText(result) };
     }
 
-    async evaluate(script: string): Promise<ToolResult> {
-        const result = await this.call("evaluate", { expression: script })
-            || await this.call("browser_evaluate", { code: script });
-
+    async evaluate(expression: string): Promise<ToolResult> {
+        const result = await this.call("evaluate_script", { expression });
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
-
-        const data = result.result as { content?: Array<{ text?: string }> };
-        const output = data?.content?.[0]?.text || JSON.stringify(result.result);
-
-        return { success: true, content: output };
+        return { success: true, content: ChromeMCPClient.extractText(result) };
     }
 
     async getConsole(): Promise<ToolResult> {
-        const result = await this.call("console_messages", {})
-            || await this.call("browser_console", {});
-
+        const result = await this.call("list_console_messages", {});
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
-
-        const data = result.result as { content?: Array<{ text?: string }> };
-        const text = data?.content?.[0]?.text || JSON.stringify(result.result);
-
-        return { success: true, content: text };
+        return { success: true, content: ChromeMCPClient.extractText(result) };
     }
 
-    async getNetwork(): Promise<ToolResult> {
-        const result = await this.call("network_requests", {})
-            || await this.call("browser_network", {});
-
+    async getConsoleMessage(id: string): Promise<ToolResult> {
+        const result = await this.call("get_console_message", { id });
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
-
-        const data = result.result as { content?: Array<{ text?: string }> };
-        const text = data?.content?.[0]?.text || JSON.stringify(result.result);
-
-        return { success: true, content: text };
+        return { success: true, content: ChromeMCPClient.extractText(result) };
     }
 
-    async performanceTrace(): Promise<ToolResult> {
-        const result = await this.call("performance_trace", {})
-            || await this.call("browser_performance", {});
-
+    // ── Network ──
+    async listNetworkRequests(): Promise<ToolResult> {
+        const result = await this.call("list_network_requests", {});
         if (!result.success) {
             return { success: false, content: "", error: result.error };
         }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
 
-        const data = result.result as { content?: Array<{ text?: string }> };
-        const text = data?.content?.[0]?.text || JSON.stringify(result.result);
+    async getNetworkRequest(id: string): Promise<ToolResult> {
+        const result = await this.call("get_network_request", { id });
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
 
-        return { success: true, content: text };
+    // ── Performance ──
+    async startPerformanceTrace(): Promise<ToolResult> {
+        const result = await this.call("performance_start_trace", {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: "Performance trace started" };
+    }
+
+    async stopPerformanceTrace(): Promise<ToolResult> {
+        const result = await this.call("performance_stop_trace", {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
+
+    async analyzePerformance(): Promise<ToolResult> {
+        const result = await this.call("performance_analyze_insight", {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
+
+    async takeMemorySnapshot(): Promise<ToolResult> {
+        const result = await this.call("take_memory_snapshot", {});
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: ChromeMCPClient.extractText(result) };
+    }
+
+    // ── Emulation ──
+    async emulate(device: string): Promise<ToolResult> {
+        const result = await this.call("emulate", { device });
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: `Emulating: ${device}` };
+    }
+
+    async resizePage(width: number, height: number): Promise<ToolResult> {
+        const result = await this.call("resize_page", { width, height });
+        if (!result.success) {
+            return { success: false, content: "", error: result.error };
+        }
+        return { success: true, content: `Resized to ${width}x${height}` };
     }
 
     stop(): void {
