@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? 380 : 48
+    height: chatExpanded ? Math.min(380, parent.height - 80) : 48
     radius: root.radiusLg
     color: Qt.rgba(0.1, 0.1, 0.1, 0.8)
     border.color: Qt.rgba(1, 1, 1, 0.06)
@@ -51,12 +51,20 @@ Rectangle {
                 anchors.leftMargin: 14
                 anchors.rightMargin: 8
 
-                Text {
-                    text: "🐋"
-                    font.pixelSize: 14
+                Canvas {
+                    width: 16; height: 16
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0,0,16,16);
+                        ctx.fillStyle = "#60a5fa";
+                        ctx.beginPath(); ctx.moveTo(2,2); ctx.lineTo(14,2); ctx.lineTo(14,10);
+                        ctx.lineTo(6,10); ctx.lineTo(4,13); ctx.lineTo(4,10); ctx.lineTo(2,10);
+                        ctx.closePath(); ctx.fill();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(5,5,2,2); ctx.fillRect(9,5,2,2);
+                    }
                 }
                 Text {
-                    text: "Whale AI"
+                    text: "TensorAgent AI"
                     font.pixelSize: 13
                     font.weight: Font.Medium
                     color: root.textPrimary
@@ -71,10 +79,16 @@ Rectangle {
                     radius: 6
                     color: clearMouse.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "🗑"
-                        font.pixelSize: 12
+                    Canvas {
+                        anchors.centerIn: parent; width: 12; height: 12
+                        onPaint: {
+                            var ctx = getContext("2d"); ctx.clearRect(0,0,12,12);
+                            ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                            ctx.beginPath(); ctx.moveTo(4,1); ctx.lineTo(8,1); ctx.stroke();
+                            ctx.strokeRect(2,2,8,9);
+                            ctx.beginPath(); ctx.moveTo(5,4); ctx.lineTo(5,9); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(7,4); ctx.lineTo(7,9); ctx.stroke();
+                        }
                     }
 
                     MouseArea {
@@ -138,7 +152,7 @@ Rectangle {
                     spacing: 2
 
                     Text {
-                        text: modelData.role === "user" ? "You" : "Whale AI"
+                        text: modelData.role === "user" ? "You" : "TensorAgent AI"
                         font.pixelSize: 10
                         font.weight: Font.Medium
                         color: modelData.role === "user" ? root.accentBlue : root.accentGreen
@@ -180,11 +194,19 @@ Rectangle {
             anchors.rightMargin: 6
             spacing: 8
 
-            // Whale icon (collapsed only)
-            Text {
-                text: "🐋"
-                font.pixelSize: 14
+            // Chat icon (collapsed only)
+            Canvas {
+                width: 16; height: 16
                 visible: !chatExpanded
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.clearRect(0,0,16,16);
+                    ctx.fillStyle = "#60a5fa";
+                    ctx.beginPath(); ctx.moveTo(2,2); ctx.lineTo(14,2); ctx.lineTo(14,10);
+                    ctx.lineTo(6,10); ctx.lineTo(4,13); ctx.lineTo(4,10); ctx.lineTo(2,10);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(5,5,2,2); ctx.fillRect(9,5,2,2);
+                }
             }
 
             TextInput {
@@ -197,7 +219,7 @@ Rectangle {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Ask Whale AI anything..."
+                    text: "Ask TensorAgent AI anything..."
                     color: root.textMuted
                     font.pixelSize: 13
                     visible: !parent.text && !parent.activeFocus

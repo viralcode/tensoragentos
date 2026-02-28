@@ -5,8 +5,8 @@ Rectangle {
     id: appWindow
     x: initialX
     y: initialY
-    width: 700
-    height: 500
+    width: Math.min(700, windowArea ? windowArea.width - 20 : 700)
+    height: Math.min(450, windowArea ? windowArea.height - 20 : 450)
     radius: root.radiusLg
     color: root.bgSurface
     border.color: root.borderColor
@@ -15,171 +15,115 @@ Rectangle {
     z: 10
 
     property string windowTitle: "App"
-    property string windowIcon: "📱"
+    property string windowIcon: ""
     property string appId: ""
     property Item windowArea: parent
     property int initialX: 100
     property int initialY: 80
 
-    // Shadow
     Rectangle {
-        anchors.fill: parent
-        anchors.margins: -1
-        radius: parent.radius + 1
-        color: "transparent"
-        border.color: Qt.rgba(0, 0, 0, 0.4)
-        border.width: 2
-        z: -1
+        anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
+        color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.4); border.width: 2; z: -1
     }
 
     // ── Title Bar ──
     Rectangle {
         id: titleBar
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 40
-        color: root.bgElevated
-        radius: root.radiusLg
+        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+        height: 40; color: root.bgElevated; radius: root.radiusLg
 
-        // Square off bottom corners
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: parent.radius
-            color: parent.color
-        }
+        Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: parent.radius; color: parent.color }
+        Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: root.borderColor }
 
-        // Bottom border
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: root.borderColor
-        }
-
-        // Drag handle
         MouseArea {
-            id: dragArea
-            anchors.fill: parent
-            drag.target: appWindow
-            drag.minimumX: 0
-            drag.minimumY: 0
+            id: dragArea; anchors.fill: parent; drag.target: appWindow
+            drag.minimumX: -appWindow.width + 100; drag.minimumY: 0
+            drag.maximumX: windowArea ? windowArea.width - 100 : 800
+            drag.maximumY: windowArea ? windowArea.height - 40 : 600
             cursorShape: Qt.SizeAllCursor
-
-            onPressed: { appWindow.z = 100; }
-            onReleased: { appWindow.z = 10; }
+            onPressed: function(mouse) {
+                root.bringToFront(appWindow);
+            }
         }
 
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 8
-            spacing: 8
+            anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 8; spacing: 8
 
             Text {
-                text: windowIcon
-                font.pixelSize: 14
+                text: appWindow.windowIcon
+                font.family: root.iconFont; font.pixelSize: 14
+                color: root.accentBlue
             }
 
             Text {
-                text: windowTitle
-                font.pixelSize: 13
-                font.weight: Font.Medium
-                color: root.textPrimary
+                text: appWindow.windowTitle
+                font.pixelSize: 13; font.weight: Font.DemiBold
+                color: root.textPrimary; Layout.fillWidth: true
             }
 
-            Item { Layout.fillWidth: true }
-
-            // Close button
+            // ── Close Button ──
             Rectangle {
-                width: 28
-                height: 28
-                radius: 6
-                color: closeMouse.containsMouse ? root.accentRed : Qt.rgba(1, 1, 1, 0.06)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "✕"
-                    font.pixelSize: 11
-                    color: closeMouse.containsMouse ? "#ffffff" : root.textSecondary
-                }
-
-                MouseArea {
-                    id: closeMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: closeWindow()
-                }
+                width: 13; height: 13; radius: 6.5
+                Layout.alignment: Qt.AlignVCenter
+                color: closeHover.containsMouse ? "#ef4444" : Qt.darker("#ef4444", 1.5)
+                border.color: Qt.darker("#ef4444", 1.3); border.width: 0.5
+                MouseArea { id: closeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: closeWindow() }
             }
         }
     }
 
-    // ── App Content ──
+    // ── Body ──
     Item {
         id: contentArea
-        anchors.top: titleBar.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.top: titleBar.bottom; anchors.left: parent.left
+        anchors.right: parent.right; anchors.bottom: parent.bottom
+        clip: true
+
+        MouseArea {
+            anchors.fill: parent
+            propagateComposedEvents: true
+            onPressed: function(mouse) {
+                root.bringToFront(appWindow);
+                mouse.accepted = false;
+            }
+        }
 
         Loader {
             anchors.fill: parent
             source: {
-                switch (appId) {
-                    case "settings":  return "SettingsApp.qml";
-                    case "skills":    return "SkillsApp.qml";
-                    case "apps":      return "AppsApp.qml";
-                    case "providers": return "ProvidersApp.qml";
-                    case "terminal":  return "TerminalApp.qml";
-                    default:          return "";
-                }
+                if (appId === "settings") return "SettingsApp.qml";
+                if (appId === "providers") return "ProvidersApp.qml";
+                if (appId === "skills") return "SkillsApp.qml";
+                if (appId === "apps") return "AppsApp.qml";
+                if (appId === "terminal") return "TerminalApp.qml";
+                if (appId === "mcp") return "McpApp.qml";
+                if (appId === "agents") return "AgentsApp.qml";
+                return "";
             }
         }
     }
 
+    function closeWindow() {
+        var wins = root.openWindows;
+        var newWins = [];
+        for (var i = 0; i < wins.length; i++) {
+            if (wins[i].appId !== appId) newWins.push(wins[i]);
+        }
+        root.openWindows = newWins;
+    }
+
     // ── Resize Handle ──
     MouseArea {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        width: 16
-        height: 16
+        width: 16; height: 16
+        anchors.right: parent.right; anchors.bottom: parent.bottom
         cursorShape: Qt.SizeFDiagCursor
-
         property point pressPos
-
-        onPressed: function(mouse) {
-            pressPos = Qt.point(mouse.x, mouse.y);
-        }
-
+        onPressed: function(mouse) { pressPos = Qt.point(mouse.x, mouse.y); root.bringToFront(appWindow); }
         onPositionChanged: function(mouse) {
             var dx = mouse.x - pressPos.x;
             var dy = mouse.y - pressPos.y;
-            appWindow.width = Math.max(400, appWindow.width + dx);
-            appWindow.height = Math.max(300, appWindow.height + dy);
+            appWindow.width = Math.max(350, appWindow.width + dx);
+            appWindow.height = Math.max(250, appWindow.height + dy);
         }
-    }
-
-    function closeWindow() {
-        var wins = root.openWindows.filter(function(w) { return w.appId !== appId; });
-        root.openWindows = wins;
-    }
-
-    // Entry animation
-    Component.onCompleted: {
-        opacity = 0;
-        scale = 0.95;
-    }
-
-    Behavior on opacity { NumberAnimation { duration: 200 } }
-    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-
-    Timer {
-        running: true
-        interval: 50
-        onTriggered: { appWindow.opacity = 1; appWindow.scale = 1; }
     }
 }

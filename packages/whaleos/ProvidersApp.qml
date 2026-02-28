@@ -1,215 +1,177 @@
 import QtQuick
 import QtQuick.Layouts
-import "api.js" as API
+import QtQuick.Controls
 
 Rectangle {
-    id: providersApp
-    anchors.fill: parent
-    color: "transparent"
+    anchors.fill: parent; color: "transparent"
 
-    property var providers: [
-        { type: "anthropic", name: "Anthropic", icon: "🟣", desc: "Claude 5, Claude Sonnet, Claude Haiku", configured: false, active: false },
-        { type: "openai", name: "OpenAI", icon: "🟢", desc: "GPT-5, GPT-4o, o1-preview", configured: false, active: false },
-        { type: "google", name: "Google", icon: "🔵", desc: "Gemini 3, Gemini 2.0 Flash", configured: false, active: false },
-        { type: "deepseek", name: "DeepSeek", icon: "🔶", desc: "DeepSeek Chat, Reasoner", configured: false, active: false },
-        { type: "qwen", name: "Qwen", icon: "🟠", desc: "Qwen 2.5, DashScope API", configured: false, active: false },
-        { type: "groq", name: "Groq", icon: "⚡", desc: "Fast inference, Llama models", configured: false, active: false },
-        { type: "together", name: "Together AI", icon: "🤝", desc: "Open-source models", configured: false, active: false },
-        { type: "ollama", name: "Ollama", icon: "🦙", desc: "Local models — Llama, Mistral, Qwen", configured: false, active: false }
-    ]
+    property var providerData: []
+    property bool loading: true
+
+    Component.onCompleted: loadProviders()
+
+    function loadProviders() {
+        loading = true;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.apiBase + "/providers");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                loading = false;
+                if (xhr.status === 200) {
+                    try { var data = JSON.parse(xhr.responseText); providerData = data.providers || []; } catch(e) {}
+                }
+                if (providerData.length === 0) {
+                    providerData = [
+                        { type: "anthropic", name: "Anthropic", enabled: false, hasKey: false, models: ["claude-sonnet-4-20250514","claude-3-5-sonnet-20241022","claude-3-opus-20240229","claude-3-5-haiku-20241022"] },
+                        { type: "openai", name: "OpenAI", enabled: false, hasKey: false, models: ["gpt-4o","gpt-4o-mini","gpt-4-turbo","gpt-4"] },
+                        { type: "google", name: "Google", enabled: false, hasKey: false, models: ["gemini-2.0-flash","gemini-1.5-pro","gemini-1.5-flash"] },
+                        { type: "deepseek", name: "DeepSeek", enabled: false, hasKey: false, models: ["deepseek-chat","deepseek-reasoner"] },
+                        { type: "groq", name: "Groq", enabled: false, hasKey: false, models: ["llama-3.3-70b-versatile","mixtral-8x7b-32768"] },
+                        { type: "ollama", name: "Ollama (Local)", enabled: false, hasKey: false, models: ["llama3.2","mistral","codellama"] }
+                    ];
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    function saveProvider(providerType, apiKey, selectedModel) {
+        if (!apiKey) return;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/providers/" + providerType);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() { if (xhr.readyState === 4 && xhr.status === 200) loadProviders(); };
+        xhr.send(JSON.stringify({ apiKey: apiKey, selectedModel: selectedModel, enabled: true }));
+    }
+
+    function testProvider(providerType, apiKey) {
+        if (!apiKey) return;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/setup/test-ai");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) { try { var d = JSON.parse(xhr.responseText); console.log("Test " + providerType + ": " + (d.ok ? "OK" : d.error)); } catch(e) {} }
+        };
+        xhr.send(JSON.stringify({ provider: providerType, apiKey: apiKey }));
+    }
 
     Flickable {
-        anchors.fill: parent
-        anchors.margins: 20
-        contentHeight: provCol.height
-        clip: true
+        anchors.fill: parent; anchors.margins: 16
+        contentHeight: mainCol.height; clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
-        ColumnLayout {
-            id: provCol
-            width: parent.width
-            spacing: 16
+        Column {
+            id: mainCol; width: parent.width; spacing: 12
 
-            Text {
-                text: "AI Providers"
-                font.pixelSize: 18
-                font.weight: Font.DemiBold
-                color: root.textPrimary
-            }
+            Text { text: "AI Providers"; font.pixelSize: 20; font.weight: Font.Bold; color: root.textPrimary }
+            Text { text: "Configure API keys for AI model providers"; font.pixelSize: 12; color: root.textMuted }
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
-            Text {
-                text: "Configure and manage AI model providers"
-                font.pixelSize: 13
-                color: root.textSecondary
-            }
+            Repeater {
+                model: providerData
 
-            // Provider grid
-            GridLayout {
-                Layout.fillWidth: true
-                columns: 2
-                columnSpacing: 12
-                rowSpacing: 12
+                Rectangle {
+                    id: provCard; width: mainCol.width; height: provCol.height + 20
+                    radius: root.radiusMd; color: root.bgCard
+                    border.color: modelData.hasKey ? Qt.rgba(0.13,0.77,0.37,0.3) : root.borderColor; border.width: 1
+                    clip: false
 
-                Repeater {
-                    model: providers
+                    property string selectedModel: modelData.models && modelData.models.length > 0 ? modelData.models[0] : ""
+                    property bool dropOpen: false
 
-                    delegate: Rectangle {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 200
-                        height: providerInnerCol.height + 24
-                        radius: root.radiusMd
-                        color: root.bgElevated
-                        border.color: modelData.active ? root.accentBlue : root.borderColor
-                        border.width: modelData.active ? 2 : 1
+                    Column {
+                        id: provCol; anchors.left: parent.left; anchors.right: parent.right
+                        anchors.top: parent.top; anchors.margins: 12; spacing: 8
 
-                        ColumnLayout {
-                            id: providerInnerCol
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 14
-                            spacing: 10
-
-                            // Header
-                            RowLayout {
-                                spacing: 8
-
-                                Text { text: modelData.icon; font.pixelSize: 22 }
-
-                                ColumnLayout {
-                                    spacing: 2
-                                    Text {
-                                        text: modelData.name
-                                        font.pixelSize: 14
-                                        font.weight: Font.Medium
-                                        color: root.textPrimary
-                                    }
-                                    Text {
-                                        text: modelData.desc
-                                        font.pixelSize: 10
-                                        color: root.textMuted
-                                        elide: Text.ElideRight
-                                        Layout.maximumWidth: 180
-                                    }
-                                }
-
-                                Item { Layout.fillWidth: true }
-
-                                // Status
-                                Rectangle {
-                                    width: 72; height: 24; radius: 12
-                                    color: modelData.configured ?
-                                        Qt.rgba(0.13, 0.77, 0.37, 0.15) :
-                                        Qt.rgba(1, 1, 1, 0.06)
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData.configured ? "Ready" : "Setup"
-                                        font.pixelSize: 10
-                                        color: modelData.configured ? root.accentGreen : root.textMuted
-                                    }
-                                }
-                            }
-
-                            // API Key input
+                        RowLayout {
+                            width: parent.width; spacing: 10
                             Rectangle {
-                                Layout.fillWidth: true
-                                height: 36
-                                radius: root.radiusSm
-                                color: root.bgSurface
-                                border.color: keyInput.activeFocus ? root.accentBlue : root.borderColor
-                                border.width: 1
-
-                                TextInput {
-                                    id: keyInput
-                                    anchors.fill: parent
-                                    anchors.margins: 10
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    color: root.textPrimary
-                                    font.pixelSize: 12
-                                    echoMode: TextInput.Password
-                                    clip: true
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.type === "ollama" ? "http://localhost:11434" : "Enter API key..."
-                                        color: root.textMuted
-                                        font.pixelSize: 12
-                                        visible: !parent.text && !parent.activeFocus
-                                    }
-                                }
+                                width: 36; height: 36; radius: 10; color: Qt.rgba(1,1,1,0.06)
+                                Image { anchors.fill: parent; anchors.margins: 5; source: "icons/" + modelData.type + ".png"; fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true }
                             }
+                            Column {
+                                Layout.fillWidth: true; spacing: 2
+                                Text { text: modelData.name; font.pixelSize: 14; font.weight: Font.DemiBold; color: root.textPrimary }
+                                Text { text: modelData.hasKey ? "Connected" : "Not configured"; font.pixelSize: 11; color: modelData.hasKey ? root.accentGreen : root.textMuted }
+                            }
+                            Rectangle { width: 10; height: 10; radius: 5; color: modelData.hasKey ? root.accentGreen : root.textMuted }
+                        }
 
-                            // Actions
+                        // Model dropdown selector
+                        Rectangle {
+                            id: modelDropdown; width: parent.width; height: 30; radius: root.radiusSm
+                            color: Qt.rgba(0,0,0,0.3); border.color: provCard.dropOpen ? root.accentBlue : Qt.rgba(1,1,1,0.12); border.width: 1
+                            visible: modelData.models && modelData.models.length > 0
+
                             RowLayout {
-                                spacing: 8
+                                anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10
+                                Text { text: "AI Model:"; font.pixelSize: 11; color: root.textMuted }
+                                Text { text: provCard.selectedModel; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff"; font.family: "monospace"; Layout.fillWidth: true }
+                                Text { text: provCard.dropOpen ? "\u25B2" : "\u25BC"; font.pixelSize: 9; color: root.textMuted }
+                            }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: provCard.dropOpen = !provCard.dropOpen }
+                        }
 
-                                Rectangle {
-                                    width: 60; height: 30; radius: root.radiusSm
-                                    color: root.accentBlue
+                        // Dropdown overlay
+                        Rectangle {
+                            visible: provCard.dropOpen; z: 200
+                            width: parent.width; height: dropdownCol.height + 8
+                            radius: root.radiusSm; color: "#1a1a2e"
+                            border.color: Qt.rgba(0.39,0.51,0.97,0.3); border.width: 1
 
-                                    Text { anchors.centerIn: parent; text: "Save"; font.pixelSize: 11; color: "#ffffff"; font.weight: Font.Medium }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            var config = {};
-                                            config.apiKey = keyInput.text;
-                                            config.enabled = true;
-                                            API.saveProvider(modelData.type, config, function(s, d) {});
+                            Column {
+                                id: dropdownCol; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.top: parent.top; anchors.margins: 4; spacing: 1
+
+                                Repeater {
+                                    model: modelData.models || []
+                                    Rectangle {
+                                        width: dropdownCol.width; height: 28; radius: 4
+                                        color: dOptMouse.containsMouse ? Qt.rgba(1,1,1,0.08) : (provCard.selectedModel === modelData ? Qt.rgba(0.39,0.51,0.97,0.12) : "transparent")
+
+                                        RowLayout {
+                                            anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10
+                                            Text { text: modelData; font.pixelSize: 11; color: "#ffffff"; font.family: "monospace"; Layout.fillWidth: true }
+                                            Text { text: "\u2713"; font.pixelSize: 13; font.weight: Font.Bold; color: root.accentBlue; visible: provCard.selectedModel === modelData }
                                         }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 50; height: 30; radius: root.radiusSm
-                                    color: Qt.rgba(1,1,1,0.06)
-                                    border.color: root.borderColor; border.width: 1
-
-                                    Text { anchors.centerIn: parent; text: "Test"; font.pixelSize: 11; color: root.textSecondary }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: API.testAI(modelData.type, function(s, d) {})
+                                        MouseArea {
+                                            id: dOptMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: { provCard.selectedModel = modelData; provCard.dropOpen = false; }
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        // API key + Save + Test
+                        RowLayout {
+                            width: parent.width; spacing: 6
+                            Rectangle {
+                                Layout.fillWidth: true; height: 32; radius: root.radiusSm
+                                color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                                TextInput {
+                                    id: keyInput; anchors.fill: parent; anchors.margins: 8
+                                    color: "#ffffff"; font.pixelSize: 12; clip: true
+                                    echoMode: TextInput.Password; verticalAlignment: TextInput.AlignVCenter
+                                    Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter; text: modelData.hasKey ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : "Enter API key..."; color: Qt.rgba(1,1,1,0.3); font.pixelSize: 12; visible: !parent.text }
+                                }
+                            }
+                            Rectangle {
+                                width: 52; height: 32; radius: root.radiusSm; color: root.accentBlue
+                                Text { anchors.centerIn: parent; text: "Save"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: saveProvider(modelData.type, keyInput.text, provCard.selectedModel) }
+                            }
+                            Rectangle {
+                                width: 44; height: 32; radius: root.radiusSm
+                                color: Qt.rgba(1,1,1,0.06); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                                Text { anchors.centerIn: parent; text: "Test"; font.pixelSize: 11; color: "#e0e0e0" }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: testProvider(modelData.type, keyInput.text) }
+                            }
+                        }
                     }
-                }
-            }
-
-            // Add provider
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.maximumWidth: 480
-                Layout.topMargin: 8
-                height: 50
-                radius: root.radiusMd
-                color: "transparent"
-                border.color: root.borderColor
-                border.width: 1
-                border.pixelAligned: true
-
-                // Dashed border simulation
-                Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: addMouse.containsMouse ? Qt.rgba(1,1,1,0.03) : "transparent"
-                }
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Text { text: "+"; font.pixelSize: 18; color: root.textMuted }
-                    Text { text: "Add Provider"; font.pixelSize: 13; color: root.textMuted }
-                }
-
-                MouseArea {
-                    id: addMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
                 }
             }
         }

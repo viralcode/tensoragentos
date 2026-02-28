@@ -26,7 +26,7 @@ Rectangle {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "Apps"
+                    text: "Extensions"
                     font.pixelSize: 18
                     font.weight: Font.DemiBold
                     color: root.textPrimary
@@ -80,7 +80,7 @@ Rectangle {
                             RowLayout {
                                 spacing: 8
 
-                                Text { text: "📦"; font.pixelSize: 18 }
+                                Text { text: ""; font.pixelSize: 18; font.family: root.iconFont; color: root.textSecondary }
 
                                 ColumnLayout {
                                     spacing: 2
@@ -144,7 +144,7 @@ Rectangle {
 
                                         Text {
                                             anchors.centerIn: parent
-                                            text: modelData.label === "Edit" ? "Edit ⏳" : modelData.label
+                                            text: modelData.label === "Edit" ? "Edit ..." : modelData.label
                                             font.pixelSize: 10
                                             color: modelData.label === "Run" ? "#ffffff" :
                                                    modelData.label === "Delete" ? root.accentRed :
@@ -172,24 +172,25 @@ Rectangle {
             // Empty state
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: 40
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 spacing: 8
                 visible: extensions.length === 0
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "📦"
-                    font.pixelSize: 40
+                    text: ""
+                    font.pixelSize: 40; font.family: root.iconFont; color: root.textSecondary
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "No apps installed yet"
+                    text: "No extensions installed yet"
                     font.pixelSize: 14
                     color: root.textSecondary
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "Ask Whale AI to create extensions for you"
+                    text: "Ask TensorAgent AI to create extensions for you"
                     font.pixelSize: 12
                     color: root.textMuted
                 }
