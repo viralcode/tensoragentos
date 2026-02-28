@@ -17,6 +17,7 @@ Rectangle {
         appendLine("TensorAgent OS — Terminal");
         appendLine("System shell access. Type commands and press Enter.");
         appendLine("");
+        cmdInput.forceActiveFocus();
     }
 
     function getPrompt() {
@@ -28,7 +29,6 @@ Rectangle {
     function appendLine(text) {
         var lines = outputLines.slice();
         lines.push(text);
-        // Keep buffer reasonable
         if (lines.length > 1000) lines = lines.slice(lines.length - 800);
         outputLines = lines;
     }
@@ -36,139 +36,135 @@ Rectangle {
     function appendLines(text) {
         if (!text) return;
         var parts = text.split("\n");
-        // Remove trailing empty line from split
         if (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
         for (var i = 0; i < parts.length; i++) {
             appendLine(parts[i]);
         }
     }
 
-    ColumnLayout {
+    // Click anywhere to focus input
+    MouseArea {
         anchors.fill: parent
-        spacing: 0
+        onClicked: cmdInput.forceActiveFocus()
+    }
 
-        // ── Terminal Output ──
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: "#0a0a0a"
+    Flickable {
+        id: termFlick
+        anchors.fill: parent
+        anchors.margins: 10
+        contentHeight: termCol.height
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: true
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: cmdInput.forceActiveFocus()
-            }
+        Column {
+            id: termCol
+            width: parent.width
+            spacing: 0
 
-            Flickable {
-                id: termFlick
-                anchors.fill: parent
-                anchors.margins: 10
-                contentHeight: termCol.height
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-
-                Column {
-                    id: termCol
-                    width: parent.width
-                    spacing: 0
-
-                    Repeater {
-                        model: outputLines
-                        Text {
-                            width: termCol.width
-                            text: modelData
-                            color: {
-                                // Color code different line types
-                                if (modelData.indexOf("ainux@tensoragent:") === 0) return "#60a5fa";
-                                if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
-                                if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
-                                return "#d4d4d8";
-                            }
-                            font.pixelSize: 13
-                            font.family: "monospace"
-                            wrapMode: Text.WrapAnywhere
-                            height: implicitHeight + 2
-                        }
-                    }
-                }
-
-                onContentHeightChanged: {
-                    Qt.callLater(function() {
-                        termFlick.contentY = Math.max(0, termFlick.contentHeight - termFlick.height);
-                    });
-                }
-            }
-        }
-
-        // ── Input Bar ──
-        Rectangle {
-            Layout.fillWidth: true
-            height: 38
-            color: "#111111"
-
-            Rectangle {
-                anchors.top: parent.top
-                width: parent.width; height: 1
-                color: Qt.rgba(1, 1, 1, 0.06)
-            }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 0
-
-                // Prompt
+            // ── Output Lines ──
+            Repeater {
+                model: outputLines
                 Text {
-                    text: getPrompt()
+                    width: termCol.width
+                    text: modelData
+                    color: {
+                        if (modelData.indexOf("ainux@tensoragent:") === 0) return "#60a5fa";
+                        if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
+                        if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
+                        return "#d4d4d8";
+                    }
                     font.pixelSize: 13
                     font.family: "monospace"
+                    wrapMode: Text.WrapAnywhere
+                    height: implicitHeight + 2
+                }
+            }
+
+            // ── Inline Prompt + Input ──
+            Row {
+                visible: !isRunning
+                width: termCol.width
+                spacing: 0
+
+                Text {
+                    id: promptText
+                    text: getPrompt()
                     color: "#60a5fa"
+                    font.pixelSize: 13
+                    font.family: "monospace"
+                    height: implicitHeight + 2
                 }
 
-                // Input
                 TextInput {
                     id: cmdInput
-                    Layout.fillWidth: true
-                    verticalAlignment: TextInput.AlignVCenter
+                    width: termCol.width - promptText.width
                     color: "#d4d4d8"
                     selectionColor: "#3b82f6"
                     selectedTextColor: "#ffffff"
                     font.pixelSize: 13
                     font.family: "monospace"
-                    clip: true
                     focus: true
+                    activeFocusOnTab: true
+                    height: promptText.height
+
+                    // Blinking cursor
+                    cursorVisible: true
+                    cursorDelegate: Rectangle {
+                        width: 8
+                        height: 15
+                        color: "#d4d4d8"
+                        visible: cmdInput.activeFocus
+
+                        SequentialAnimation on opacity {
+                            running: cmdInput.activeFocus
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0; duration: 530 }
+                            NumberAnimation { to: 1; duration: 530 }
+                        }
+                    }
 
                     Keys.onReturnPressed: executeCommand()
                     Keys.onUpPressed: navigateHistory(-1)
                     Keys.onDownPressed: navigateHistory(1)
 
                     Keys.onPressed: function(event) {
-                        // Ctrl+C — cancel running command
                         if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
                             if (isRunning) {
                                 isRunning = false;
                                 appendLine("^C");
-                                appendLine("");
                             } else {
+                                appendLine(getPrompt() + cmdInput.text + "^C");
                                 cmdInput.text = "";
                             }
                             event.accepted = true;
                         }
-                        // Ctrl+L — clear screen
                         if (event.key === Qt.Key_L && (event.modifiers & Qt.ControlModifier)) {
-                            outputLines = [""];
+                            outputLines = [];
                             event.accepted = true;
                         }
                     }
                 }
+            }
 
-                // Busy indicator
+            // ── Busy line while command runs ──
+            Row {
+                visible: isRunning
+                width: termCol.width
+                spacing: 0
+
                 Text {
-                    visible: isRunning
-                    text: " ..."
+                    text: getPrompt()
+                    color: "#60a5fa"
                     font.pixelSize: 13
                     font.family: "monospace"
+                }
+
+                Text {
+                    text: "..."
                     color: "#f59e0b"
+                    font.pixelSize: 13
+                    font.family: "monospace"
 
                     SequentialAnimation on opacity {
                         running: isRunning
@@ -179,11 +175,16 @@ Rectangle {
                 }
             }
         }
+
+        onContentHeightChanged: {
+            Qt.callLater(function() {
+                termFlick.contentY = Math.max(0, termFlick.contentHeight - termFlick.height);
+            });
+        }
     }
 
     function navigateHistory(direction) {
         if (cmdHistory.length === 0) return;
-
         if (historyIndex === -1 && direction === -1) {
             savedInput = cmdInput.text;
             historyIndex = cmdHistory.length - 1;
@@ -197,7 +198,6 @@ Rectangle {
                 return;
             }
         }
-
         if (historyIndex >= 0 && historyIndex < cmdHistory.length) {
             cmdInput.text = cmdHistory[historyIndex];
             cmdInput.cursorPosition = cmdInput.text.length;
@@ -209,12 +209,10 @@ Rectangle {
         cmdInput.text = "";
         historyIndex = -1;
 
-        // Show the prompt + command in output
         appendLine(getPrompt() + cmd);
 
-        if (!cmd) { appendLine(""); return; }
+        if (!cmd) return;
 
-        // Add to history
         if (cmdHistory.length === 0 || cmdHistory[cmdHistory.length - 1] !== cmd) {
             var hist = cmdHistory.slice();
             hist.push(cmd);
@@ -222,18 +220,8 @@ Rectangle {
             cmdHistory = hist;
         }
 
-        // Built-in: clear
-        if (cmd === "clear") {
-            outputLines = [""];
-            return;
-        }
-
-        // Built-in: exit
-        if (cmd === "exit") {
-            appendLine("Use the close button to close the terminal.");
-            appendLine("");
-            return;
-        }
+        if (cmd === "clear") { outputLines = []; return; }
+        if (cmd === "exit") { appendLine("Use the close button to close the terminal."); return; }
 
         isRunning = true;
 
@@ -248,14 +236,8 @@ Rectangle {
                 if (xhr.status === 200) {
                     try {
                         var data = JSON.parse(xhr.responseText);
-
-                        // Update working directory
                         if (data.cwd) currentCwd = data.cwd;
-
-                        // Show stdout
                         if (data.stdout) appendLines(data.stdout);
-
-                        // Show stderr in red (it's appended as regular text, colored by the Repeater)
                         if (data.stderr) {
                             var errParts = data.stderr.split("\n");
                             for (var i = 0; i < errParts.length; i++) {
@@ -267,18 +249,17 @@ Rectangle {
                     }
                 } else if (xhr.status === 0) {
                     appendLine("Error: Helper service not reachable (port 7778)");
-                    appendLine("Start it: node /opt/ainux/whaleos/whaleos-helper.mjs &");
                 } else {
                     appendLine("Error: HTTP " + xhr.status);
                 }
-                appendLine("");
+                cmdInput.forceActiveFocus();
             }
         };
 
         xhr.ontimeout = function() {
             isRunning = false;
             appendLine("Error: Command timed out (15s limit)");
-            appendLine("");
+            cmdInput.forceActiveFocus();
         };
 
         xhr.send(JSON.stringify({ command: cmd }));
