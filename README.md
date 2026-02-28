@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="packages/whaleos/whale_logo.png" alt="AInux Logo" width="120" />
+  <img src="packages/whaleos/whale_logo.png" alt="TensorAgent OS Logo" width="120" />
 </p>
 
-<h1 align="center">AInux</h1>
+<h1 align="center">TensorAgent OS</h1>
 
 <p align="center">
   <strong>The AI-Native Operating System</strong><br/>
@@ -18,11 +18,11 @@
 
 ---
 
-## What is AInux?
+## What is TensorAgent OS?
 
-AInux is a custom Linux distribution that replaces the traditional desktop with an **AI-powered agentic interface**. There is no file manager, no taskbar, no app launcher — just you and an AI that can control the entire operating system.
+TensorAgent OS is a custom Linux distribution that replaces the traditional desktop with an **AI-powered agentic interface**. There is no file manager, no taskbar, no app launcher — just you and an AI that can control the entire operating system.
 
-Under the hood, AInux combines:
+Under the hood, TensorAgent OS combines:
 
 | Component | Technology |
 |-----------|------------|
@@ -47,7 +47,7 @@ Under the hood, AInux combines:
 - [Project Structure](#project-structure)
 - [WhaleOS Desktop Shell](#whaleos-desktop-shell)
 - [System Administration](#system-administration)
-- [Updating AInux](#updating-ainux)
+- [Updating TensorAgent OS](#updating-tensoragent-os)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
@@ -84,7 +84,7 @@ python3 vm/launch-ainux.py
 
 That's it. The script will:
 
-1. Create a cloud-init seed image with all AInux configuration
+1. Create a cloud-init seed image with all TensorAgent OS configuration
 2. Copy the base Debian image and resize it to 20GB
 3. Boot QEMU with HVF acceleration (native speed)
 4. Cloud-init auto-installs everything on first boot (~3–5 min):
@@ -116,7 +116,7 @@ python3 vm/launch-ainux.py
 
 ## Quick Start (Linux x86_64)
 
-> **Best for:** Running AInux on a Linux host with KVM acceleration.
+> **Best for:** Running TensorAgent OS on a Linux host with KVM acceleration.
 
 ### Prerequisites
 
@@ -195,7 +195,7 @@ sudo apt install build-essential git python3 wget curl xz-utils \
 ### What the Build Does
 
 1. **Clones Buildroot** (v2024.11) into `build/buildroot/`
-2. **Applies AInux defconfig** — custom kernel, systemd, Wayland, Mesa, PipeWire, Node.js, Python, etc.
+2. **Applies TensorAgent OS defconfig** — custom kernel, systemd, Wayland, Mesa, PipeWire, Node.js, Python, etc.
 3. **Builds Chromium** (optional) — with Wayland/Ozone, VA-API hardware decode, PipeWire audio
 4. **Compiles the Linux kernel** and root filesystem
 5. **Integrates Chromium** into the rootfs at `/opt/ainux/chromium/`
@@ -282,10 +282,10 @@ qemu-img create -f qcow2 vm/ainux-disk.qcow2 20G
 
 # 3. Inside the VM, install Alpine:
 #    Run setup-alpine (use 'sys' disk mode, select vda)
-#    Then run the AInux setup:
+#    Then run the TensorAgent OS setup:
 #    wget -O- http://10.0.2.2:8888/setup.sh | sh
 
-# 4. Reboot into AInux
+# 4. Reboot into TensorAgent OS
 ./vm/boot-ainux.sh
 ```
 
@@ -293,7 +293,7 @@ qemu-img create -f qcow2 vm/ainux-disk.qcow2 20G
 
 ## iOS / Remote Access
 
-Since AInux exposes OpenWhale on port `7777`, you can access the AI interface from any device on the same network, including an iPhone or iPad.
+Since TensorAgent OS exposes OpenWhale on port `7777`, you can access the AI interface from any device on the same network, including an iPhone or iPad.
 
 ### From Your Local Network
 
@@ -310,7 +310,7 @@ Since AInux exposes OpenWhale on port `7777`, you can access the AI interface fr
 
 ### Over SSH (iOS Terminal Apps)
 
-Using apps like **Termius**, **Blink Shell**, or **a]SSH** on iOS:
+Using apps like **Termius**, **Blink Shell**, or **a-Shell** on iOS:
 
 ```bash
 ssh ainux@<host-ip> -p 2222
@@ -319,7 +319,7 @@ ssh ainux@<host-ip> -p 2222
 
 ### Expose Over the Internet (Advanced)
 
-To access AInux from anywhere:
+To access TensorAgent OS from anywhere:
 
 ```bash
 # Option 1: SSH tunnel (requires a server with a public IP)
@@ -349,9 +349,9 @@ ainux/
 │   ├── external.mk             # External makefiles
 │   └── package/                # Custom Buildroot packages
 ├── packages/
-│   ├── core/                   # AInux core kernel (Node.js)
+│   ├── core/                   # TensorAgent OS core kernel (Node.js)
 │   ├── gui/                    # Web-based GUI components
-│   ├── chromium/               # Chromium patches for AInux
+│   ├── chromium/               # Chromium patches for TensorAgent OS
 │   ├── openwhale/              # OpenWhale integration & extensions
 │   └── whaleos/                # Qt6 QML native desktop shell
 │       ├── main.cpp            # Application entry point
@@ -475,7 +475,7 @@ journalctl -u openwhale -f
 # GUI logs
 journalctl -u ainux-gui -f
 
-# All AInux logs
+# All TensorAgent OS logs
 journalctl -u openwhale -u ainux-gui -f
 
 # Setup completion check
@@ -495,7 +495,7 @@ AINUX_VERSION=0.1.0
 
 ### AI System Tools
 
-AInux exposes 8 system tools to the AI agent:
+TensorAgent OS exposes 8 system tools to the AI agent:
 
 | Tool | Capability |
 |------|------------|
@@ -505,14 +505,14 @@ AInux exposes 8 system tools to the AI agent:
 | `ainux_audio_control` | Volume, mute, device switching |
 | `ainux_display_control` | Resolution, brightness |
 | `ainux_power` | Shutdown, reboot, suspend |
-| `ainux_update` | Update OpenWhale/AInux from GitHub |
+| `ainux_update` | Update OpenWhale/TensorAgent OS from GitHub |
 | `ainux_system_config` | Read/write system configuration |
 
 ---
 
-## Updating AInux
+## Updating TensorAgent OS
 
-AInux includes a built-in update manager:
+TensorAgent OS includes a built-in update manager:
 
 ```bash
 # Check for available updates
@@ -521,7 +521,7 @@ ainux-update check
 # Update OpenWhale only
 ainux-update openwhale
 
-# Update AInux core
+# Update TensorAgent OS core
 ainux-update ainux
 
 # Update everything
@@ -692,7 +692,7 @@ MIT — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <strong>🐋 AInux v0.1.0</strong><br/>
+  <strong>🐋 TensorAgent OS v0.1.0</strong><br/>
   Built by <a href="https://github.com/viralcode">Jijo John</a><br/>
   Powered by <a href="https://github.com/viralcode/openwhale">OpenWhale</a>
 </p>

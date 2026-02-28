@@ -1,0 +1,351 @@
+import OpenAI from "openai";
+import type { AIProvider, CompletionRequest, CompletionResponse, StreamEvent, Message, Tool } from "./base.js";
+import { logger } from "../logger.js";
+
+/** Safely parse tool call arguments - LLMs sometimes return malformed JSON */
+function safeParseArgs(raw: string): Record<string, unknown> {
+    try {
+        return JSON.parse(raw);
+    } catch {
+        // Try to fix common issues: trailing commas, single quotes
+        try {
+            const fixed = raw
+                .replace(/,\s*([}\]])/g, '$1')  // trailing commas
+                .replace(/'/g, '"');             // single quotes
+            return JSON.parse(fixed);
+        } catch {
+            logger.warn('provider', 'Failed to parse tool arguments, using raw string', { raw: raw.slice(0, 200) });
+            return { input: raw };
+        }
+    }
+}
+
+export class OpenAICompatibleProvider implements AIProvider {
+    name: string;
+    type = "openai-compatible";
+    private client: OpenAI;
+    private modelList: string[] = [];
+
+    constructor(config: {
+        name: string;
+        apiKey?: string;
+        baseUrl?: string;
+        models?: string[];
+    }) {
+        this.name = config.name;
+        this.client = new OpenAI({
+            apiKey: config.apiKey ?? "dummy", // Some providers don't need a key
+            baseURL: config.baseUrl,
+        });
+        this.modelList = config.models ?? [];
+    }
+
+    async listModels(): Promise<string[]> {
+        if (this.modelList.length > 0) return this.modelList;
+
+        try {
+            const models = await this.client.models.list();
+            return models.data.map(m => m.id);
+        } catch {
+            return [];
+        }
+    }
+
+    supportsTools(): boolean {
+        return true;
+    }
+
+    supportsVision(): boolean {
+        return true;
+    }
+
+    private convertMessages(messages: Message[], systemPrompt?: string): OpenAI.ChatCompletionMessageParam[] {
+        const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [];
+
+        if (systemPrompt) {
+            openaiMessages.push({ role: "system", content: systemPrompt });
+        }
+
+        for (const msg of messages) {
+            switch (msg.role) {
+                case "system":
+                    openaiMessages.push({ role: "system", content: msg.content });
+                    break;
+                case "user":
+                    openaiMessages.push({ role: "user", content: msg.content });
+                    break;
+                case "assistant":
+                    if (msg.toolCalls?.length) {
+                        openaiMessages.push({
+                            role: "assistant",
+                            content: msg.content || null,
+                            tool_calls: msg.toolCalls.map(tc => ({
+                                id: tc.id,
+                                type: "function" as const,
+                                function: {
+                                    name: tc.name,
+                                    arguments: JSON.stringify(tc.arguments),
+                                },
+                            })),
+                        });
+                    } else {
+                        openaiMessages.push({ role: "assistant", content: msg.content });
+                    }
+                    break;
+                case "tool":
+                    if (msg.toolResults) {
+                        for (const tr of msg.toolResults) {
+                            openaiMessages.push({
+                                role: "tool",
+                                tool_call_id: tr.toolCallId,
+                                content: tr.content,
+                            });
+                        }
+                    }
+                    break;
+            }
+        }
+
+        return openaiMessages;
+    }
+
+    private convertTools(tools?: Tool[]): OpenAI.ChatCompletionTool[] | undefined {
+        if (!tools?.length) return undefined;
+
+        return tools.map(tool => ({
+            type: "function" as const,
+            function: {
+                name: tool.name,
+                description: tool.description,
+                parameters: tool.parameters,
+            },
+        }));
+    }
+
+    async complete(request: CompletionRequest): Promise<CompletionResponse> {
+        const messages = this.convertMessages(request.messages, request.systemPrompt);
+        const tools = this.convertTools(request.tools);
+
+        logger.info("provider", `${this.name} API call`, { model: request.model, messages: messages.length, tools: tools?.length ?? 0, maxTokens: request.maxTokens ?? 'default', baseURL: this.client.baseURL });
+
+        try {
+            const response = await this.client.chat.completions.create({
+                model: request.model,
+                messages,
+                max_tokens: request.maxTokens,
+                temperature: request.temperature,
+                tools,
+            });
+
+            const choice = response.choices[0];
+            if (!choice) {
+                logger.error("provider", `${this.name} API returned no choices`, { responseId: response.id, model: response.model });
+                return { content: "No response from AI", model: response.model || request.model };
+            }
+
+            const toolCalls = choice.message.tool_calls?.map(tc => ({
+                id: tc.id,
+                name: tc.function.name,
+                arguments: safeParseArgs(tc.function.arguments),
+            }));
+
+            logger.info("provider", `${this.name} API success`, { model: response.model, finish: choice.finish_reason, inputTokens: response.usage?.prompt_tokens, outputTokens: response.usage?.completion_tokens, toolCalls: toolCalls?.length ?? 0, contentLen: choice.message.content?.length ?? 0 });
+
+            return {
+                content: choice.message.content ?? "",
+                toolCalls: toolCalls?.length ? toolCalls : undefined,
+                inputTokens: response.usage?.prompt_tokens,
+                outputTokens: response.usage?.completion_tokens,
+                model: response.model,
+                stopReason: choice.finish_reason ?? undefined,
+            };
+        } catch (error: any) {
+            // Extract detailed error info from OpenAI SDK errors
+            const status = error?.status || error?.statusCode || 'unknown';
+            const errorType = error?.error?.type || error?.type || 'unknown';
+            const errorCode = error?.error?.code || error?.code || 'unknown';
+            const errorMessage = error?.error?.message || error?.message || String(error);
+            const requestId = error?.headers?.get?.('x-request-id') || 'unknown';
+
+            logger.error("provider", `${this.name} API ERROR`, { status, type: errorType, code: errorCode, message: errorMessage.slice(0, 500), model: request.model, requestId, baseURL: this.client.baseURL });
+
+            throw error;
+        }
+    }
+
+    async *stream(request: CompletionRequest): AsyncGenerator<StreamEvent> {
+        const messages = this.convertMessages(request.messages, request.systemPrompt);
+
+        const stream = await this.client.chat.completions.create({
+            model: request.model,
+            messages,
+            max_tokens: request.maxTokens,
+            temperature: request.temperature,
+            tools: this.convertTools(request.tools),
+            stream: true,
+        });
+
+        let currentToolCall: { id: string; name: string; args: string } | null = null;
+
+        for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta;
+
+            if (delta?.content) {
+                yield { type: "text", text: delta.content };
+            }
+
+            if (delta?.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                    if (tc.id) {
+                        // New tool call
+                        if (currentToolCall) {
+                            yield {
+                                type: "tool_call",
+                                toolCall: {
+                                    id: currentToolCall.id,
+                                    name: currentToolCall.name,
+                                    arguments: safeParseArgs(currentToolCall.args || "{}"),
+                                },
+                            };
+                        }
+                        currentToolCall = {
+                            id: tc.id,
+                            name: tc.function?.name ?? "",
+                            args: tc.function?.arguments ?? "",
+                        };
+                    } else if (tc.function?.arguments) {
+                        // Continuing tool call arguments
+                        if (currentToolCall) {
+                            currentToolCall.args += tc.function.arguments;
+                        }
+                    }
+                }
+            }
+
+            if (chunk.choices[0]?.finish_reason) {
+                if (currentToolCall) {
+                    yield {
+                        type: "tool_call",
+                        toolCall: {
+                            id: currentToolCall.id,
+                            name: currentToolCall.name,
+                            arguments: safeParseArgs(currentToolCall.args || "{}"),
+                        },
+                    };
+                }
+                yield {
+                    type: "done",
+                    inputTokens: chunk.usage?.prompt_tokens,
+                    outputTokens: chunk.usage?.completion_tokens,
+                };
+            }
+        }
+    }
+}
+
+// Convenience factory functions with env detection
+export function createOpenAIProvider(): OpenAICompatibleProvider | null {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAICompatibleProvider({
+        name: "OpenAI",
+        apiKey,
+        baseUrl: "https://api.openai.com/v1",
+        models: [
+            // GPT-5 series (2026)
+            "gpt-5.2",
+            "gpt-5.2-instant",
+            "gpt-5",
+            // GPT-4o (still on API, retiring from ChatGPT Feb 2026)
+            "gpt-4o",
+            "gpt-4o-mini",
+            // o-series reasoning
+            "o4-mini",
+            "o1-preview",
+            "o1-mini",
+            // Legacy
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+        ],
+    });
+}
+
+export function createDeepSeekProvider(): OpenAICompatibleProvider | null {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAICompatibleProvider({
+        name: "DeepSeek",
+        apiKey,
+        baseUrl: "https://api.deepseek.com/v1",
+        models: [
+            "deepseek-chat",
+            "deepseek-coder",
+            "deepseek-reasoner",
+        ],
+    });
+}
+
+export function createGroqProvider(): OpenAICompatibleProvider | null {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAICompatibleProvider({
+        name: "Groq",
+        apiKey,
+        baseUrl: "https://api.groq.com/openai/v1",
+        models: [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+        ],
+    });
+}
+
+export function createTogetherProvider(): OpenAICompatibleProvider | null {
+    const apiKey = process.env.TOGETHER_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAICompatibleProvider({
+        name: "Together AI",
+        apiKey,
+        baseUrl: "https://api.together.xyz/v1",
+    });
+}
+
+export function createOllamaProvider(): OpenAICompatibleProvider | null {
+    const host = process.env.OLLAMA_HOST ?? "http://localhost:11434/v1";
+    // Ollama is local, always try to create
+    return new OpenAICompatibleProvider({
+        name: "Ollama",
+        baseUrl: host,
+    });
+}
+
+export function createQwenProvider(): OpenAICompatibleProvider | null {
+    const apiKey = process.env.DASHSCOPE_API_KEY ?? process.env.QWEN_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAICompatibleProvider({
+        name: "Qwen",
+        apiKey,
+        baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        models: [
+            // Qwen 3 Flagship (Feb 2026)
+            "qwen3-max",
+            "qwen3-max-2026-01-23",
+            "qwen-max",
+            "qwen-plus",
+            "qwen-turbo",
+            // Reasoning
+            "qwq-plus",
+            "qwq-32b",
+            // Vision & Multimodal
+            "qwen3-vl-plus",
+            "qwen3-vl-flash",
+            "qwen-vl-max",
+            // Coding
+            "qwen3-coder-plus",
+            "qwen3-coder-flash",
+            // Long context
+            "qwen-long",
+        ],
+    });
+}

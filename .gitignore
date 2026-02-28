@@ -26,3 +26,7 @@ Thumbs.db
 .gemini/
 packages/openwhale/repo/
 packages/openwhale/src/
+packages/openwhale/repo/
+
+# Include openwhale source (override node_modules exclusion)
+!packages/openwhale/src/

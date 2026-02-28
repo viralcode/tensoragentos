@@ -1,0 +1,6739 @@
+// OpenWhale Dashboard - Complete Redesign
+// Setup Wizard + Chat + Channels + Configuration
+
+const API_BASE = '/dashboard/api';
+
+// ============================================
+// Lucide Icons (SVG) - Professional Icon System
+// ============================================
+const ICONS = {
+  // Navigation
+  layoutDashboard: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
+  messageSquare: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  radio: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>',
+  bot: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+  wrench: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  tool: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z"/><path d="m18 13-1.375-1.375a1 1 0 0 1 0-1.414L18 9"/><path d="m2.293 15.707 5.586 5.586a1 1 0 0 0 1.414 0l1.586-1.586a1 1 0 0 0 0-1.414L5.293 12.707a1 1 0 0 0-1.414 0L2.293 14.293a1 1 0 0 0 0 1.414z"/><path d="m6 9 1.375 1.375a1 1 0 0 1 0 1.414L6 13"/><path d="m21.854 2.146a.5.5 0 0 0-.708 0l-5.297 5.297"/><path d="M8.56 5.854 3.91 1.207a.5.5 0 0 0-.708 0l-.499.5a.5.5 0 0 0 0 .708l4.647 4.647"/></svg>',
+  settings: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+
+  // Channels
+  smartphone: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>',
+  phone: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  phoneCall: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><path d="M14.05 2a9 9 0 0 1 8 7.94"/><path d="M14.05 6A5 5 0 0 1 18 10"/></svg>',
+  mic: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>',
+  micOff: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" x2="12" y1="19" y2="22"/></svg>',
+  send: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+  globe: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>',
+
+  // Stats
+  messageCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
+  ticket: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>',
+  cpu: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>',
+  zap: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+
+  // Providers
+  sparkles: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>',
+  brain: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M19.967 17.484A4 4 0 0 1 18 18"/></svg>',
+
+  // Skills
+  github: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>',
+  music: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  cloud: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
+  database: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>',
+  key: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>',
+  twitter: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>',
+
+
+  // Tools
+  terminal: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>',
+  camera: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>',
+  image: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+  file: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
+  fileText: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
+  clock: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  volume2: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>',
+  code: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  palette: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"/></svg>',
+  mapPin: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+
+  // Status
+  check: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  x: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+  alertCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+  loader: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>',
+  plus: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+  chevronLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+  chevronRight: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+  chevronDown: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  externalLink: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+
+  // Misc
+  whale: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 16.5c.5-.5 1-1.3 1.3-2.3.3-1 .3-2.2-.3-3.2-.6-1-1.6-1.8-2.9-2-1.3-.3-2.7 0-3.9.6-1.2.7-2.2 1.8-2.7 3.1-.5 1.3-.5 2.7 0 4 .5 1.3 1.5 2.4 2.8 3 1.3.6 2.7.7 4 .3 1.3-.4 2.3-1.3 2.9-2.4"/><path d="M2 12c-1 2 0 5 3 6l1-2"/><path d="M5 18c1 1 3 1 4 0"/><path d="M3 12c0-5 4-7 8-7 6 0 6 5 6 5s1-2 4-2c1.5 0 2 1 2 2"/><circle cx="14" cy="10" r="1"/></svg>',
+  activity: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  arrowLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>',
+  arrowRight: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+  arrowUp: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/><path d="M12 21V9"/></svg>',
+  refresh: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+
+  // Additional tool icons
+  video: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>',
+  monitor: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>',
+  puzzle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.878.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z"/></svg>',
+  gitBranch: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
+  download: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+  penTool: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>',
+  info: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+  folder: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+  code: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  search: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+
+  // New tool icons
+  qrCode: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>',
+  table: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>',
+  calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>',
+  clipboardCopy: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
+  wand: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>',
+  hardDrive: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>',
+  archive: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>',
+  mail: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+  gitCommit: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></svg>',
+  container: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>',
+  server: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>',
+  databaseZap: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 12 22"/><path d="M21 5v6"/><path d="M3 12A9 3 0 0 0 14.59 14.87"/><path d="M21 15l-2.5 5H19l-2.5-5"/></svg>',
+  presentation: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></svg>',
+  square: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  users: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  gitFork: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/></svg>',
+  lock: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  share2: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>',
+  rocket: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+  network: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>',
+};
+
+// Icon helper function
+function icon(name, size = 20) {
+  const svg = ICONS[name];
+  if (!svg) return '';
+  // Adjust size if needed
+  if (size !== 20) {
+    return svg.replace(/width="20"/g, `width="${size}"`).replace(/height="20"/g, `height="${size}"`);
+  }
+  return svg;
+}
+
+// State
+let state = {
+  view: 'overview',
+  setupComplete: false,
+  setupStep: 0,
+  stats: {},
+  messages: [],
+  channels: [],
+  providers: [],
+  skills: [],
+  tools: [],
+  agents: [],
+  agentRuns: [],
+  agentRunsPage: 0,
+  config: {},
+  isLoading: false,
+  isSending: false,
+  currentModel: '',
+  whatsappQR: null,
+  prerequisites: {},
+  // Auth
+  isAuthenticated: false,
+  user: null,
+  sessionId: localStorage.getItem('owSessionId') || null,
+  users: [], // For admin user management
+  extensions: [], // For self-extension system
+  mdSkills: [], // Markdown-based skills from ~/.openwhale/skills/
+  mdSkillsLoading: false,
+  mdSkillsSearch: '',
+  mdSkillsPage: 0,
+  skillsTab: 'api', // 'api' or 'markdown'
+  editingSkillDir: null,
+  editingSkillPath: null,
+  editingSkillContent: null,
+  editingSkillTree: [],
+  editingSkillLoading: false,
+  showCreateSkillModal: false,
+  // Tools page
+  toolsSearch: '',
+  toolsPage: 0,
+  toolsCategory: 'all',
+  // Voice mode
+  voiceMode: false,
+  isListening: false,
+  isSpeaking: false,
+  voiceRecognition: null,
+  voiceAudio: null,
+  // Logs page
+  logs: [],
+  logsTotal: 0,
+  logsPage: 0,
+  logsLogPath: '',
+  logsLoading: false,
+  logsFilter: { level: '', category: '', startDate: '', endDate: '', search: '' },
+  logsStreamActive: false,
+  logsEventSource: null,
+  // Agent events SSE
+  agentEventSource: null,
+  liveAgentRuns: {},
+};
+
+// ============================================
+// Custom Dialog System (replaces alert/confirm/prompt)
+// ============================================
+
+function createDialogOverlay() {
+  const existing = document.getElementById('dialog-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dialog-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.15s ease-out;
+  `;
+  return overlay;
+}
+
+function createDialogBox(title, content, buttons) {
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    background: var(--bg-secondary, #12121a);
+    border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 450px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.2s ease-out;
+  `;
+
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = `
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #f1f1f1);
+    margin-bottom: 12px;
+  `;
+  titleEl.textContent = title;
+
+  const contentEl = document.createElement('div');
+  contentEl.style.cssText = `
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+  `;
+  if (typeof content === 'string') {
+    contentEl.textContent = content;
+  } else {
+    contentEl.appendChild(content);
+  }
+
+  const buttonsEl = document.createElement('div');
+  buttonsEl.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  `;
+  buttons.forEach(btn => buttonsEl.appendChild(btn));
+
+  dialog.appendChild(titleEl);
+  dialog.appendChild(contentEl);
+  dialog.appendChild(buttonsEl);
+  return dialog;
+}
+
+function createButton(text, primary = false) {
+  const btn = document.createElement('button');
+  btn.textContent = text;
+  btn.style.cssText = `
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+    ${primary ? `
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    ` : `
+      background: var(--bg-tertiary, #1a1a25);
+      color: var(--text-secondary, #a0a0a0);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+    `}
+  `;
+  btn.onmouseenter = () => btn.style.opacity = '0.85';
+  btn.onmouseleave = () => btn.style.opacity = '1';
+  return btn;
+}
+
+// Custom alert dialog
+function showAlert(message, title = 'Notice') {
+  return new Promise(resolve => {
+    const overlay = createDialogOverlay();
+    const okBtn = createButton('OK', true);
+    okBtn.onclick = () => {
+      overlay.remove();
+      resolve();
+    };
+    const dialog = createDialogBox(title, message, [okBtn]);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    okBtn.focus();
+  });
+}
+
+// Custom confirm dialog
+function showConfirm(message, title = 'Confirm') {
+  return new Promise(resolve => {
+    const overlay = createDialogOverlay();
+    const cancelBtn = createButton('Cancel');
+    const confirmBtn = createButton('Confirm', true);
+
+    cancelBtn.onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    confirmBtn.onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
+
+    const dialog = createDialogBox(title, message, [cancelBtn, confirmBtn]);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    confirmBtn.focus();
+  });
+}
+
+// Custom prompt dialog
+function showPrompt(message, defaultValue = '', title = 'Input') {
+  return new Promise(resolve => {
+    const overlay = createDialogOverlay();
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = defaultValue;
+    input.placeholder = 'Enter value...';
+    input.style.cssText = `
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-tertiary, #1a1a25);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+      border-radius: 8px;
+      color: var(--text-primary, #f1f1f1);
+      font-size: 14px;
+      margin-top: 8px;
+      outline: none;
+    `;
+    input.onfocus = () => input.style.borderColor = 'var(--accent, #6366f1)';
+    input.onblur = () => input.style.borderColor = 'var(--border-color, rgba(255,255,255,0.08))';
+
+    const wrapper = document.createElement('div');
+    wrapper.textContent = message;
+    wrapper.appendChild(input);
+
+    const cancelBtn = createButton('Cancel');
+    const okBtn = createButton('OK', true);
+
+    cancelBtn.onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+    okBtn.onclick = () => {
+      overlay.remove();
+      resolve(input.value);
+    };
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') okBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    };
+
+    const dialog = createDialogBox(title, wrapper, [cancelBtn, okBtn]);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    input.focus();
+  });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check if user is authenticated
+  const isAuth = await checkAuth();
+
+  if (isAuth) {
+    await checkSetupStatus();
+    if (!state.setupComplete) {
+      state.view = 'setup';
+    } else {
+      state.view = location.hash.slice(1) || 'chat';
+      await loadConfig();
+      await loadData();
+    }
+  }
+  render();
+
+  window.addEventListener('hashchange', async () => {
+    if (state.isAuthenticated) {
+      state.view = location.hash.slice(1) || 'chat';
+      await loadData();
+      render();
+    }
+  });
+});
+
+// API Helpers
+async function api(endpoint, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (state.sessionId) {
+    headers['Authorization'] = `Bearer ${state.sessionId}`;
+  }
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers,
+    ...options
+  });
+  const data = await res.json();
+  if (!res.ok && !data.error) {
+    data.error = `HTTP ${res.status}`;
+  }
+  return data;
+}
+
+// Auth Functions
+async function login(username, password) {
+  try {
+    const result = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await result.json();
+    if (data.ok) {
+      state.sessionId = data.sessionId;
+      state.user = data.user;
+      state.isAuthenticated = true;
+      localStorage.setItem('owSessionId', data.sessionId);
+      return { ok: true };
+    }
+    return { ok: false, error: data.error };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function logout() {
+  try {
+    await api('/auth/logout', { method: 'POST' });
+  } catch { }
+  state.sessionId = null;
+  state.user = null;
+  state.isAuthenticated = false;
+  localStorage.removeItem('owSessionId');
+  render();
+}
+
+async function checkAuth() {
+  if (!state.sessionId) {
+    state.isAuthenticated = false;
+    return false;
+  }
+  try {
+    const data = await api('/auth/me');
+    if (data.ok) {
+      state.user = data.user;
+      state.isAuthenticated = true;
+      return true;
+    }
+  } catch { }
+  state.sessionId = null;
+  state.isAuthenticated = false;
+  localStorage.removeItem('owSessionId');
+  return false;
+}
+
+// Data Loading
+async function checkSetupStatus() {
+  try {
+    const data = await api('/setup/status');
+    state.setupComplete = data.completed;
+    state.setupStep = data.currentStep || 0;
+    state.config = data.config || {};
+  } catch (e) {
+    console.log('Setup check failed, showing wizard');
+    state.setupComplete = false;
+  }
+}
+
+async function loadData() {
+  // Disconnect log stream when leaving logs page
+  if (state.view !== 'logs') disconnectLogStream();
+  // Disconnect agent event stream when leaving chat page
+  if (state.view !== 'chat') disconnectAgentEventStream();
+
+  switch (state.view) {
+    case 'chat':
+      await loadMessages();
+      await loadProviders();
+      await loadAgents();
+      await loadAgentRuns();
+      connectAgentEventStream();
+      break;
+    case 'channels':
+      await loadChannels();
+      break;
+    case 'providers':
+      await loadProviders();
+      break;
+    case 'skills':
+      await loadSkills();
+      break;
+    case 'tools':
+      await loadTools();
+      break;
+    case 'extensions':
+      await loadExtensions();
+      break;
+    case 'settings':
+      await loadProviders();
+      await loadUsers();
+      break;
+    case 'logs':
+      await loadLogs();
+      connectLogStream();
+      break;
+    case 'overview':
+      await loadStats();
+      await loadChannels();
+      await loadProviders();
+      await loadTools();
+      break;
+    case 'agents':
+      await loadAgents();
+      await loadAgentRuns();
+
+      break;
+  }
+}
+
+async function loadStats() {
+  try {
+    state.stats = await api('/stats');
+  } catch (e) { console.error(e); }
+}
+
+async function loadMessages() {
+  try {
+    const data = await api('/chat/history');
+    state.messages = data.messages || [];
+  } catch (e) { console.error(e); }
+}
+
+async function loadChannels() {
+  try {
+    const data = await api('/channels');
+    state.channels = data.channels || [];
+  } catch (e) { console.error(e); }
+}
+
+async function loadProviders() {
+  try {
+    const data = await api('/providers');
+    state.providers = data.providers || [];
+
+    // Set currentModel from the enabled provider
+    const enabledProvider = state.providers.find(p => p.enabled && p.hasKey);
+    if (enabledProvider && enabledProvider.models && enabledProvider.models.length > 0) {
+      // Use the first model from the enabled provider as default
+      state.currentModel = enabledProvider.models[0];
+      console.log('[Dashboard] Using model from enabled provider:', state.currentModel);
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function loadSkills() {
+  try {
+    const data = await api('/skills');
+    state.skills = data.skills || [];
+    // Also load markdown skills
+    state.mdSkillsLoading = true;
+    const mdData = await api('/md-skills');
+    state.mdSkills = mdData.mdSkills || [];
+    state.mdSkillsLoading = false;
+  } catch (e) {
+    state.mdSkillsLoading = false;
+    console.error(e);
+  }
+}
+
+async function loadTools() {
+  try {
+    const data = await api('/tools');
+    state.tools = data.tools || [];
+  } catch (e) { console.error(e); }
+}
+
+async function loadConfig() {
+  try {
+    const config = await api('/config');
+    if (config.defaultModel) {
+      state.currentModel = config.defaultModel;
+    }
+    state.config = config;
+  } catch (e) { console.error(e); }
+}
+
+async function loadExtensions() {
+  try {
+    const data = await api('/extensions');
+    if (data.ok) {
+      state.extensions = data.extensions || [];
+    }
+  } catch (e) {
+    console.error('Failed to load extensions:', e);
+  }
+}
+
+async function loadUsers() {
+  if (state.user?.role !== 'admin') return;
+  try {
+    const data = await api('/users');
+    if (data.ok) {
+      state.users = data.users;
+    }
+  } catch (e) {
+    console.error('Failed to load users:', e);
+  }
+}
+
+async function loadLogs() {
+  state.logsLoading = true;
+  try {
+    const f = state.logsFilter;
+    const params = new URLSearchParams();
+    params.set('page', String(state.logsPage));
+    params.set('limit', '100');
+    if (f.level) params.set('level', f.level);
+    if (f.category) params.set('category', f.category);
+    if (f.startDate) params.set('startDate', f.startDate);
+    if (f.endDate) params.set('endDate', f.endDate);
+    if (f.search) params.set('search', f.search);
+
+    const data = await api('/logs?' + params.toString());
+    state.logs = data.entries || [];
+    state.logsTotal = data.total || 0;
+    state.logsLogPath = data.logPath || '';
+  } catch (e) {
+    console.error('Failed to load logs:', e);
+    state.logs = [];
+  }
+  state.logsLoading = false;
+}
+
+// Real-time log streaming
+function connectLogStream() {
+  disconnectLogStream();
+  try {
+    const es = new EventSource('/dashboard/api/logs/stream');
+    state.logsEventSource = es;
+
+    es.onmessage = (event) => {
+      try {
+        const entry = JSON.parse(event.data);
+        // Skip the initial "connected" message
+        if (entry.event === 'connected') {
+          state.logsStreamActive = true;
+          updateLiveIndicator();
+          return;
+        }
+        // Only prepend if we're on the logs page and on page 0 (latest)
+        if (state.view === 'logs' && state.logsPage === 0 && entry.timestamp) {
+          state.logs.unshift(entry);
+          state.logsTotal++;
+          // Limit displayed entries to 100
+          if (state.logs.length > 100) state.logs.pop();
+          // Update the table without full re-render
+          prependLogEntry(entry);
+        }
+      } catch { /* skip non-JSON */ }
+    };
+
+    es.onerror = () => {
+      state.logsStreamActive = false;
+      updateLiveIndicator();
+      // Auto-reconnect after 3s
+      setTimeout(() => {
+        if (state.view === 'logs') connectLogStream();
+      }, 3000);
+    };
+  } catch (e) {
+    console.error('Failed to connect log stream:', e);
+  }
+}
+
+function disconnectLogStream() {
+  if (state.logsEventSource) {
+    state.logsEventSource.close();
+    state.logsEventSource = null;
+  }
+  state.logsStreamActive = false;
+}
+
+function updateLiveIndicator() {
+  const el = document.getElementById('live-indicator');
+  if (el) {
+    el.style.display = state.logsStreamActive ? 'inline-flex' : 'none';
+  }
+}
+
+function prependLogEntry(entry) {
+  const tbody = document.querySelector('#logs-tbody');
+  if (!tbody) return;
+
+  const levelColors = { DEBUG: '#6b7280', INFO: '#3b82f6', WARN: '#f59e0b', ERROR: '#ef4444' };
+  const categoryIcons = { chat: 'messageSquare', channel: 'radio', provider: 'bot', tool: 'zap', session: 'settings', dashboard: 'layoutDashboard', system: 'globe', cron: 'clock', extension: 'puzzle', auth: 'shield', heartbeat: 'clock' };
+
+  const ts = new Date(entry.timestamp);
+  const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString();
+  const levelColor = levelColors[entry.level] || '#6b7280';
+  const catIcon = categoryIcons[entry.category] || 'fileText';
+  const hasData = entry.data && Object.keys(entry.data).length > 0;
+
+  const tr = document.createElement('tr');
+  tr.style.cssText = 'border-bottom: 1px solid var(--border-color); animation: logFadeIn 0.3s ease;';
+  tr.innerHTML = `
+    <td style="padding: 8px 12px; color: var(--text-muted); font-family: monospace; font-size: 12px; white-space: nowrap;">${timeStr}</td>
+    <td style="padding: 8px; text-align: center;">
+      <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; color: white; background: ${levelColor};">${entry.level}</span>
+    </td>
+    <td style="padding: 8px; color: var(--text-secondary);">
+      <span style="display: flex; align-items: center; gap: 4px;">${icon(catIcon, 14)} ${entry.category}</span>
+    </td>
+    <td style="padding: 8px 12px; color: var(--text-primary); word-break: break-word;">
+      ${entry.message}
+      ${hasData ? '<span style="color: var(--text-muted); font-size: 11px; margin-left: 6px;">▸ details</span>' : ''}
+    </td>
+  `;
+
+  // Flash effect
+  tr.style.background = 'rgba(59, 130, 246, 0.08)';
+  setTimeout(() => { tr.style.background = 'transparent'; tr.style.transition = 'background 1s'; }, 100);
+
+  tbody.insertBefore(tr, tbody.firstChild);
+
+  // Remove excess rows
+  while (tbody.children.length > 100) {
+    tbody.removeChild(tbody.lastChild);
+  }
+
+  // Update entry count
+  const countEl = document.getElementById('log-entry-count');
+  if (countEl) countEl.textContent = `${state.logsTotal.toLocaleString()} entries`;
+}
+
+// Directly update the send button appearance based on isSending state
+function updateSendButton() {
+  const sendBtn = document.getElementById('send-btn');
+  if (!sendBtn) return;
+  if (state.isSending) {
+    sendBtn.className = 'send-btn stop-mode';
+    sendBtn.title = 'Stop generating';
+    sendBtn.innerHTML = icon('square', 16);
+    sendBtn.disabled = false;
+    sendBtn.removeAttribute('onclick');
+    sendBtn.onclick = () => stopChat();
+  } else {
+    sendBtn.className = 'send-btn';
+    sendBtn.title = 'Send message';
+    sendBtn.innerHTML = icon('arrowUp', 20);
+    sendBtn.disabled = false;
+    sendBtn.removeAttribute('onclick');
+    sendBtn.onclick = () => {
+      const chatInput = document.getElementById('chat-input');
+      if (chatInput && chatInput.value.trim()) {
+        sendMessage(chatInput.value);
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+      }
+    };
+  }
+}
+
+// Chat Functions
+async function sendMessage(content) {
+  if (!content || !content.trim()) return;
+
+  // If already sending, abort the current stream first
+  if (state.isSending && state.currentAbort) {
+    state.currentAbort.abort();
+    state.currentAbort = null;
+    // Finalize the current streaming state
+    state.isSending = false;
+    state.streamingSteps = [];
+    state.streamingContent = '';
+    state.streamingDone = false;
+    state.activePlan = null;
+  }
+
+  state.messages.push({
+    id: Date.now().toString(),
+    role: 'user',
+    content: content.trim(),
+    createdAt: new Date().toISOString()
+  });
+
+  state.isSending = true;
+  // Track streaming state for progressive rendering
+  state.streamingSteps = [];
+  state.streamingContent = '';
+  state.streamingDone = false;
+  state.activePlan = null;
+
+  // Create abort controller for this stream
+  const abortController = new AbortController();
+  state.currentAbort = abortController;
+
+  // Immediately swap the send button to stop mode
+  updateSendButton();
+  updateChatMessages();
+  scrollToBottom();
+
+  try {
+    const response = await fetch(`${API_BASE}/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: content.trim(),
+        model: state.currentModel
+      }),
+      signal: abortController.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const { event, data } = JSON.parse(line.slice(6));
+          handleStreamEvent(event, data);
+        } catch { /* skip malformed lines */ }
+      }
+    }
+
+    // Process any remaining buffer
+    if (buffer.startsWith('data: ')) {
+      try {
+        const { event, data } = JSON.parse(buffer.slice(6));
+        handleStreamEvent(event, data);
+      } catch { }
+    }
+
+  } catch (e) {
+    // Don't show error for user-initiated aborts
+    if (e.name !== 'AbortError') {
+      state.messages.push({
+        id: Date.now().toString(),
+        role: 'system',
+        content: `Error: ${e.message}`,
+        createdAt: new Date().toISOString()
+      });
+    }
+  }
+
+  state.isSending = false;
+  state.currentAbort = null;
+  state.streamingSteps = [];
+  state.streamingContent = '';
+  state.streamingDone = false;
+  state.activePlan = null;
+  updateSendButton();
+  updateChatMessages();
+  scrollToBottom();
+}
+
+function stopChat() {
+  if (state.currentAbort) {
+    state.currentAbort.abort();
+    state.currentAbort = null;
+  }
+}
+
+// ============================================
+// Voice Mode - Real-time voice conversation
+// ============================================
+
+function toggleVoiceMode() {
+  if (state.voiceMode) {
+    // Turn off voice mode
+    stopVoiceMode();
+    return;
+  }
+
+  // Check for Web Speech API support
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showAlert('Voice mode requires a browser that supports the Web Speech API (Chrome, Edge, or Safari).', 'Not Supported');
+    return;
+  }
+
+  state.voiceMode = true;
+  state.isListening = true;
+
+  const recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    state.isListening = true;
+    updateChatMessages();
+  };
+
+  recognition.onresult = (event) => {
+    let finalTranscript = '';
+    let interimTranscript = '';
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    // Show interim results in the input
+    if (interimTranscript) {
+      const input = document.getElementById('chat-input');
+      if (input) input.value = interimTranscript;
+    }
+
+    // Send final transcript as a message
+    if (finalTranscript.trim()) {
+      const input = document.getElementById('chat-input');
+      if (input) input.value = '';
+      state.isListening = false;
+      updateChatMessages();
+      sendMessage(finalTranscript.trim());
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.warn('[Voice] Recognition error:', event.error);
+    if (event.error === 'not-allowed') {
+      showAlert('Microphone access was denied. Please allow microphone access in your browser settings.', 'Microphone Blocked');
+      stopVoiceMode();
+      return;
+    }
+    // Auto-restart on recoverable errors
+    if (state.voiceMode && !state.isSending && !state.isSpeaking) {
+      setTimeout(() => startListeningLoop(), 500);
+    }
+  };
+
+  recognition.onend = () => {
+    // Auto-restart listening if still in voice mode and not sending/speaking
+    if (state.voiceMode && !state.isSending && !state.isSpeaking) {
+      setTimeout(() => startListeningLoop(), 300);
+    }
+  };
+
+  state.voiceRecognition = recognition;
+  updateChatMessages();
+  startListeningLoop();
+}
+
+function startListeningLoop() {
+  if (!state.voiceMode || state.isSending || state.isSpeaking) return;
+
+  try {
+    state.isListening = true;
+    state.voiceRecognition?.start();
+    updateChatMessages();
+  } catch (e) {
+    // Already started, ignore
+  }
+}
+
+function stopVoiceMode() {
+  state.voiceMode = false;
+  state.isListening = false;
+  state.isSpeaking = false;
+
+  if (state.voiceRecognition) {
+    try { state.voiceRecognition.abort(); } catch (e) { }
+    state.voiceRecognition = null;
+  }
+
+  if (state.voiceAudio) {
+    state.voiceAudio.pause();
+    state.voiceAudio = null;
+  }
+
+  const input = document.getElementById('chat-input');
+  if (input) input.value = '';
+
+  updateChatMessages();
+}
+
+async function speakResponse(text) {
+  if (!state.voiceMode) return;
+
+  // Strip markdown for cleaner speech
+  const cleanText = text
+    .replace(/```[\s\S]*?```/g, 'code block omitted')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[-*]\s/g, '')
+    .replace(/\n{2,}/g, '. ')
+    .replace(/\n/g, ' ')
+    .trim();
+
+  if (!cleanText) return;
+
+  // Truncate very long responses for TTS
+  const ttsText = cleanText.length > 1000 ? cleanText.slice(0, 1000) + '... response truncated for voice.' : cleanText;
+
+  state.isSpeaking = true;
+  state.isListening = false;
+  updateChatMessages();
+
+  try {
+    // Stop recognition while speaking
+    if (state.voiceRecognition) {
+      try { state.voiceRecognition.abort(); } catch (e) { }
+    }
+
+    const response = await fetch(`${API_BASE}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: ttsText })
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS failed: ${response.status}`);
+    }
+
+    const { audio } = await response.json();
+
+    if (audio && state.voiceMode) {
+      const audioEl = new Audio(audio);
+      state.voiceAudio = audioEl;
+
+      audioEl.onended = () => {
+        state.isSpeaking = false;
+        state.voiceAudio = null;
+        updateChatMessages();
+        // Auto-restart listening after speaking 
+        if (state.voiceMode) {
+          setTimeout(() => startListeningLoop(), 500);
+        }
+      };
+
+      audioEl.onerror = () => {
+        state.isSpeaking = false;
+        state.voiceAudio = null;
+        updateChatMessages();
+        if (state.voiceMode) {
+          setTimeout(() => startListeningLoop(), 500);
+        }
+      };
+
+      await audioEl.play();
+    } else {
+      // Fallback: use browser TTS
+      fallbackSpeak(ttsText);
+    }
+  } catch (e) {
+    console.warn('[Voice] TTS error, falling back to browser speech:', e);
+    fallbackSpeak(ttsText);
+  }
+}
+
+function fallbackSpeak(text) {
+  if (!window.speechSynthesis) {
+    state.isSpeaking = false;
+    updateChatMessages();
+    if (state.voiceMode) startListeningLoop();
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+
+  utterance.onend = () => {
+    state.isSpeaking = false;
+    updateChatMessages();
+    if (state.voiceMode) {
+      setTimeout(() => startListeningLoop(), 500);
+    }
+  };
+
+  utterance.onerror = () => {
+    state.isSpeaking = false;
+    updateChatMessages();
+    if (state.voiceMode) startListeningLoop();
+  };
+
+  speechSynthesis.speak(utterance);
+}
+function handleStreamEvent(event, data) {
+  switch (event) {
+    case 'thinking':
+      // Update or add thinking step
+      const existingThinking = state.streamingSteps.find(s => s.type === 'thinking');
+      if (existingThinking) {
+        existingThinking.iteration = data.iteration;
+      } else {
+        state.streamingSteps.push({ type: 'thinking', iteration: data.iteration, maxIterations: data.maxIterations });
+      }
+      break;
+
+    case 'content':
+      state.streamingContent = data.text;
+      // Mark thinking as done
+      const thinkingStep = state.streamingSteps.find(s => s.type === 'thinking');
+      if (thinkingStep) thinkingStep.done = true;
+      break;
+
+    case 'tool_start': {
+      const toolStep = {
+        type: 'tool',
+        id: data.id,
+        name: data.name,
+        arguments: data.arguments,
+        status: 'running',
+      };
+      state.streamingSteps.push(toolStep);
+      // Group tool under active plan step
+      if (state.activePlan && data.name !== 'plan') {
+        const activeStep = state.activePlan.steps.find(s => s.status === 'in_progress');
+        if (activeStep) {
+          activeStep.toolCalls.push(toolStep);
+        }
+      }
+      break;
+    }
+
+    case 'tool_end':
+      const step = state.streamingSteps.find(s => s.id === data.id);
+      if (step) {
+        step.status = data.status;
+        step.result = data.result;
+        step.metadata = data.metadata;
+      }
+      break;
+
+    case 'done':
+      state.streamingDone = true;
+      if (data.message) {
+        // Replace any existing assistant message from content events
+        state.messages.push({
+          id: data.message.id || Date.now().toString(),
+          role: 'assistant',
+          content: data.message.content,
+          toolCalls: data.message.toolCalls,
+          model: data.message.model,
+          createdAt: data.message.createdAt || new Date().toISOString()
+        });
+        // Voice mode: auto-speak the response
+        if (state.voiceMode && data.message.content) {
+          speakResponse(data.message.content);
+        }
+      }
+      break;
+
+    case 'error':
+      state.streamingSteps.push({
+        type: 'error',
+        message: data.message,
+      });
+      break;
+
+    case 'stopped':
+      // User stopped the generation — silently handle
+      state.streamingDone = true;
+      break;
+
+    case 'plan_created':
+      state.activePlan = {
+        title: data.title,
+        steps: data.steps.map(s => ({
+          ...s,
+          notes: null,
+          toolCalls: [],
+        })),
+        completed: false,
+      };
+      break;
+
+    case 'plan_step_update': {
+      if (state.activePlan) {
+        const step = state.activePlan.steps.find(s => s.id === data.stepId);
+        if (step) {
+          step.status = data.status;
+          if (data.notes) step.notes = data.notes;
+        }
+      }
+      break;
+    }
+
+    case 'plan_completed':
+      if (state.activePlan) {
+        state.activePlan.completed = true;
+        state.activePlan.steps.forEach(s => {
+          if (s.status !== 'skipped') s.status = 'completed';
+        });
+      }
+      break;
+  }
+
+  updateStreamingUI();
+  scrollToBottom();
+}
+
+function updateStreamingUI() {
+  const messagesInner = document.querySelector('.chat-messages-inner');
+  if (!messagesInner) return;
+
+  // Find or create streaming container
+  let streamEl = document.getElementById('streaming-container');
+  if (!streamEl) {
+    // Re-render messages first, then append streaming container
+    let messagesHtml = state.messages.map(renderMessage).join('');
+    messagesHtml += '<div id="streaming-container" class="message assistant stream-message"></div>';
+    messagesInner.innerHTML = messagesHtml;
+    streamEl = document.getElementById('streaming-container');
+  }
+
+  if (!streamEl) return;
+
+  // Build streaming steps HTML
+  let html = '<div class="message-avatar" style="font-size: 18px;">🐋</div><div class="message-body">';
+
+  // Render steps — group tool steps together
+  const toolSteps = state.streamingSteps.filter(s => s.type === 'tool');
+  const nonToolSteps = state.streamingSteps.filter(s => s.type !== 'tool');
+
+  // Render non-tool steps (thinking, error)
+  for (const step of nonToolSteps) {
+    if (step.type === 'thinking' && !step.done) {
+      html += `
+        <div class="stream-step thinking">
+          <div class="stream-step-header">
+            <span class="stream-step-icon spinning">${icon('loader', 14)}</span>
+            <span class="stream-step-label">Thinking${step.iteration > 1 ? ` (round ${step.iteration})` : ''}...</span>
+          </div>
+        </div>`;
+    } else if (step.type === 'error') {
+      html += `
+        <div class="stream-step error">
+          <div class="stream-step-header">
+            <span class="stream-step-icon error">${icon('x', 14)}</span>
+            <span class="stream-step-label">${escapeHtml(step.message)}</span>
+          </div>
+        </div>`;
+    }
+  }
+
+  // Render plan widget OR tool steps
+  if (state.activePlan) {
+    html += renderPlanWidget();
+  } else if (toolSteps.length > 0) {
+    const toolChipsHtml = toolSteps.map((step, idx) => {
+      const si = state.streamingSteps.indexOf(step);
+      const statusIcon = step.status === 'running'
+        ? `<span class="tc-status-icon running spinning">${icon('loader', 12)}</span>`
+        : step.status === 'completed'
+          ? `<span class="tc-status-icon done">${icon('check', 12)}</span>`
+          : `<span class="tc-status-icon error">${icon('x', 12)}</span>`;
+
+      const toolLabel = getToolLabel(step.name, step.arguments);
+      const isExpanded = step.expanded ? ' expanded' : '';
+
+      return `
+        <div class="tool-call-chip stream-chip${isExpanded}" data-step-index="${si}">
+          <div class="tool-call-chip-header" onclick="toggleStreamStep(${si})">
+            ${statusIcon}
+            <span class="tool-call-chip-name">${escapeHtml(toolLabel)}</span>
+            ${step.status !== 'running' ? `<span class="tool-call-chip-chevron">${icon('chevronDown', 10)}</span>` : ''}
+          </div>
+          ${step.result ? `
+            <div class="tool-call-chip-body${step.expanded ? ' show' : ''}">
+              ${step.metadata?.audio ? `
+                <div class="tool-call-audio" style="margin: 8px 0;">
+                  <audio controls autoplay style="width: 100%; height: 36px; border-radius: 8px;">
+                    <source src="${step.metadata.audio}" type="audio/mpeg">
+                  </audio>
+                </div>
+              ` : ''}
+              <div class="tool-call-result">${typeof step.result === 'string' ? escapeHtml(step.result).substring(0, 500) : JSON.stringify(step.result, null, 2).substring(0, 500)}</div>
+              ${renderFileChip(step.metadata)}
+            </div>
+          ` : ''}
+        </div>`;
+    }).join('');
+
+    if (toolSteps.length > 1) {
+      const completed = toolSteps.filter(s => s.status === 'completed').length;
+      const running = toolSteps.filter(s => s.status === 'running').length;
+      const errored = toolSteps.filter(s => s.status === 'error').length;
+      const parts = [];
+      if (running) parts.push(`${running} running`);
+      if (completed) parts.push(`${completed} done`);
+      if (errored) parts.push(`${errored} failed`);
+
+      html += `
+        <div class="tool-call-group">
+          <details class="tool-call-group-details" open>
+            <summary class="tool-call-group-summary">
+              ${icon('wrench', 12)}
+              <span>${toolSteps.length} tool calls</span>
+              <span class="tool-call-group-meta">${parts.join(', ')}</span>
+            </summary>
+            <div class="tool-call-group-list">
+              ${toolChipsHtml}
+            </div>
+          </details>
+        </div>`;
+    } else {
+      html += `<div class="tool-call-group-single">${toolChipsHtml}</div>`;
+    }
+  }
+
+  // Show streaming content (final answer) with markdown
+  if (state.streamingContent) {
+    html += `<div class="message-content">${formatMarkdown(state.streamingContent)}</div>`;
+  }
+
+  // Show multi-agent activity panel inline
+  html += renderMultiAgentPanel();
+
+  // Show persistent working indicator while agent is still processing
+  if (!state.streamingDone) {
+    let workingLabel = 'Thinking...';
+    const runningTool = state.streamingSteps.filter(s => s.type === 'tool' && s.status === 'running').pop();
+    if (runningTool) {
+      const label = getToolLabel(runningTool.name, runningTool.arguments);
+      workingLabel = `Running: ${label}`;
+    } else if (state.streamingContent) {
+      workingLabel = 'Generating response...';
+    } else if (state.streamingSteps.some(s => s.type === 'thinking' && !s.done)) {
+      const thinkStep = state.streamingSteps.find(s => s.type === 'thinking');
+      workingLabel = thinkStep && thinkStep.iteration > 1 ? `Thinking (round ${thinkStep.iteration})...` : 'Thinking...';
+    } else if (toolSteps.length > 0) {
+      workingLabel = 'Processing results...';
+    }
+    html += `
+      <div class="agent-working-bar">
+        <div class="agent-working-dot"></div>
+        <span class="agent-working-text">${escapeHtml(workingLabel)}</span>
+        <div class="agent-working-spinner"></div>
+      </div>`;
+  }
+
+  html += '</div>';
+  streamEl.innerHTML = html;
+}
+
+// Global function for toggling step expansion (called from onclick)
+window.toggleStreamStep = function (stepIndex) {
+  const step = state.streamingSteps[stepIndex];
+  if (step) {
+    step.expanded = !step.expanded;
+    // Update DOM directly without full re-render
+    const stepEl = document.querySelector(`[data-step-index="${stepIndex}"]`);
+    if (stepEl) {
+      stepEl.classList.toggle('expanded');
+    }
+  }
+};
+
+// Global function for toggling plan step details
+window.togglePlanStep = function (stepId) {
+  if (!state.activePlan) return;
+  const step = state.activePlan.steps.find(s => s.id === stepId);
+  if (step) {
+    step.expanded = !step.expanded;
+    updateStreamingUI();
+    scrollToBottom();
+  }
+};
+
+function renderPlanWidget() {
+  const plan = state.activePlan;
+  if (!plan) return '';
+
+  const completedCount = plan.steps.filter(s => s.status === 'completed').length;
+  const totalCount = plan.steps.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isAllDone = plan.completed || completedCount === totalCount;
+
+  let html = `<div class="plan-widget${isAllDone ? ' plan-done' : ''}">`;
+
+  // Header with gradient accent
+  html += `
+    <div class="plan-widget-header">
+      <div class="plan-widget-header-top">
+        <div class="plan-widget-title">
+          <span class="plan-widget-icon">${isAllDone ? '✨' : '⚡'}</span>
+          <span>Plan</span>
+        </div>
+        <div class="plan-widget-badge ${isAllDone ? 'done' : ''}">${isAllDone ? 'Completed' : `${completedCount} of ${totalCount}`}</div>
+      </div>
+      <div class="plan-widget-subtitle">${escapeHtml(plan.title)}</div>
+      <div class="plan-progress-track">
+        <div class="plan-progress-fill${isAllDone ? ' done' : ''}" style="width: ${progressPct}%"></div>
+      </div>
+    </div>`;
+
+  // Timeline steps
+  html += '<div class="plan-timeline">';
+  for (let i = 0; i < plan.steps.length; i++) {
+    const step = plan.steps[i];
+    const isActive = step.status === 'in_progress';
+    const isDone = step.status === 'completed';
+    const isSkipped = step.status === 'skipped';
+    const isLast = i === plan.steps.length - 1;
+    const stepClass = isActive ? 'active' : isDone ? 'done' : isSkipped ? 'skipped' : 'pending';
+
+    // Step number circle
+    let circleContent;
+    if (isDone) {
+      circleContent = icon('check', 14);
+    } else if (isActive) {
+      circleContent = `<span class="plan-num-spinner spinning">${icon('loader', 14)}</span>`;
+    } else {
+      circleContent = `${i + 1}`;
+    }
+
+    const hasDetails = (isDone || isActive) && (step.notes || (step.toolCalls && step.toolCalls.length > 0));
+    const isExpanded = step.expanded && hasDetails;
+
+    html += `
+      <div class="plan-tl-step ${stepClass}">
+        <div class="plan-tl-gutter">
+          <div class="plan-tl-circle">${circleContent}</div>
+          ${!isLast ? '<div class="plan-tl-connector"></div>' : ''}
+        </div>
+        <div class="plan-tl-content">
+          <div class="plan-tl-row${hasDetails ? ' clickable' : ''}" ${hasDetails ? `onclick="togglePlanStep(${step.id})"` : ''}>
+            <span class="plan-tl-label">${escapeHtml(step.title)}</span>
+            ${hasDetails ? `<span class="plan-tl-chevron${isExpanded ? ' open' : ''}">${icon('chevronDown', 12)}</span>` : ''}
+          </div>`;
+
+    // Expandable proof of work
+    if (hasDetails) {
+      html += `<div class="plan-tl-details${isExpanded ? ' show' : ''}">`;
+
+      if (step.notes) {
+        html += `<div class="plan-tl-notes">${icon('info', 12)} ${escapeHtml(step.notes)}</div>`;
+      }
+
+      if (step.toolCalls && step.toolCalls.length > 0) {
+        html += '<div class="plan-tl-tools">';
+        for (const tc of step.toolCalls) {
+          const tcIcon = tc.status === 'running'
+            ? `<span class="tc-status-icon running spinning">${icon('loader', 10)}</span>`
+            : tc.status === 'completed'
+              ? `<span class="tc-status-icon done">${icon('check', 10)}</span>`
+              : `<span class="tc-status-icon error">${icon('x', 10)}</span>`;
+          const tcLabel = getToolLabel(tc.name, tc.arguments);
+          html += `<div class="plan-tl-tool">${tcIcon}<span>${escapeHtml(tcLabel)}</span></div>`;
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+  }
+  html += '</div>';
+
+  // Footer with completion celebration
+  if (isAllDone) {
+    html += `<div class="plan-widget-footer done"><span>🎉</span> All steps completed successfully</div>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function getToolLabel(name, args) {
+  // Generate human-readable labels for tool calls
+  const labels = {
+    file: () => {
+      const action = args?.action || 'file';
+      if (action === 'write') return `Writing file: ${(args?.path || '').split('/').pop()}`;
+      if (action === 'read') return `Reading file: ${(args?.path || '').split('/').pop()}`;
+      if (action === 'list') return `Listing directory: ${(args?.path || '').split('/').pop()}`;
+      if (action === 'mkdir') return `Creating directory: ${(args?.path || '').split('/').pop()}`;
+      if (action === 'delete') return `Deleting: ${(args?.path || '').split('/').pop()}`;
+      return `File: ${action}`;
+    },
+    exec: () => `Running: ${(args?.command || '').substring(0, 60)}`,
+    web_fetch: () => `Fetching: ${(args?.url || '').substring(0, 50)}`,
+    browser: () => `Browser: ${args?.action || 'navigate'}`,
+    pdf: () => {
+      const action = args?.action || 'pdf';
+      return `PDF: ${action}${args?.outputPath ? ' → ' + args.outputPath.split('/').pop() : ''}`;
+    },
+    slides: () => {
+      return `Slides: ${args?.action || 'create'}${args?.outputPath ? ' → ' + args.outputPath.split('/').pop() : ''}`;
+    },
+    plan: () => `Plan: ${args?.action || 'create'}`,
+    image: () => `Generating image`,
+    screenshot: () => `Taking screenshot`,
+    memory: () => `Memory: ${args?.action || 'recall'}`,
+    code_exec: () => `Executing code`,
+    tts: () => `Text to speech`,
+  };
+
+  if (labels[name]) return labels[name]();
+  return `${name}${args?.action ? `: ${args.action}` : ''}`;
+}
+
+function renderFileChip(metadata) {
+  if (!metadata?.path) return '';
+  const filePath = metadata.path;
+  const fileName = filePath.split('/').pop() || filePath;
+  const ext = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+  const fileIcon = ext === 'pdf' ? icon('fileText', 16) : icon('file', 16);
+  const downloadUrl = `${API_BASE}/files/download?path=${encodeURIComponent(filePath)}`;
+  return `
+    <div class="tool-file-chip">
+      <span class="file-icon">${fileIcon}</span>
+      <span class="file-name" title="${escapeHtml(filePath)}">${escapeHtml(fileName)}</span>
+      <a href="${downloadUrl}" class="file-download-btn" target="_blank" download="${escapeHtml(fileName)}">
+        ${icon('download', 12)} Download
+      </a>
+    </div>`;
+}
+
+function formatMarkdown(text) {
+  let html = escapeHtml(text);
+  // Code blocks first (protect from other replacements)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  // Headings (must come before line-break replacement)
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+  // Unordered lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Inline formatting
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Markdown tables — must come before \n → <br>
+  html = html.replace(/((?:^\|.+\|$\n?){2,})/gm, function (tableBlock) {
+    const rows = tableBlock.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return tableBlock;
+    // Check for separator row (---|---|---)
+    const sepIdx = rows.findIndex(r => /^\|[\s\-:|]+\|$/.test(r));
+    if (sepIdx < 0) return tableBlock;
+
+    const cleanCell = (c) => c.trim()
+      .replace(/&lt;br\s*\/?&gt;/gi, '<br>')
+      .replace(/\\n/g, '<br>');
+    const parseRow = (row) => row.replace(/^\||\|$/g, '').split('|').map(cleanCell);
+    const headerRows = rows.slice(0, sepIdx);
+    const bodyRows = rows.slice(sepIdx + 1);
+
+    let tableHtml = '<div class="md-table-wrap"><table class="md-table">';
+    if (headerRows.length > 0) {
+      tableHtml += '<thead>';
+      for (const hr of headerRows) {
+        tableHtml += '<tr>' + parseRow(hr).map(c => `<th>${c}</th>`).join('') + '</tr>';
+      }
+      tableHtml += '</thead>';
+    }
+    if (bodyRows.length > 0) {
+      tableHtml += '<tbody>';
+      for (const br of bodyRows) {
+        tableHtml += '<tr>' + parseRow(br).map(c => `<td>${c}</td>`).join('') + '</tr>';
+      }
+      tableHtml += '</tbody>';
+    }
+    tableHtml += '</table></div>';
+    return tableHtml;
+  });
+  html = html.replace(/\n/g, '<br>');
+  // Collapse 3+ consecutive <br> into max 2 (paragraph gap)
+  html = html.replace(/(<br>){3,}/gi, '<br><br>');
+  // Remove <br> immediately after block elements
+  html = html.replace(/(<\/(h[1-4]|pre|li|hr|div|table)>)(\s*<br>)+/gi, '$1');
+  // Remove <br> immediately before block elements
+  html = html.replace(/(<br>)+(\s*<(h[1-4]|pre|li|hr|div|table))/gi, '$2');
+  return html;
+}
+
+// Targeted update for chat messages only (avoids full re-render flicker)
+function updateChatMessages() {
+  const messagesInner = document.querySelector('.chat-messages-inner');
+  if (!messagesInner) {
+    // Fall back to full render if element not found
+    render();
+    return;
+  }
+
+  // Build the messages HTML
+  let messagesHtml = '';
+  if (state.messages.length === 0) {
+    messagesHtml = `
+      <div class="empty-state">
+        <div class="empty-state-icon" style="font-size: 64px;">🐋</div>
+        <div class="empty-state-title">How can I help you today?</div>
+        <p>I can help you manage your channels, write code, or just chat.</p>
+      </div>
+    `;
+  } else {
+    messagesHtml = state.messages.map(renderMessage).join('');
+  }
+
+  // Add thinking indicator if sending
+  if (state.isSending) {
+    messagesHtml += `
+      <div class="message assistant thinking-message" id="thinking-indicator">
+        <div class="message-avatar" style="font-size: 18px;">🐋</div>
+        <div class="message-body">
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  messagesInner.innerHTML = messagesHtml;
+
+  // Update send button to show stop or send icon
+  const sendBtn = document.getElementById('send-btn');
+  if (sendBtn) {
+    if (state.isSending) {
+      sendBtn.className = 'send-btn stop-mode';
+      sendBtn.title = 'Stop generating';
+      sendBtn.onclick = () => stopChat();
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = icon('square', 16);
+    } else {
+      sendBtn.className = 'send-btn';
+      sendBtn.title = 'Send message';
+      sendBtn.onclick = () => {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+          sendMessage(chatInput.value);
+          chatInput.value = '';
+          chatInput.style.height = 'auto';
+        }
+      };
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = icon('arrowUp', 20);
+    }
+  }
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    const container = document.querySelector('.chat-messages');
+    if (container) container.scrollTop = container.scrollHeight;
+  }, 100);
+}
+
+// Clear chat history
+async function clearChat() {
+  const confirmed = await showConfirm('Clear all messages in this conversation?', 'Clear Chat');
+  if (!confirmed) return;
+
+  try {
+    await api('/chat/history', { method: 'DELETE' });
+    state.messages = [];
+    state.liveAgentRuns = {};
+    state.expandedAgentRuns = {};
+    render();
+    await showAlert('Conversation cleared!', 'Success');
+  } catch (e) {
+    await showAlert(`Failed to clear chat: ${e.message}`, 'Error');
+  }
+}
+
+// Setup Wizard Functions
+async function loadPrerequisites() {
+  try {
+    const data = await api('/setup/prerequisites');
+    state.prerequisites = data;
+  } catch (e) { console.error(e); }
+}
+
+async function installPrerequisite(name) {
+  const descriptions = {
+    python: 'Python 3 - for code execution tool',
+    homebrew: 'Homebrew - macOS package manager',
+    ffmpeg: 'FFmpeg - for audio/video processing and screen recording',
+    imagesnap: 'ImageSnap - for camera capture on macOS',
+    docker: 'Docker - for container management tool',
+    git: 'Git - for version control and git tool',
+    pnpm: 'pnpm - recommended Node.js package manager',
+    ssh: 'SSH - for remote server connections',
+    playwright: 'Playwright - browser automation (installs via npm)',
+  };
+
+  const confirmed = await showConfirm(
+    `This will run: brew install ${name}\n\nClick Confirm to proceed with installation.`,
+    `Install ${descriptions[name] || name}?`
+  );
+
+  if (!confirmed) return;
+
+  // Show installing state
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Installing...';
+  }
+
+  try {
+    await api(`/setup/install/${name}`, { method: 'POST' });
+    await loadPrerequisites();
+    render();
+    await showAlert(`${name} installed successfully!`, '✅ Success');
+  } catch (e) {
+    await showAlert(`Failed to install ${name}: ${e.message}\n\nYou can install manually: brew install ${name}`, '❌ Error');
+  }
+}
+
+async function saveSetupStep(step, data) {
+  try {
+    await api(`/setup/step/${step}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    state.setupStep = step + 1;
+    if (step >= 5) {
+      state.setupComplete = true;
+      state.view = 'chat';
+      await loadData();
+    }
+    render();
+  } catch (e) {
+    await showAlert(`Failed to save: ${e.message}`, '❌ Error');
+  }
+}
+
+// Channel Functions
+async function toggleChannel(type, enabled) {
+  try {
+    await api(`/channels/${type}/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ enabled })
+    });
+    await loadChannels();
+    render();
+  } catch (e) {
+    await showAlert(`Failed to toggle channel: ${e.message}`, '❌ Error');
+  }
+}
+
+async function connectWhatsApp() {
+  try {
+    const data = await api('/channels/whatsapp/connect', { method: 'POST' });
+    state.whatsappQR = data.qr;
+    render();
+    // Poll for connection
+    const checkConnection = setInterval(async () => {
+      const status = await api('/channels/whatsapp/status');
+      if (status.connected) {
+        clearInterval(checkConnection);
+        state.whatsappQR = null;
+        await loadChannels();
+        render();
+      }
+    }, 2000);
+  } catch (e) {
+    await showAlert(`Failed to connect: ${e.message}`, '❌ Error');
+  }
+}
+
+async function connectTelegram() {
+  const token = await showPrompt(
+    'Enter your Telegram Bot Token (from @BotFather):',
+    '',
+    '🤖 Telegram Setup'
+  );
+
+  if (!token) return;
+
+  try {
+    const result = await api('/channels/telegram/connect', {
+      method: 'POST',
+      body: JSON.stringify({ telegramBotToken: token })
+    });
+
+    if (result.ok) {
+      await showAlert(`Telegram bot @${result.botUsername} connected!`, '✅ Success');
+      await loadChannels();
+      render();
+    } else {
+      await showAlert(`Failed: ${result.error}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed to connect: ${e.message}`, '❌ Error');
+  }
+}
+
+async function connectDiscord() {
+  const token = await showPrompt(
+    'Enter your Discord Bot Token:',
+    '',
+    '🎮 Discord Setup'
+  );
+
+  if (!token) return;
+
+  try {
+    const result = await api('/channels/discord/connect', {
+      method: 'POST',
+      body: JSON.stringify({ discordBotToken: token })
+    });
+
+    if (result.ok) {
+      await showAlert(`Discord bot ${result.botUsername} connected!`, '✅ Success');
+      await loadChannels();
+      render();
+    } else {
+      await showAlert(`Failed: ${result.error}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed to connect: ${e.message}`, '❌ Error');
+  }
+}
+
+async function checkBirdCLI() {
+  try {
+    const result = await api('/skills/twitter/check-bird');
+
+    if (result.ok && result.installed) {
+      if (result.authenticated) {
+        await showAlert(`✅ bird CLI is installed and authenticated as @${result.username}!\n\nYou can now enable Twitter/X and start using it.`, '🐦 Twitter/X Ready');
+      } else {
+        await showAlert(`⚠️ bird CLI is installed but not authenticated.\n\nRun this command in terminal:\n\n  bird check\n\nThen authenticate with your Twitter/X cookies.`, '🔑 Authentication Required');
+      }
+    } else if (result.ok && !result.installed) {
+      await showAlert(`❌ bird CLI is not installed.\n\nInstall it with:\n\n  npm install -g @steipete/bird\n\nThen run 'bird check' to authenticate.`, '📦 Installation Required');
+    } else {
+      await showAlert(`Error: ${result.error || 'Unknown error'}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed to check bird CLI: ${e.message}`, '❌ Error');
+  }
+}
+
+async function loadBirdConfig() {
+  try {
+    const result = await api('/skills/twitter/bird-config');
+
+    if (result.ok && result.config) {
+      const authInput = document.getElementById('skill-twitter-auth-token');
+      const ct0Input = document.getElementById('skill-twitter-ct0');
+
+      if (authInput && result.config.auth_token) {
+        authInput.value = result.config.auth_token;
+      }
+      if (ct0Input && result.config.ct0) {
+        ct0Input.value = result.config.ct0;
+      }
+
+      if (result.config.auth_token && result.config.ct0) {
+        await showAlert(`Loaded existing Twitter cookies!\n\n@${result.username || 'Unknown user'}`, '✅ Config Loaded');
+      } else {
+        await showAlert('No existing Twitter cookies found.\n\nFollow the instructions to get them from your browser.', 'ℹ️ No Config');
+      }
+    } else {
+      await showAlert('No bird config found. Enter your cookies manually.', 'ℹ️ No Config');
+    }
+  } catch (e) {
+    await showAlert(`Failed to load config: ${e.message}`, '❌ Error');
+  }
+}
+
+async function saveTwitterCookies() {
+  const authToken = document.getElementById('skill-twitter-auth-token')?.value?.trim();
+  const ct0 = document.getElementById('skill-twitter-ct0')?.value?.trim();
+
+  if (!authToken || !ct0) {
+    await showAlert('Please enter both auth_token and ct0 values.', '⚠️ Missing Fields');
+    return;
+  }
+
+  // Validate lengths
+  if (authToken.length < 30) {
+    await showAlert('auth_token seems too short. It should be ~40 characters.', '⚠️ Invalid');
+    return;
+  }
+  if (ct0.length < 50) {
+    await showAlert('ct0 seems too short. It should be ~160 characters.', '⚠️ Invalid');
+    return;
+  }
+
+  try {
+    const result = await api('/skills/twitter/bird-config', {
+      method: 'POST',
+      body: JSON.stringify({ auth_token: authToken, ct0 })
+    });
+
+    if (result.ok) {
+      await showAlert(`Twitter cookies saved!\n\n${result.username ? `Authenticated as @${result.username}` : 'Saved to ~/.config/bird/config.json5'}`, '✅ Success');
+      // Enable the Twitter skill
+      await saveSkillConfig('twitter', { enabled: true });
+    } else {
+      await showAlert(`Failed: ${result.error}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed to save cookies: ${e.message}`, '❌ Error');
+  }
+}
+
+// Provider/Skill Config Functions
+async function saveProviderConfig(id, config) {
+  try {
+    await api(`/providers/${id}/config`, {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+    await loadProviders();
+    render();
+  } catch (e) {
+    await showAlert(`Failed to save: ${e.message}`, '❌ Error');
+  }
+}
+
+async function saveSkillConfig(id, config) {
+  try {
+    await api(`/skills/${id}/config`, {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+    await loadSkills();
+    render();
+  } catch (e) {
+    await showAlert(`Failed to save: ${e.message}`, '❌ Error');
+  }
+}
+
+// Render Functions
+function render() {
+  const root = document.getElementById('root');
+
+  // Check authentication first
+  if (!state.isAuthenticated) {
+    root.innerHTML = renderLoginPage();
+    bindLoginEvents();
+    return;
+  }
+
+  if (state.view === 'setup') {
+    root.innerHTML = renderSetupWizard();
+    bindSetupEvents();
+  } else {
+    root.innerHTML = renderApp();
+    bindEvents();
+  }
+}
+
+function renderLoginPage() {
+  return `
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-header">
+          <div class="login-logo">🐋</div>
+          <h1>OpenWhale</h1>
+          <p>Sign in to your dashboard</p>
+        </div>
+        <form id="login-form">
+          <div class="login-field">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" placeholder="Enter username" required autofocus>
+          </div>
+          <div class="login-field">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Enter password" required>
+          </div>
+          <div id="login-error" class="login-error"></div>
+          <button type="submit" class="login-btn">
+            <span>Sign In</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+        <div class="login-footer">
+          <span>Default credentials:</span>
+          <code>admin / admin</code>
+        </div>
+      </div>
+      <div class="login-version">OpenWhale v0.1.0</div>
+    </div>
+    <style>
+      .login-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0a0a12 0%, #12121a 50%, #0d0d15 100%);
+        padding: 20px;
+        position: relative;
+      }
+      .login-container::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(88, 101, 242, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+      }
+      .login-box {
+        position: relative;
+        background: linear-gradient(145deg, rgba(30, 30, 45, 0.9), rgba(20, 20, 32, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 48px 40px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 
+          0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+      }
+      .login-box::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: 21px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(88, 101, 242, 0.5), rgba(255, 255, 255, 0.1), rgba(88, 101, 242, 0.3));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+      .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .login-logo {
+        font-size: 56px;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 4px 12px rgba(88, 101, 242, 0.3));
+      }
+      .login-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        background: linear-gradient(135deg, #fff, #a0a0b0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .login-header p {
+        color: #6b6b80;
+        margin: 0;
+        font-size: 15px;
+      }
+      #login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .login-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .login-field label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #9090a0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .login-field input {
+        width: 100%;
+        padding: 14px 16px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+      .login-field input::placeholder {
+        color: #4a4a5a;
+      }
+      .login-field input:focus {
+        outline: none;
+        border-color: rgba(88, 101, 242, 0.6);
+        box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.15);
+        background: rgba(0, 0, 0, 0.4);
+      }
+      .login-error {
+        display: none;
+        padding: 12px 16px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 10px;
+        color: #ef4444;
+        font-size: 14px;
+        text-align: center;
+      }
+      .login-error.show {
+        display: block;
+      }
+      .login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 16px 24px;
+        margin-top: 8px;
+        background: linear-gradient(135deg, #5865f2, #4752c4);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+      }
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(88, 101, 242, 0.4);
+        background: linear-gradient(135deg, #6875f5, #5865f2);
+      }
+      .login-btn:active {
+        transform: translateY(0);
+      }
+      .login-footer {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        text-align: center;
+        font-size: 13px;
+        color: #5a5a6a;
+      }
+      .login-footer code {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 4px 10px;
+        background: rgba(88, 101, 242, 0.15);
+        border-radius: 6px;
+        color: #8890f2;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .login-version {
+        margin-top: 24px;
+        font-size: 12px;
+        color: #3a3a4a;
+      }
+    </style>
+  `;
+}
+
+function bindLoginEvents() {
+  const form = document.getElementById('login-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      const errorDiv = document.getElementById('login-error');
+
+      // Hide any previous error
+      errorDiv.classList.remove('show');
+
+      const result = await login(username, password);
+      if (result.ok) {
+        await checkSetupStatus();
+        await loadData();
+        render();
+      } else {
+        errorDiv.textContent = result.error || 'Invalid username or password';
+        errorDiv.classList.add('show');
+      }
+    });
+  }
+}
+
+function renderApp() {
+  return `
+    <div class="app-container">
+      ${renderSidebar()}
+      <main class="main-content">
+        ${renderHeader()}
+        <div class="content-area">
+          ${renderContent()}
+        </div>
+      </main>
+    </div>
+  `;
+}
+
+function renderSidebar() {
+  const navItems = [
+    { id: 'chat', iconName: 'messageSquare', label: 'Chat' },
+    { id: 'overview', iconName: 'layoutDashboard', label: 'Overview' },
+    { id: 'channels', iconName: 'radio', label: 'Channels' },
+    { id: 'providers', iconName: 'bot', label: 'Providers' },
+    { id: 'skills', iconName: 'sparkles', label: 'Skills' },
+    { id: 'agents', iconName: 'users', label: 'Agents' },
+    { id: 'tools', iconName: 'zap', label: 'Tools' },
+    { id: 'extensions', iconName: 'puzzle', label: 'Extensions' },
+    { id: 'logs', iconName: 'fileText', label: 'Logs' },
+    { id: 'settings', iconName: 'settings', label: 'Settings' },
+  ];
+
+  return `
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo" style="font-size: 28px;">🐋</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          ${navItems.map(item => `
+            <a href="#${item.id}" class="nav-item ${state.view === item.id ? 'active' : ''}" title="${item.label}">
+              <span class="nav-icon">${icon(item.iconName)}</span>
+            </a>
+          `).join('')}
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="nav-item" onclick="logout()" title="Logout (${state.user?.username || 'User'})">
+          <span class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+          </span>
+        </button>
+      </div>
+    </aside>
+  `;
+}
+
+function renderHeader() {
+  const titles = {
+    chat: 'AI Assistant',
+    overview: 'Dashboard',
+    channels: 'Channels',
+    providers: 'AI Providers',
+    skills: 'Skills',
+    tools: 'Tools',
+    settings: 'Settings'
+  };
+
+  const enabledProviders = state.providers.filter(p => p.enabled);
+
+  // Only show header for chat view
+  if (state.view !== 'chat') {
+    return '';
+  }
+  return `
+    <header class="header">
+      <div></div>
+      <button class="btn btn-ghost" onclick="clearChat()" title="Clear conversation">
+        ${icon('trash', 16)}
+        <span style="margin-left: 4px;">Clear Chat</span>
+      </button>
+    </header>
+  `;
+}
+
+function renderContent() {
+  switch (state.view) {
+    case 'chat': return renderChat();
+    case 'overview': return renderOverview();
+    case 'channels': return renderChannels();
+    case 'providers': return renderProviders();
+    case 'skills': return renderSkills();
+    case 'agents': return renderAgents();
+    case 'tools': return renderTools();
+    case 'extensions': return renderExtensions();
+    case 'logs': return renderLogs();
+    case 'settings': return renderSettings();
+    default: return renderChat();
+  }
+}
+
+function renderChat() {
+  return `
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-messages-inner">
+          ${state.messages.length === 0 ? `
+            <div class="empty-state">
+              <div class="empty-state-icon" style="font-size: 64px;">🐋</div>
+              <div class="empty-state-title">How can I help you today?</div>
+              <p>I can help you manage your channels, write code, or just chat.</p>
+            </div>
+          ` : state.messages.map(renderMessage).join('')}
+          ${state.isSending ? `
+            <div class="message assistant thinking-message">
+              <div class="message-avatar" style="font-size: 18px;">🐋</div>
+              <div class="message-body">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+      <div class="chat-input-container">
+        <div class="chat-input-wrapper ${state.voiceMode ? 'voice-active' : ''}">
+          <div class="agent-selector-area">
+            <button class="agent-pill" id="agent-pill" onclick="toggleAgentDropdown(event)">
+              <span class="agent-pill-icon">${icon('bot', 14)}</span>
+              <span class="agent-pill-name" id="agent-pill-name">${state.selectedAgent ? ((state.agents || []).find(a => a.id === state.selectedAgent)?.name || 'OpenWhale') : 'OpenWhale'}</span>
+              <span class="agent-pill-chevron">▾</span>
+            </button>
+            <div class="agent-dropdown" id="agent-dropdown">
+              <div class="agent-dropdown-header">Select Agent</div>
+              <div class="agent-dropdown-item ${!state.selectedAgent || state.selectedAgent === 'main' ? 'active' : ''}" onclick="selectAgent('main', 'OpenWhale')">
+                <span class="agent-dot"></span>
+                <span>OpenWhale</span>
+                <span class="agent-badge">default</span>
+              </div>
+              ${(state.agents || []).filter(a => a.id !== 'main').map(a => `
+                <div class="agent-dropdown-item ${state.selectedAgent === a.id ? 'active' : ''}" onclick="selectAgent('${a.id}', '${a.name.replace(/'/g, "\\'")}')">
+                  <span class="agent-dot"></span>
+                  <span>${a.name}</span>
+                </div>
+              `).join('')}
+              <div class="agent-dropdown-divider"></div>
+              <div class="agent-dropdown-item fanout-item" onclick="selectFanOut()">
+                <span class="fanout-icon">${icon('gitFork', 14)}</span>
+                <span>Fan-Out (Multi-Agent)</span>
+              </div>
+            </div>
+          </div>
+          <textarea 
+            class="chat-input" 
+            id="chat-input"
+            placeholder="${state.isListening ? '🎙️ Listening...' : state.isSpeaking ? '🔊 Speaking...' : 'Type your message...'}" 
+            rows="1"
+            onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+          ></textarea>
+          <div class="chat-input-actions">
+            <button class="voice-btn ${state.voiceMode ? 'active' : ''} ${state.isListening ? 'listening' : ''} ${state.isSpeaking ? 'speaking' : ''}" 
+              id="voice-btn" 
+              onclick="toggleVoiceMode()" 
+              title="${state.voiceMode ? 'Stop voice mode' : 'Talk to OpenWhale'}">
+              ${state.voiceMode ? icon('mic', 18) : icon('mic', 18)}
+            </button>
+            <button class="send-btn ${state.isSending ? 'stop-mode' : ''}" id="send-btn" 
+              onclick="${state.isSending ? 'stopChat()' : 'sendMessage()'}" 
+              title="${state.isSending ? 'Stop generating' : 'Send message'}">
+              ${state.isSending ? icon('square', 16) : icon('arrowUp', 20)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMessage(msg) {
+  const roleClass = msg.role === 'user' ? 'user' : msg.role === 'system' ? 'system' : 'assistant';
+  const isUser = msg.role === 'user';
+  const isSystem = msg.role === 'system';
+
+  // Format time
+  const date = msg.createdAt ? new Date(msg.createdAt) : new Date();
+  const timeStr = date.toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  let content = formatMarkdown(msg.content);
+
+  let toolCallsHtml = '';
+  if (msg.toolCalls && msg.toolCalls.length > 0) {
+    const toolChips = msg.toolCalls.map((tc, i) => {
+      // Check for image in result metadata (supports multiple formats)
+      let imageSrc = null;
+      const resultMeta = typeof tc.result === 'object' ? tc.result?.metadata : null;
+      const tcMeta = tc.metadata;
+
+      // Check for direct image data URL
+      if (tcMeta?.image) {
+        imageSrc = tcMeta.image;
+      } else if (resultMeta?.image) {
+        imageSrc = resultMeta.image;
+      }
+      // Check for base64 (screenshot tool format)
+      else if (tcMeta?.base64) {
+        const mimeType = tcMeta.mimeType || 'image/png';
+        imageSrc = `data:${mimeType};base64,${tcMeta.base64}`;
+      } else if (resultMeta?.base64) {
+        const mimeType = resultMeta.mimeType || 'image/png';
+        imageSrc = `data:${mimeType};base64,${resultMeta.base64}`;
+      }
+
+      // Check for created file path in metadata
+      let fileChipHtml = '';
+      const filePath = tcMeta?.path || resultMeta?.path;
+      if (filePath && tc.status === 'completed') {
+        const fileName = filePath.split('/').pop() || filePath;
+        const ext = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+        const fileIcon = ext === 'pdf' ? icon('fileText', 16) : icon('file', 16);
+        const downloadUrl = `${API_BASE}/files/download?path=${encodeURIComponent(filePath)}`;
+        fileChipHtml = `
+          <div class="tool-file-chip">
+            <span class="file-icon">${fileIcon}</span>
+            <span class="file-name" title="${escapeHtml(filePath)}">${escapeHtml(fileName)}</span>
+            <a href="${downloadUrl}" class="file-download-btn" target="_blank" download="${escapeHtml(fileName)}">
+              ${icon('download', 12)} Download
+            </a>
+          </div>
+        `;
+      }
+
+      const statusIcon = tc.status === 'completed'
+        ? `<span class="tc-status-icon done">${icon('check', 12)}</span>`
+        : tc.status === 'error'
+          ? `<span class="tc-status-icon error">${icon('x', 12)}</span>`
+          : `<span class="tc-status-icon running">${icon('loader', 12)}</span>`;
+
+      const toolLabel = getToolLabel(tc.name, tc.arguments);
+
+      return `
+      <div class="tool-call-chip" onclick="toggleToolCall('${msg.id}', ${i})">
+        <div class="tool-call-chip-header">
+          ${statusIcon}
+          <span class="tool-call-chip-name">${escapeHtml(toolLabel)}</span>
+          <span class="tool-call-chip-chevron">${icon('chevronDown', 10)}</span>
+        </div>
+        <div class="tool-call-chip-body" id="tool-${msg.id}-${i}">
+          <div class="tool-call-args">${JSON.stringify(tc.arguments, null, 2)}</div>
+          ${tc.result ? `
+            ${imageSrc ? `
+              <div class="tool-call-result-image">
+                <img src="${imageSrc}" alt="Tool Result" style="max-width: 100%; border-radius: 6px; margin-top: 6px;">
+              </div>
+            ` : ''}
+            ${tcMeta?.audio ? `
+              <div class="tool-call-audio" style="margin: 8px 0;">
+                <audio controls style="width: 100%; height: 36px; border-radius: 8px;">
+                  <source src="${tcMeta.audio}" type="audio/mpeg">
+                </audio>
+              </div>
+            ` : ''}
+            <div class="tool-call-result">${typeof tc.result === 'string' ? escapeHtml(tc.result).substring(0, 500) : JSON.stringify(tc.result, null, 2).substring(0, 500)}</div>
+            ${fileChipHtml}
+          ` : ''}
+        </div>
+      </div>
+    `}).join('');
+
+    // Group tool calls if more than one
+    if (msg.toolCalls.length > 1) {
+      const completed = msg.toolCalls.filter(tc => tc.status === 'completed').length;
+      const errored = msg.toolCalls.filter(tc => tc.status === 'error').length;
+      const total = msg.toolCalls.length;
+      const summaryParts = [];
+      if (completed) summaryParts.push(`${completed} completed`);
+      if (errored) summaryParts.push(`${errored} failed`);
+      const summaryText = summaryParts.join(', ') || `${total} tools`;
+
+      toolCallsHtml = `
+        <div class="tool-call-group">
+          <details class="tool-call-group-details">
+            <summary class="tool-call-group-summary">
+              ${icon('wrench', 12)}
+              <span>${total} tool calls</span>
+              <span class="tool-call-group-meta">${summaryText}</span>
+            </summary>
+            <div class="tool-call-group-list">
+              ${toolChips}
+            </div>
+          </details>
+        </div>
+      `;
+    } else {
+      toolCallsHtml = `<div class="tool-call-group-single">${toolChips}</div>`;
+    }
+  }
+
+  // Icons
+  let avatarIcon = '<span style="font-size: 20px;">🐋</span>'; // OpenWhale Icon
+  if (isSystem) avatarIcon = icon('alertCircle', 18);
+
+  return `
+    <div class="message ${roleClass}">
+      ${isUser ? '' : `<div class="message-avatar">
+        ${avatarIcon}
+      </div>`}
+      <div class="message-body">
+        <div class="message-header">
+          <span class="message-author">${isUser ? '' : isSystem ? 'System' : 'OpenWhale'}</span>
+          <span class="message-time">${timeStr}</span>
+        </div>
+        <div class="message-content">${content}</div>
+        ${toolCallsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderOverview() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
+
+  const connectedChannels = state.channels.filter(c => c.connected).length;
+  const totalChannels = state.channels.length;
+  const healthPercent = totalChannels > 0 ? Math.round((connectedChannels / totalChannels) * 100) : 0;
+  const strokeOffset = 339.292 - (339.292 * healthPercent / 100);
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Overview of your OpenWhale instance</p>
+      </div>
+      <div class="header-actions">
+        <div class="status-indicator">
+          <span class="status-dot online"></span>
+          <span>System Online</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bento-grid">
+      <!-- Welcome Widget -->
+      <div class="bento-item bento-md bento-short widget-welcome">
+        <div class="welcome-greeting">${greeting}</div>
+        <div class="welcome-title">🐋 OpenWhale</div>
+        <div class="welcome-time">${timeStr}</div>
+        <div class="welcome-date">${dateStr}</div>
+      </div>
+
+      <!-- Active Sessions -->
+      <div class="bento-item bento-sm bento-short widget-stat">
+        <div class="stat-header">
+          <div class="stat-icon green">${icon('activity')}</div>
+        </div>
+        <div class="stat-value">${state.stats.sessions || 0}</div>
+        <div class="stat-label">Active Sessions</div>
+      </div>
+
+      <!-- Messages Stat -->
+      <div class="bento-item bento-sm bento-short widget-stat">
+        <div class="stat-header">
+          <div class="stat-icon blue">${icon('messageCircle')}</div>
+          <span class="stat-trend up">+12%</span>
+        </div>
+        <div class="stat-value">${formatNumber(state.stats.messages || 0)}</div>
+        <div class="stat-label">Total Messages</div>
+      </div>
+
+
+      <!-- Providers Stat -->
+      <div class="bento-item bento-sm bento-short widget-stat">
+        <div class="stat-header">
+          <div class="stat-icon green">${icon('bot')}</div>
+        </div>
+        <div class="stat-value">${state.providers.filter(p => p.enabled).length}</div>
+        <div class="stat-label">Active Providers</div>
+      </div>
+
+      <!-- Channels List -->
+      <div class="bento-item bento-md bento-tall widget-channels">
+        <div class="channels-header">
+          <h3 class="channels-title">Channels</h3>
+          <a href="#channels" class="btn btn-ghost">View All</a>
+        </div>
+        <div class="channel-list">
+          ${state.channels.map(ch => `
+            <div class="channel-row">
+              <div class="channel-icon">${getChannelIcon(ch.type)}</div>
+              <div class="channel-info">
+                <div class="channel-name">${ch.name}</div>
+                <div class="channel-desc">${ch.type === 'whatsapp' ? 'WhatsApp Messaging' : ch.type === 'telegram' ? 'Telegram Bot' : 'Web Interface'}</div>
+              </div>
+              <div class="channel-status">
+                <span class="status-dot ${ch.connected ? 'online' : 'offline'}"></span>
+                ${ch.connected ? 'Online' : 'Offline'}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Tools Count -->
+      <div class="bento-item bento-sm bento-short widget-stat">
+        <div class="stat-header">
+          <div class="stat-icon orange">${icon('tool')}</div>
+        </div>
+        <div class="stat-value">${state.tools?.length || 0}</div>
+        <div class="stat-label">Available Tools</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderChannels() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Channels</h1>
+        <p class="page-subtitle">Manage your messaging channels and connections</p>
+      </div>
+    </div>
+    <div class="channel-grid">
+      ${state.channels.map(ch => `
+        <div class="channel-card">
+          <div class="channel-header">
+            <span class="channel-icon">${getChannelIcon(ch.type)}</span>
+            <div style="flex: 1">
+              <div class="channel-name">${ch.name}</div>
+              <div class="channel-status ${ch.connected ? 'connected' : 'disconnected'}">
+                ${ch.connected ? 'Connected' : 'Disconnected'}
+              </div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" ${ch.enabled ? 'checked' : ''} 
+                     onchange="toggleChannel('${ch.type}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          ${ch.type === 'whatsapp' && !ch.connected && ch.enabled ? `
+            <button class="btn btn-primary" onclick="connectWhatsApp()" style="margin-top: 16px">
+              📲 Connect WhatsApp
+            </button>
+            ${state.whatsappQR ? `
+              <div class="qr-container">
+                <div class="qr-code">
+                  <img src="${state.whatsappQR}" alt="Scan QR Code" width="200">
+                </div>
+                <p>Scan with WhatsApp to connect</p>
+              </div>
+            ` : ''}
+          ` : ''}
+          
+          ${ch.type === 'telegram' && !ch.connected && ch.enabled ? `
+            <button class="btn btn-primary" onclick="connectTelegram()" style="margin-top: 16px; width: 100%">
+              🤖 Connect Telegram Bot
+            </button>
+          ` : ''}
+          
+          ${ch.type === 'discord' && !ch.connected && ch.enabled ? `
+            <button class="btn btn-primary" onclick="connectDiscord()" style="margin-top: 16px; width: 100%">
+              🎮 Connect Discord Bot
+            </button>
+          ` : ''}
+          
+          ${ch.type === 'imessage' ? `
+            ${!ch.available ? `
+              <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 8px;">🚫</div>
+                <div style="color: var(--text-muted); font-size: 13px;">iMessage is only available on macOS</div>
+              </div>
+            ` : !ch.connected ? `
+              <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-secondary" onclick="installImsg()" style="width: 100%" id="btn-install-imsg">
+                  ⬇️ Install imsg CLI
+                </button>
+                <button class="btn btn-primary" onclick="connectIMessage()" style="width: 100%" id="btn-connect-imsg">
+                  📱 Connect iMessage
+                </button>
+              </div>
+              <div id="imessage-status" style="margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;"></div>
+            ` : ''}
+          ` : ''}
+          
+          <div class="channel-stats">
+            <div class="channel-stat">
+              <div class="channel-stat-value">${ch.messagesSent || 0}</div>
+              <div class="channel-stat-label">Sent</div>
+            </div>
+            <div class="channel-stat">
+              <div class="channel-stat-value">${ch.messagesReceived || 0}</div>
+              <div class="channel-stat-label">Received</div>
+            </div>
+          </div>
+          
+          ${ch.connected ? `
+            <button class="btn btn-secondary" style="margin-top: 16px; width: 100%"
+                    onclick="viewChannelMessages('${ch.type}')">
+              View Messages
+            </button>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderProviders() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">AI Providers</h1>
+        <p class="page-subtitle">Configure models and API keys</p>
+      </div>
+    </div>
+    
+    <div class="bento-grid">
+      ${state.providers.map(p => `
+        <div class="bento-item bento-md" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="stat-icon ${p.enabled ? 'blue' : 'gray'}">${getProviderIcon(p.type)}</span>
+              <div>
+                <h3 class="card-title">${p.name}</h3>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  ${p.models.length} Models
+                </div>
+              </div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" ${p.enabled ? 'checked' : ''} 
+                     onchange="toggleProvider('${p.type}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <input type="password" class="form-input" 
+                   placeholder="${p.enabled ? '••••••••' : 'Enter API Key'}"
+                   id="apikey-${p.type}"
+                   style="font-size: 13px; height: 36px;">
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <select class="form-input" id="model-${p.type}">
+              ${p.models.map(m => `
+                <option value="${m}" ${state.currentModel === m ? 'selected' : ''}>${m}</option>
+              `).join('')}
+            </select>
+          </div>
+          
+          <button class="btn btn-secondary" onclick="saveProvider('${p.type}')" style="width: 100%; justify-content: center;">
+            Save
+          </button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderSkills() {
+  const skillList = [
+    {
+      id: 'github',
+      name: 'GitHub',
+      iconName: 'github',
+      desc: 'Repositories, Issues, PRs',
+      placeholder: 'ghp_xxxx...',
+      helpUrl: 'https://github.com/settings/tokens',
+      helpText: 'Create a Personal Access Token at Settings → Developer settings → Personal access tokens → Generate new token. Select repo, issues, and workflow scopes.'
+    },
+    {
+      id: 'weather',
+      name: 'OpenWeatherMap',
+      iconName: 'cloud',
+      desc: 'Current Weather & Forecasts',
+      placeholder: 'API Key',
+      helpUrl: 'https://openweathermap.org/api',
+      helpText: 'Sign up free at openweathermap.org → API Keys tab → Generate key. Free tier includes 1000 calls/day.'
+    },
+    {
+      id: 'notion',
+      name: 'Notion',
+      iconName: 'file',
+      desc: 'Pages & Databases',
+      placeholder: 'secret_xxxx...',
+      helpUrl: 'https://www.notion.so/profile/integrations/form/new-integration',
+      helpText: 'Create an integration at notion.so/profile/integrations → New integration. Give it a name and select Read, Update, Insert capabilities.'
+    },
+    {
+      id: 'google',
+      name: 'Google Services',
+      iconName: 'mail',
+      desc: 'Calendar, Gmail, Drive',
+      placeholder: 'Google API credentials',
+      helpUrl: 'https://console.cloud.google.com/apis/credentials',
+      helpText: 'Create OAuth 2.0 credentials in Google Cloud Console. Enable Gmail, Calendar, and Drive APIs for your project.'
+    },
+    {
+      id: 'onepassword',
+      name: '1Password',
+      iconName: 'key',
+      desc: 'Secure Credential Access',
+      placeholder: 'op connect token...',
+      helpUrl: 'https://developer.1password.com/docs/connect',
+      helpText: '1Password Connect lets you access credentials securely. Set up a Connect server and generate an access token.'
+    },
+    {
+      id: 'twitter',
+      name: 'Twitter/X',
+      iconName: 'twitter',
+      desc: 'Post tweets, read timeline, mentions',
+      placeholder: '',
+      helpUrl: 'https://github.com/steipete/bird',
+      helpText: 'Uses bird CLI with cookie auth. Install: npm i -g @steipete/bird, then run "bird check" to authenticate.',
+      noCreds: true
+    },
+    {
+      id: 'elevenlabs',
+      name: 'ElevenLabs',
+      iconName: 'volume2',
+      desc: 'High-quality text-to-speech voices',
+      placeholder: 'sk_xxxx...',
+      helpUrl: 'https://elevenlabs.io/app/settings/api-keys',
+      helpText: 'Sign up at elevenlabs.io → Profile → API Keys → Create API Key. Free tier includes ~10,000 characters/month.'
+    },
+    {
+      id: 'twilio',
+      name: 'Twilio',
+      iconName: 'phone',
+      desc: 'SMS, WhatsApp & AI voice calls',
+      placeholder: '',
+      helpUrl: 'https://console.twilio.com',
+      helpText: 'Get your Account SID, Auth Token from twilio.com/console, and a phone number from Phone Numbers → Manage → Buy a number.',
+      multiField: true
+    }
+  ];
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Skills</h1>
+        <p class="page-subtitle">Connect external services to extend capabilities</p>
+      </div>
+    </div>
+
+    <div class="tabs" style="margin-bottom: 24px;">
+      <button class="tab-btn ${state.skillsTab === 'api' ? 'active' : ''}" onclick="switchSkillsTab('api')">
+        ${icon('key', 16)} API Skills
+      </button>
+      <button class="tab-btn ${state.skillsTab === 'markdown' ? 'active' : ''}" onclick="switchSkillsTab('markdown')">
+        ${icon('file', 16)} MD Skills <span class="badge">${state.mdSkills.length}</span>
+      </button>
+    </div>
+
+    ${state.skillsTab === 'api' ? `
+      <div class="skills-grid">
+        ${skillList.map(s => {
+    const skillData = state.skills.find(sk => sk.id === s.id);
+    const isEnabled = skillData?.enabled || false;
+    const hasKey = skillData?.hasKey || false;
+
+    return `
+            <div class="skill-card ${isEnabled ? 'enabled' : ''} ${hasKey ? 'configured' : ''}">
+              <div class="skill-header">
+                <div class="skill-icon-wrap">
+                  <span class="skill-icon">${icon(s.iconName, 24)}</span>
+                </div>
+                <div class="skill-info">
+                  <h3 class="skill-name">${s.name}</h3>
+                  <div class="skill-desc">${s.desc}</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" ${isEnabled ? 'checked' : ''}
+                         onchange="toggleSkill('${s.id}', this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              
+              <div class="skill-body">
+                <div class="skill-status">
+                  ${hasKey ? `
+                    <span class="status-badge success">✓ Configured</span>
+                  ` : `
+                    <span class="status-badge warning">Not configured</span>
+                  `}
+                </div>
+                
+                <div class="skill-help">
+                  <p>${s.helpText}</p>
+                  <a href="${s.helpUrl}" target="_blank" rel="noopener" class="skill-link">
+                    ${icon('externalLink', 14)} ${s.noCreds ? 'View Documentation' : 'Get API Key'}
+                  </a>
+                </div>
+                
+                ${s.noCreds ? `
+                  <div class="skill-help" style="margin-bottom: 16px;">
+                    <details style="cursor: pointer;">
+                      <summary style="font-weight: 500; color: var(--text-primary); margin-bottom: 8px;">
+                        📋 How to get Twitter cookies
+                      </summary>
+                      <ol style="margin: 12px 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+                        <li>Open <a href="https://x.com" target="_blank" style="color: var(--accent);">x.com</a> and log in</li>
+                        <li>Open DevTools (F12 or Cmd+Option+I)</li>
+                        <li>Go to <strong>Application</strong> → <strong>Cookies</strong> → <strong>https://x.com</strong></li>
+                        <li>Find <code>auth_token</code> and <code>ct0</code></li>
+                        <li>Copy their values and paste below</li>
+                      </ol>
+                    </details>
+                  </div>
+                  <div class="skill-form" style="flex-direction: column; gap: 8px;">
+                    <input type="password" class="form-input" 
+                           placeholder="auth_token (40 chars)"
+                           id="skill-twitter-auth-token"
+                           style="font-family: monospace; font-size: 12px;">
+                    <input type="password" class="form-input" 
+                           placeholder="ct0 (160 chars)"
+                           id="skill-twitter-ct0"
+                           style="font-family: monospace; font-size: 12px;">
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                      <button class="btn btn-secondary" onclick="loadBirdConfig()" style="flex: 1;">
+                        ${icon('refresh', 14)} Load Existing
+                      </button>
+                      <button class="btn btn-primary" onclick="saveTwitterCookies()" style="flex: 1;">
+                        ${icon('check', 14)} Save Cookies
+                      </button>
+                    </div>
+                  </div>
+                ` : s.multiField ? `
+                  <div class="skill-form" style="flex-direction: column; gap: 8px;">
+                    <input type="password" class="form-input" 
+                           placeholder="Account SID (AC...)"
+                           id="skill-twilio-sid"
+                           style="font-family: monospace; font-size: 12px;">
+                    <input type="password" class="form-input" 
+                           placeholder="Auth Token"
+                           id="skill-twilio-token"
+                           style="font-family: monospace; font-size: 12px;">
+                    <input type="text" class="form-input" 
+                           placeholder="Phone Number (+1...)"
+                           id="skill-twilio-phone"
+                           style="font-family: monospace; font-size: 12px;">
+                    <button class="btn btn-primary" onclick="saveTwilioConfig()" style="width: 100%; justify-content: center;">
+                      ${icon('check', 14)} ${hasKey ? 'Update' : 'Connect'}
+                    </button>
+                  </div>
+                ` : `
+                  <div class="skill-form">
+                    <input type="password" class="form-input" 
+                           placeholder="${s.placeholder}"
+                           id="skill-${s.id}">
+                    <button class="btn btn-primary" onclick="saveSkill('${s.id}')">
+                      ${hasKey ? 'Update' : 'Connect'}
+                    </button>
+                  </div>
+                `}
+              </div>
+            </div>
+          `;
+  }).join('')}
+      </div>
+    ` : `
+      <!-- Search and Create Header -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px; position: relative;">
+          <input type="text" 
+                 id="md-skills-search"
+                 placeholder="Search skills..." 
+                 value="${state.mdSkillsSearch}"
+                 oninput="handleMdSkillsSearch(this)"
+                 style="width: 100%; padding: 10px 12px 10px 36px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-elevated); color: var(--text-primary); font-size: 14px;"
+          />
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary);">
+            ${icon('search', 16)}
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="color: var(--text-secondary); font-size: 13px;">${state.mdSkills.length} skills</span>
+          <button class="btn btn-primary" onclick="showCreateSkillModal()">
+            ${icon('plus', 16)} Create Skill
+          </button>
+        </div>
+      </div>
+      
+      ${state.mdSkillsLoading ? `
+        <div style="display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-secondary);">
+          <div class="spinner" style="margin-right: 12px;"></div>
+          Loading skills...
+        </div>
+      ` : `
+        ${renderMdSkillsGrid()}
+      `}
+      
+      ${state.showCreateSkillModal ? `
+        <div class="skill-editor-overlay" onclick="event.target === this && closeCreateSkillModal()">
+          <div class="create-skill-modal">
+            <div class="skill-editor-header">
+              <h3 style="margin: 0;">${icon('plus', 18)} Create New Skill</h3>
+              <button class="btn btn-ghost" onclick="closeCreateSkillModal()">
+                ${icon('x', 16)}
+              </button>
+            </div>
+            <div style="padding: 24px;">
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">Skill Name *</label>
+                <input type="text" id="new-skill-name" placeholder="e.g., My Custom Tool" 
+                       style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-base); color: var(--text-primary);"/>
+              </div>
+              <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">Description</label>
+                <textarea id="new-skill-desc" placeholder="What does this skill do?" rows="3"
+                          style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-base); color: var(--text-primary); resize: vertical;"></textarea>
+              </div>
+              <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-ghost" onclick="closeCreateSkillModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createNewSkill()">
+                  ${icon('check', 14)} Create Skill
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+      
+      ${state.editingSkillPath ? `
+        <div class="skill-editor-overlay" onclick="event.target === this && closeMdSkillEditor()">
+          <div class="skill-editor-modal">
+            <div class="skill-editor-header">
+              <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                ${icon('file', 18)} ${state.editingSkillPath.split('/').pop()}
+              </h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" onclick="saveMdSkill()">
+                  ${icon('check', 14)} Save
+                </button>
+                <button class="btn btn-ghost" onclick="closeMdSkillEditor()">
+                  ${icon('x', 14)} Close
+                </button>
+              </div>
+            </div>
+            <div class="skill-editor-body">
+              <div class="skill-editor-sidebar">
+                <div class="skill-tree-header">
+                  <span>Files</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-ghost btn-icon" onclick="promptNewFile()" title="New File">
+                      ${icon('plus', 14)}
+                    </button>
+                    <button class="btn btn-ghost btn-icon" onclick="promptNewFolder()" title="New Folder">
+                      ${icon('folder', 14)}
+                    </button>
+                  </div>
+                </div>
+                <div class="skill-tree">
+                  ${renderFileTree(state.editingSkillTree, state.editingSkillPath)}
+                </div>
+              </div>
+              <div class="skill-editor-content">
+                ${state.editingSkillLoading ? `
+                  <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">
+                    <div class="spinner" style="margin-right: 12px;"></div>
+                    Loading...
+                  </div>
+                ` : `
+                  <textarea id="skill-editor-content" class="skill-editor-textarea" spellcheck="false">${escapeHtml(state.editingSkillContent || '')}</textarea>
+                `}
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+    `}
+  `;
+}
+
+// Render MD skills grid with pagination and search
+function renderMdSkillsGrid() {
+  const searchTerm = state.mdSkillsSearch.toLowerCase();
+  const filtered = state.mdSkills.filter(s =>
+    s.name.toLowerCase().includes(searchTerm) ||
+    (s.description || '').toLowerCase().includes(searchTerm)
+  );
+  const perPage = 12;
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const page = Math.min(Math.max(0, state.mdSkillsPage), Math.max(0, totalPages - 1));
+  const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
+
+  if (filtered.length === 0) {
+    return `
+      <div class="empty-state" style="text-align: center; padding: 60px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+        <h3>No skills found</h3>
+        <p style="color: var(--text-secondary);">${searchTerm ? 'Try a different search term' : 'Create your first skill to get started'}</p>
+      </div>
+    `;
+  }
+
+  let html = `<div class="md-skills-grid">`;
+
+  for (const skill of paginated) {
+    const safePath = skill.path.replace(/'/g, "\\'");
+    html += `
+      <div class="md-skill-card" onclick="editMdSkill('${safePath}')">
+        <div class="md-skill-header">
+          <div class="md-skill-icon">${icon('file', 24)}</div>
+          <div class="md-skill-meta">
+            <h3>${escapeHtml(skill.name)}</h3>
+            <span class="status-badge success">Active</span>
+          </div>
+        </div>
+        <p class="md-skill-desc">${escapeHtml(skill.description || 'No description provided')}</p>
+        <div class="md-skill-footer">
+          <span style="color: var(--text-tertiary); font-size: 12px;">${skill.path.split('/').pop()}</span>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editMdSkill('${safePath}')">
+            ${icon('penTool', 14)} Edit
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+
+  if (totalPages > 1) {
+    html += `
+      <div class="pagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 24px; align-items: center;">
+        <button class="btn btn-ghost" ${page === 0 ? 'disabled' : ''} onclick="setMdSkillsPage(${page - 1})">
+          ${icon('arrowLeft', 16)} Prev
+        </button>
+        <span style="color: var(--text-secondary); font-size: 14px; padding: 0 12px;">
+          Page ${page + 1} of ${totalPages}
+        </span>
+        <button class="btn btn-ghost" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="setMdSkillsPage(${page + 1})">
+          Next ${icon('arrowRight', 16)}
+        </button>
+      </div>
+    `;
+  }
+
+  return html;
+}
+
+// Helper to escape HTML in content
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Render skill file tree recursively
+function renderFileTree(nodes, currentPath, depth = 0) {
+  if (!nodes || nodes.length === 0) return '';
+
+  return nodes.map(node => {
+    const isActive = node.path === currentPath;
+    const indent = depth * 16;
+    const safePath = node.path.replace(/'/g, "\\'");
+
+    if (node.type === 'directory') {
+      return `
+        <div class="skill-tree-folder" style="padding-left: ${indent}px;">
+          <div class="skill-tree-item folder">
+            <span>${icon('folder', 14)} ${node.name}</span>
+            <button class="btn-tree-action" onclick="event.stopPropagation(); promptNewFileInFolder('${safePath}')" title="Add file in ${node.name}">
+              ${icon('plus', 12)}
+            </button>
+          </div>
+          ${renderFileTree(node.children, currentPath, depth + 1)}
+        </div>
+      `;
+    } else {
+      const fileIcon = node.name.endsWith('.md') ? 'file' :
+        node.name.endsWith('.py') ? 'code' :
+          node.name.endsWith('.js') || node.name.endsWith('.ts') ? 'code' :
+            node.name.endsWith('.sh') ? 'terminal' : 'file';
+      return `
+        <div class="skill-tree-item file ${isActive ? 'active' : ''}" 
+             style="padding-left: ${indent + 8}px;"
+             onclick="selectSkillFile('${safePath}')">
+          ${icon(fileIcon, 14)} ${node.name}
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function switchSkillsTab(tab) {
+  state.skillsTab = tab;
+  render();
+}
+
+
+function renderAgents() {
+  const agents = state.agents || [];
+  const runs = state.agentRuns || [];
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Agents</h1>
+        <p class="page-subtitle">Configure and manage AI agents for multi-agent coordination</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="showCoordinationDialog()">
+          ${icon('network', 16)}
+          <span>Coordination</span>
+        </button>
+        <button class="btn btn-primary" onclick="showCreateAgentForm()">
+          ${icon('plus', 16)}
+          <span>New Agent</span>
+        </button>
+      </div>
+    </div>
+
+
+
+    <div class="agents-grid">
+      ${agents.map(agent => `
+        <div class="agent-card ${agent.isDefault ? 'agent-default' : ''} ${!agent.enabled ? 'agent-disabled' : ''}">
+          <div class="agent-card-header">
+            <div class="agent-avatar">${agent.isDefault ? icon('whale', 20) : icon('bot', 20)}</div>
+            <div class="agent-info">
+              <div class="agent-name">${escapeHtml(agent.name)}
+                ${agent.isDefault ? '<span class="agent-badge default">Default</span>' : ''}
+                ${!agent.enabled ? '<span class="agent-badge disabled">Disabled</span>' : ''}
+              </div>
+              <div class="agent-id">${escapeHtml(agent.id)}</div>
+            </div>
+            ${!agent.isDefault ? `
+              <button class="btn btn-ghost btn-sm" onclick="deleteAgent('${escapeHtml(agent.id)}')" title="Delete agent">
+                ${icon('trash', 14)}
+              </button>
+            ` : ''}
+          </div>
+          ${agent.description ? `<div class="agent-description">${escapeHtml(agent.description)}</div>` : ''}
+          <div class="agent-details">
+            <div class="agent-detail"><span class="detail-label">Model:</span> ${agent.model || '(default)'}</div>
+            ${agent.capabilities?.length ? `<div class="agent-detail"><span class="detail-label">Capabilities:</span> ${agent.capabilities.map(c => `<span class="capability-tag">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+            ${agent.allowAgents?.length ? `<div class="agent-detail"><span class="detail-label">Can spawn:</span> ${agent.allowAgents.join(', ')}</div>` : ''}
+          </div>
+          <div class="agent-actions">
+            <label class="toggle">
+              <input type="checkbox" ${agent.enabled ? 'checked' : ''}
+                     onchange="toggleAgent('${escapeHtml(agent.id)}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    ${runs.length > 0 ? (() => {
+      const perPage = 10;
+      const page = state.agentRunsPage || 0;
+      const totalPages = Math.ceil(runs.length / perPage);
+      const pageRuns = runs.slice(page * perPage, (page + 1) * perPage);
+      return `
+      <div style="margin-top: 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0;">Recent Agent Runs <span style="font-size: 13px; font-weight: 400; color: var(--text-muted);">(${runs.length})</span></h2>
+          ${totalPages > 1 ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-ghost btn-sm" ${page === 0 ? 'disabled style="opacity: 0.4; cursor: default;"' : ''} onclick="state.agentRunsPage = ${page - 1}; render();" title="Previous page">${icon('chevronLeft', 14)}</button>
+              <span style="font-size: 13px; color: var(--text-muted); min-width: 70px; text-align: center;">${page + 1} / ${totalPages}</span>
+              <button class="btn btn-ghost btn-sm" ${page >= totalPages - 1 ? 'disabled style="opacity: 0.4; cursor: default;"' : ''} onclick="state.agentRunsPage = ${page + 1}; render();" title="Next page">${icon('chevronRight', 14)}</button>
+            </div>
+          ` : ''}
+        </div>
+        <div class="runs-list">
+          ${pageRuns.map(run => `
+            <div class="run-item">
+              <div class="run-status run-status-${run.status}"></div>
+              <div class="run-info">
+                <div class="run-agent">${escapeHtml(run.agentId)}</div>
+                <div class="run-task">${escapeHtml(run.task?.slice(0, 100) || '')}</div>
+              </div>
+              <div class="run-meta">
+                <span class="run-status-badge status-${run.status}">${run.status}</span>
+                ${run.status === 'running' || run.status === 'pending' ? `
+                  <button class="btn btn-ghost btn-sm" onclick="stopAgentRun('${run.runId}')" title="Stop">
+                    ${icon('square', 12)}
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    })() : ''}
+
+  `;
+}
+
+async function loadCoordinatedTasks() {
+  try {
+    const result = await api('/agents/coordinated');
+    const container = document.getElementById('coordinated-tasks-list');
+    if (!container) return;
+    const tasks = result.tasks || [];
+    if (tasks.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; padding: 16px; text-align: center;">No coordinated tasks yet. Use the Fan-Out mode to create one.</div>';
+      return;
+    }
+    container.innerHTML = tasks.map(t => {
+      const agentCount = t.tasks?.length || t.runIds?.length || 0;
+      const completedCount = (t.results || []).filter(r => r.status === 'completed').length;
+      const taskId = t.coordinationId || t.id || '?';
+      return `
+      <div class="run-item">
+        <div class="run-status run-status-${t.status}"></div>
+        <div class="run-info">
+          <div class="run-agent" style="font-weight: 600;">Task ${escapeHtml(taskId.slice(0, 8))}</div>
+          <div class="run-task">${agentCount} agents · ${escapeHtml(t.status)} · ${completedCount}/${agentCount} done</div>
+        </div>
+        <div class="run-meta">
+          <span class="run-status-badge status-${t.status === 'completed' ? 'completed' : t.status === 'running' ? 'running' : t.status === 'partial' ? 'running' : 'pending'}">${escapeHtml(t.status)}</span>
+          ${t.status === 'running' ? `<button class="btn btn-ghost btn-sm" onclick="stopCoordinatedTask('${escapeHtml(taskId)}')" title="Stop">${icon('square', 12)}</button>` : ''}
+        </div>
+      </div>
+    `;
+    }).join('');
+  } catch (e) {
+    const container = document.getElementById('coordinated-tasks-list');
+    if (container) container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; padding: 16px; text-align: center;">Could not load coordinated tasks.</div>';
+  }
+}
+
+async function stopCoordinatedTask(id) {
+  try {
+    await api(`/agents/coordinated/${id}/stop`, { method: 'POST' });
+    await loadCoordinatedTasks();
+  } catch (e) {
+    console.warn('Failed to stop coordinated task:', e);
+  }
+}
+
+async function loadSharedContexts() {
+  try {
+    const result = await api('/agents/contexts');
+    const container = document.getElementById('shared-contexts-list');
+    if (!container) return;
+    const namespaces = result.namespaces || [];
+    if (namespaces.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center;">No shared contexts. Agents will create them during coordination.</div>';
+      return;
+    }
+    container.innerHTML = namespaces.map(ns => `
+      <div style="padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHtml(ns.name || ns.namespace || ns)}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">${ns.entryCount || ns.keyCount || 0} entries</div>
+        </div>
+        <span class="capability-tag">namespace</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    const container = document.getElementById('shared-contexts-list');
+    if (container) container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center;">Could not load shared contexts.</div>';
+  }
+}
+
+async function loadActiveLocks() {
+  try {
+    const result = await api('/agents/locks');
+    const container = document.getElementById('active-locks-list');
+    if (!container) return;
+    const locks = result.locks || [];
+    if (locks.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center;">No active file locks.</div>';
+      return;
+    }
+    container.innerHTML = locks.map(l => `
+      <div style="padding: 8px 12px; border-bottom: 1px solid var(--border-subtle);">
+        <div style="font-weight: 600; font-size: 12px; color: var(--text-primary); font-family: monospace;">${escapeHtml(l.filePath || l)}</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Locked by: ${escapeHtml(l.lockedBy || l.agentId || '?')}${l.purpose ? ' · ' + escapeHtml(l.purpose) : ''}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    const container = document.getElementById('active-locks-list');
+    if (container) container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center;">Could not load locks.</div>';
+  }
+}
+
+function renderAgentActivityPanel() {
+  // Compact version just shows count — the detailed view is now inline in chat via renderMultiAgentPanel
+  const activeRuns = (state.agentRuns || []).filter(r => ['pending', 'running', 'paused'].includes(r.status));
+  const liveRuns = Object.values(state.liveAgentRuns).filter(r => ['pending', 'running', 'paused'].includes(r.status));
+  const allActive = [...activeRuns];
+  // Merge live runs not already in agentRuns
+  for (const lr of liveRuns) {
+    if (!allActive.find(r => r.runId === lr.runId)) allActive.push(lr);
+  }
+  if (allActive.length === 0) return '';
+
+  return `
+    <div class="agent-activity-panel">
+      <div class="activity-header">
+        <span class="activity-dot"></span>
+        <span>${allActive.length} agent${allActive.length !== 1 ? 's' : ''} working</span>
+      </div>
+      ${allActive.slice(0, 3).map(run => `
+        <div class="activity-item">
+          <div class="activity-agent">${escapeHtml(run.agentId)}</div>
+          <div class="activity-task">${escapeHtml(run.task?.slice(0, 60) || '...')}</div>
+          <div class="activity-controls">
+            <span class="run-status-badge status-${run.status}">${run.status}</span>
+            <button class="agent-stop-btn" onclick="confirmStopAgentRun('${run.runId}', '${escapeHtml(run.agentId)}')" title="Stop this agent">${icon('x', 12)}</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Multi-Agent panel rendered inline in chat streaming UI
+function renderMultiAgentPanel() {
+  const liveRuns = Object.values(state.liveAgentRuns);
+  if (liveRuns.length === 0) return '';
+
+  const running = liveRuns.filter(r => r.status === 'running').length;
+  const completed = liveRuns.filter(r => r.status === 'completed').length;
+  const errored = liveRuns.filter(r => r.status === 'error').length;
+  const pending = liveRuns.filter(r => r.status === 'pending').length;
+
+  const parts = [];
+  if (running) parts.push(`${running} running`);
+  if (pending) parts.push(`${pending} pending`);
+  if (completed) parts.push(`${completed} done`);
+  if (errored) parts.push(`${errored} failed`);
+
+  let html = `<div class="multiagent-panel">`;
+  html += `
+    <div class="multiagent-panel-header">
+      ${icon('bot', 14)}
+      <span>Agent Activity</span>
+      <span class="agent-count-badge">${liveRuns.length}</span>
+      <span style="flex:1"></span>
+      <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">${parts.join(' · ')}</span>
+    </div>`;
+
+  for (const run of liveRuns) {
+    // Auto-expand by default — only collapse if user explicitly toggled off
+    const wasExplicitlyToggled = state.expandedAgentRuns && state.expandedAgentRuns.hasOwnProperty(run.runId);
+    const isExpanded = wasExplicitlyToggled ? state.expandedAgentRuns[run.runId] : true;
+    html += `
+      <div class="agent-run-card ${isExpanded ? 'expanded' : ''}">
+        <div class="agent-run-row" onclick="toggleRunDetail('${run.runId}')" style="cursor: pointer;">
+          <div class="agent-run-chevron ${isExpanded ? 'open' : ''}">${isExpanded ? '▾' : '▸'}</div>
+          <div class="agent-run-dot status-${run.status}"></div>
+          <div class="agent-run-info">
+            <div class="agent-run-name">${escapeHtml(run.agentId)}</div>
+            <div class="agent-run-task">${escapeHtml(run.task?.slice(0, 80) || '...')}</div>
+          </div>
+          <div class="agent-run-controls" onclick="event.stopPropagation()">
+            <span class="agent-run-status status-${run.status}">${run.status}</span>
+            ${['running', 'pending'].includes(run.status) ? `<button class="agent-stop-btn" onclick="confirmStopAgentRun('${run.runId}', '${escapeHtml(run.agentId)}')" title="Stop this agent">${icon('x', 12)}</button>` : ''}
+          </div>
+        </div>
+        ${isExpanded ? renderRunDetailInline(run) : ''}
+      </div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// Track which agent runs are expanded
+if (!state.expandedAgentRuns) state.expandedAgentRuns = {};
+if (!state.runDetailCache) state.runDetailCache = {};
+
+function toggleRunDetail(runId) {
+  if (!state.expandedAgentRuns) state.expandedAgentRuns = {};
+  state.expandedAgentRuns[runId] = !state.expandedAgentRuns[runId];
+
+  if (state.expandedAgentRuns[runId]) {
+    // Fetch detail data
+    loadRunDetail(runId);
+  }
+
+  // Re-render the streaming UI to update the panel
+  updateStreamingUI();
+}
+
+async function loadRunDetail(runId) {
+  try {
+    const result = await api(`/agents/runs/${runId}/detail`);
+    if (result.ok) {
+      if (!state.runDetailCache) state.runDetailCache = {};
+      state.runDetailCache[runId] = {
+        run: result.run,
+        messages: result.messages || [],
+        loadedAt: Date.now(),
+      };
+      // Re-render after data loads
+      updateStreamingUI();
+    }
+  } catch (e) {
+    console.warn('Failed to load run detail:', e);
+  }
+}
+
+function renderRunDetailInline(run) {
+  let html = `<div class="agent-run-detail">`;
+
+  // Show real-time tool calls from SSE events (priority)
+  const liveToolCalls = run.toolCalls || [];
+  if (liveToolCalls.length > 0) {
+    html += `<div class="agent-run-detail-section">
+      <div class="detail-label">${icon('wrench', 10)} Tools (${liveToolCalls.length})</div>`;
+    for (const tc of liveToolCalls) {
+      const statusIcon = tc.status === 'running'
+        ? `<span class="detail-tool-status running spinning">${icon('loader', 10)}</span>`
+        : tc.status === 'completed'
+          ? `<span class="detail-tool-status done">${icon('check', 10)}</span>`
+          : `<span class="detail-tool-status error">${icon('x', 10)}</span>`;
+      html += `<div class="detail-tool-call">
+        ${statusIcon}
+        <span class="detail-tool-name">${escapeHtml(tc.name)}</span>
+        ${tc.result ? `<span class="detail-tool-result">${escapeHtml(tc.result.slice(0, 120))}</span>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Show current progress message
+  if (run.progressMessage && run.status === 'running') {
+    html += `<div class="agent-run-detail-progress">
+      <div class="detail-content"><span class="detail-progress-dot"></span> ${escapeHtml(run.progressMessage)}</div>
+    </div>`;
+  }
+
+  // Show result when completed
+  if (run.result && run.status === 'completed') {
+    html += `<div class="agent-run-detail-result">
+      <div class="detail-label">${icon('check', 10)} Result</div>
+      <div class="detail-content">${escapeHtml(run.result.slice(0, 500))}</div>
+    </div>`;
+  }
+
+  // Show error
+  if (run.error) {
+    html += `<div class="agent-run-detail-result error">
+      <div class="detail-label">${icon('alertTriangle', 10)} Error</div>
+      <div class="detail-content">${escapeHtml(run.error.slice(0, 500))}</div>
+    </div>`;
+  }
+
+  // Show stopped state
+  if (run.status === 'stopped') {
+    html += `<div class="agent-run-detail-result stopped">
+      <div class="detail-content" style="color: var(--text-muted);">Agent was stopped</div>
+    </div>`;
+  }
+
+  // If no live tool data and no detail, show a message
+  if (liveToolCalls.length === 0 && !run.result && !run.error && run.status !== 'stopped') {
+    if (run.status === 'pending') {
+      html += `<div class="agent-run-detail-empty">Waiting to start...</div>`;
+    } else {
+      html += `<div class="agent-run-detail-empty"><span class="loading-spinner-small"></span> Working...</div>`;
+    }
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// SSE connection for real-time agent run events
+function connectAgentEventStream() {
+  disconnectAgentEventStream();
+  if (!state.sessionId) return;
+
+  try {
+    const es = new EventSource(`${API_BASE}/agents/events?token=${state.sessionId}`);
+    state.agentEventSource = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleAgentEvent(data);
+      } catch { }
+    };
+
+    es.onerror = () => {
+      // Reconnect after 5s
+      disconnectAgentEventStream();
+      setTimeout(() => {
+        if (state.view === 'chat') connectAgentEventStream();
+      }, 5000);
+    };
+  } catch (e) {
+    console.warn('Failed to connect agent event stream:', e);
+  }
+}
+
+function disconnectAgentEventStream() {
+  if (state.agentEventSource) {
+    state.agentEventSource.close();
+    state.agentEventSource = null;
+  }
+}
+
+function handleAgentEvent(event) {
+  switch (event.type) {
+    case 'run_created':
+      if (event.run) {
+        state.liveAgentRuns[event.run.runId] = { ...event.run, progressMessage: '', toolCalls: [] };
+      }
+      break;
+    case 'run_started':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].status = 'running';
+      }
+      break;
+    case 'run_completed':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].status = 'completed';
+        if (event.result) state.liveAgentRuns[event.runId].result = event.result;
+      }
+      break;
+    case 'run_error':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].status = 'error';
+        if (event.error) state.liveAgentRuns[event.runId].error = event.error;
+      }
+      break;
+    case 'run_stopped':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].status = 'stopped';
+      }
+      break;
+    case 'run_paused':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].status = 'paused';
+      }
+      break;
+    case 'run_progress':
+      if (state.liveAgentRuns[event.runId]) {
+        state.liveAgentRuns[event.runId].progressMessage = event.message || '';
+      }
+      break;
+    case 'run_tool_start':
+      if (state.liveAgentRuns[event.runId]) {
+        if (!state.liveAgentRuns[event.runId].toolCalls) state.liveAgentRuns[event.runId].toolCalls = [];
+        state.liveAgentRuns[event.runId].toolCalls.push({
+          name: event.tool,
+          args: event.args || '',
+          status: 'running',
+          startedAt: Date.now(),
+        });
+      }
+      break;
+    case 'run_tool_end':
+      if (state.liveAgentRuns[event.runId]) {
+        const toolCalls = state.liveAgentRuns[event.runId].toolCalls || [];
+        // Find the last tool call with matching name that's still running
+        for (let i = toolCalls.length - 1; i >= 0; i--) {
+          if (toolCalls[i].name === event.tool && toolCalls[i].status === 'running') {
+            toolCalls[i].status = event.status || 'completed';
+            toolCalls[i].result = event.result || '';
+            break;
+          }
+        }
+      }
+      break;
+    case 'heartbeat':
+    case 'connected':
+      return; // No UI update needed
+    default:
+      return;
+  }
+
+  // Refresh the streaming UI (inline multi-agent panel)
+  if (state.isSending) {
+    updateStreamingUI();
+  }
+  scrollToBottom();
+}
+
+// Agent Selector (in-textarea pill)
+function toggleAgentDropdown(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('agent-dropdown');
+  if (!dropdown) return;
+  const isOpen = dropdown.classList.contains('open');
+  dropdown.classList.toggle('open');
+  if (!isOpen) {
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', closeAgentDropdown, { once: true });
+    }, 0);
+  }
+}
+
+function closeAgentDropdown() {
+  const dropdown = document.getElementById('agent-dropdown');
+  if (dropdown) dropdown.classList.remove('open');
+}
+
+function selectAgent(id, name) {
+  state.selectedAgent = id;
+  const pillName = document.getElementById('agent-pill-name');
+  if (pillName) pillName.textContent = name;
+  closeAgentDropdown();
+  document.getElementById('chat-input')?.focus();
+}
+
+function selectFanOut() {
+  closeAgentDropdown();
+  showMultiAgentModal();
+}
+
+// Multi-Agent Modal
+function showMultiAgentModal() {
+  const existing = document.getElementById('multiagent-modal');
+  if (existing) existing.remove();
+
+  const agents = state.agents || [];
+  const enabledAgents = agents.filter(a => a.enabled);
+
+  // Grab text from main chat input to pre-populate
+  const chatInput = document.getElementById('chat-input');
+  const prefilledTask = chatInput?.value?.trim() || '';
+  if (chatInput) { chatInput.value = ''; chatInput.style.height = 'auto'; }
+
+  const modal = document.createElement('div');
+  modal.id = 'multiagent-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">${icon('bot', 20)} Multi-Agent Task</h3>
+        <button class="btn btn-ghost" onclick="document.getElementById('multiagent-modal').remove()">${icon('x', 16)}</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); margin: 0 0 16px;">Spawn agents to work on a task. Use <strong>Fan-Out</strong> mode to split tasks across multiple agents in parallel.</p>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button class="btn btn-secondary fanout-mode-btn active" onclick="setFanoutMode('single')" id="mode-single">Single Agent</button>
+          <button class="btn btn-secondary fanout-mode-btn" onclick="setFanoutMode('fanout')" id="mode-fanout">${icon('gitFork', 14)} Fan-Out (Multi)</button>
+        </div>
+
+        <div class="form-field" style="margin-bottom: 16px;">
+          <label style="font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block;">Task Description</label>
+          <textarea id="multiagent-task" rows="3" placeholder="Describe the overall task..." 
+            style="width: 100%; resize: vertical; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; color: var(--text-primary);">${escapeHtml(prefilledTask)}</textarea>
+        </div>
+
+        <div id="single-agent-section">
+          <div class="form-field" style="margin-bottom: 16px;">
+            <label style="font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block;">Target Agent</label>
+            <select id="multiagent-target" style="width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; color: var(--text-primary);">
+              ${enabledAgents.map(a => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} (${escapeHtml(a.id)})</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div id="fanout-agent-section" style="display: none;">
+          <label style="font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; display: block;">Select Agents & Sub-Tasks</label>
+          <div id="fanout-agent-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+            ${enabledAgents.map(a => `
+              <div class="fanout-agent-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-elevated); border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <input type="checkbox" id="fanout-${escapeHtml(a.id)}" value="${escapeHtml(a.id)}" style="flex-shrink: 0;">
+                <div style="flex-shrink: 0; min-width: 100px;">
+                  <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHtml(a.name)}</div>
+                  <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(a.id)}</div>
+                </div>
+                <input type="text" id="fanout-label-${escapeHtml(a.id)}" placeholder="Sub-task label (optional)" 
+                  style="flex: 1; padding: 6px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-primary); font-size: 12px;">
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('multiagent-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="launchMultiAgentTask()">${icon('rocket', 14)} Launch Task</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('multiagent-task')?.focus(), 100);
+}
+
+function setFanoutMode(mode) {
+  const singleSection = document.getElementById('single-agent-section');
+  const fanoutSection = document.getElementById('fanout-agent-section');
+  const singleBtn = document.getElementById('mode-single');
+  const fanoutBtn = document.getElementById('mode-fanout');
+
+  if (mode === 'fanout') {
+    if (singleSection) singleSection.style.display = 'none';
+    if (fanoutSection) fanoutSection.style.display = 'block';
+    singleBtn?.classList.remove('active');
+    fanoutBtn?.classList.add('active');
+  } else {
+    if (singleSection) singleSection.style.display = 'block';
+    if (fanoutSection) fanoutSection.style.display = 'none';
+    singleBtn?.classList.add('active');
+    fanoutBtn?.classList.remove('active');
+  }
+}
+
+async function launchMultiAgentTask() {
+  const taskEl = document.getElementById('multiagent-task');
+  const task = taskEl?.value?.trim();
+
+  if (!task) {
+    await showAlert('Please describe the task for the agents.', '⚠️ Task Required');
+    return;
+  }
+
+  // Check if fan-out mode
+  const fanoutSection = document.getElementById('fanout-agent-section');
+  const isFanout = fanoutSection && fanoutSection.style.display !== 'none';
+
+  let directiveMessage;
+
+  if (isFanout) {
+    const checkboxes = document.querySelectorAll('#fanout-agent-list input[type="checkbox"]:checked');
+    const agentTasks = Array.from(checkboxes).map(cb => {
+      const agentId = cb.value;
+      const labelEl = document.getElementById(`fanout-label-${agentId}`);
+      const label = labelEl?.value?.trim() || agentId;
+      return { agentId, label };
+    });
+
+    if (agentTasks.length < 2) {
+      await showAlert('Select at least 2 agents for fan-out mode.', '⚠️ More Agents Needed');
+      return;
+    }
+
+    const taskListStr = agentTasks.map(t => `  - Agent "${t.agentId}" (label: "${t.label}")`).join('\n');
+    directiveMessage = `[Fan-Out Task] Use sessions_fanout to split this task across ${agentTasks.length} agents and wait for all results:\n\nOverall task: ${task}\n\nAgent assignments:\n${taskListStr}`;
+  } else {
+    const targetEl = document.getElementById('multiagent-target');
+    const targetAgent = targetEl?.value || 'main';
+    directiveMessage = `[Multi-Agent Task] Use sessions_spawn to delegate this task to agent "${targetAgent}" and wait for the result:\n\n${task}`;
+  }
+
+  // Close modal and send as a regular chat message
+  document.getElementById('multiagent-modal')?.remove();
+  sendMessage(directiveMessage);
+}
+
+
+// Agent CRUD functions
+async function loadAgents() {
+  try {
+    const result = await api('/agents');
+    if (result.ok) {
+      state.agents = result.agents || [];
+    }
+  } catch (e) {
+    console.warn('Failed to load agents:', e);
+    state.agents = [];
+  }
+}
+
+async function loadAgentRuns() {
+  try {
+    const result = await api('/agents/runs');
+    if (result.ok) {
+      state.agentRuns = result.runs || [];
+    }
+  } catch (e) {
+    console.warn('Failed to load agent runs:', e);
+    state.agentRuns = [];
+  }
+}
+
+function showCreateAgentForm() {
+  const existing = document.getElementById('create-agent-modal');
+  if (existing) existing.remove();
+
+  // Build model options from providers
+  const providers = state.providers || [];
+  const modelOptions = providers.flatMap(p => (p.models || []).map(m => ({ model: m, provider: p.name })));
+
+  const modal = document.createElement('div');
+  modal.id = 'create-agent-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">${icon('plus', 18)} Create New Agent</h3>
+        <button class="btn btn-ghost" onclick="document.getElementById('create-agent-modal').remove()">${icon('x', 16)}</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Agent ID</label>
+            <input type="text" id="agent-id" placeholder="e.g. research-bot" style="width: 100%;">
+          </div>
+          <div class="form-field">
+            <label>Display Name</label>
+            <input type="text" id="agent-name" placeholder="e.g. Research Bot" style="width: 100%;">
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label>Description</label>
+            <input type="text" id="agent-description" placeholder="What does this agent do?" style="width: 100%;">
+          </div>
+          <div class="form-field">
+            <label>Model Override (optional)</label>
+            <select id="agent-model" style="width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; color: var(--text-primary); font-size: 13px;">
+              <option value="">Use default model</option>
+              ${modelOptions.map(o => `<option value="${o.model}">${o.model} (${o.provider})</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Capabilities (comma-separated)</label>
+            <input type="text" id="agent-capabilities" placeholder="e.g. code, research, tools" style="width: 100%;">
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label>System Prompt (optional)</label>
+            <textarea id="agent-systemprompt" placeholder="Custom system prompt for this agent..." rows="3" style="width: 100%; resize: vertical;"></textarea>
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label>Allowed Sub-Agents (comma-separated agent IDs, or * for all)</label>
+            <input type="text" id="agent-allowagents" placeholder="e.g. main, coder or *" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('create-agent-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="createAgent()">${icon('plus', 14)} Create Agent</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('agent-id')?.focus(), 100);
+}
+
+function hideCreateAgentForm() {
+  document.getElementById('create-agent-modal')?.remove();
+}
+
+function showCoordinationDialog() {
+  const existing = document.getElementById('coordination-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'coordination-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">${icon('network', 20)} Coordination Panels</h3>
+        <button class="btn btn-ghost" onclick="document.getElementById('coordination-modal').remove()">${icon('x', 16)}</button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">${icon('gitFork', 16)} Coordinated Tasks</h4>
+            <button class="btn btn-ghost btn-sm" onclick="loadCoordinatedTasks()" title="Refresh">${icon('refresh', 14)}</button>
+          </div>
+          <div id="coordinated-tasks-list" class="runs-list" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px;">
+            <div style="color: var(--text-muted); font-size: 13px; text-align: center;">Loading...</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">${icon('share2', 16)} Shared Contexts</h4>
+              <button class="btn btn-ghost btn-sm" onclick="loadSharedContexts()" title="Refresh">${icon('refresh', 14)}</button>
+            </div>
+            <div id="shared-contexts-list" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px;">
+              <div style="color: var(--text-muted); font-size: 13px; text-align: center;">Loading...</div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">${icon('lock', 16)} Active Locks</h4>
+              <button class="btn btn-ghost btn-sm" onclick="loadActiveLocks()" title="Refresh">${icon('refresh', 14)}</button>
+            </div>
+            <div id="active-locks-list" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px;">
+              <div style="color: var(--text-muted); font-size: 13px; text-align: center;">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('coordination-modal').remove()">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  // Auto-load data
+  setTimeout(() => {
+    loadCoordinatedTasks();
+    loadSharedContexts();
+    loadActiveLocks();
+  }, 100);
+}
+
+async function createAgent() {
+  const id = document.getElementById('agent-id')?.value?.trim();
+  const name = document.getElementById('agent-name')?.value?.trim();
+  const description = document.getElementById('agent-description')?.value?.trim();
+  const model = document.getElementById('agent-model')?.value?.trim();
+  const caps = document.getElementById('agent-capabilities')?.value?.trim();
+  const systemPrompt = document.getElementById('agent-systemprompt')?.value?.trim();
+  const allowAgentsStr = document.getElementById('agent-allowagents')?.value?.trim();
+
+  if (!id || !name) {
+    await showAlert('Agent ID and Name are required.', '⚠️ Missing Fields');
+    return;
+  }
+
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    await showAlert('Agent ID must be lowercase alphanumeric with hyphens only.', '⚠️ Invalid ID');
+    return;
+  }
+
+  const capabilities = caps ? caps.split(',').map(c => c.trim()).filter(Boolean) : [];
+  const allowAgents = allowAgentsStr ? allowAgentsStr.split(',').map(a => a.trim()).filter(Boolean) : [];
+
+  try {
+    const result = await api('/agents', {
+      method: 'POST',
+      body: JSON.stringify({ id, name, description, model, capabilities, systemPrompt, allowAgents, enabled: true })
+    });
+
+    if (result.ok) {
+      await showAlert(`Agent "${name}" created successfully!`, '✅ Success');
+      hideCreateAgentForm();
+      await loadAgents();
+      render();
+    } else {
+      await showAlert(`Failed: ${result.error}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed: ${e.message}`, '❌ Error');
+  }
+}
+
+async function deleteAgent(id) {
+  if (!confirm(`Delete agent "${id}"? This cannot be undone.`)) return;
+
+  try {
+    const result = await api(`/agents/${id}`, { method: 'DELETE' });
+    if (result.ok) {
+      await loadAgents();
+      render();
+    } else {
+      await showAlert(`Failed: ${result.error}`, '❌ Error');
+    }
+  } catch (e) {
+    await showAlert(`Failed: ${e.message}`, '❌ Error');
+  }
+}
+
+async function toggleAgent(id, enabled) {
+  try {
+    const agent = (state.agents || []).find(a => a.id === id);
+    if (!agent) return;
+
+    await api(`/agents/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...agent, enabled })
+    });
+    await loadAgents();
+    render();
+  } catch (e) {
+    await showAlert(`Failed: ${e.message}`, '❌ Error');
+  }
+}
+
+async function stopAgentRun(runId) {
+  try {
+    // Just send the stop request — the SSE run_stopped event will update the UI in-place
+    await api(`/agents/runs/${runId}/stop`, { method: 'POST' });
+    // Update local state immediately for responsiveness
+    if (state.liveAgentRuns[runId]) {
+      state.liveAgentRuns[runId].status = 'stopped';
+      if (state.isSending) {
+        updateStreamingUI();
+      }
+    }
+  } catch (e) {
+    await showAlert(`Failed to stop: ${e.message}`, '❌ Error');
+  }
+}
+
+async function confirmStopAgentRun(runId, agentId) {
+  const confirmed = await showConfirm(`Stop agent "${agentId}"? This will cancel its current work.`, '⏹ Stop Agent');
+  if (confirmed) {
+    await stopAgentRun(runId);
+  }
+}
+
+function renderTools() {
+  const toolIcons = {
+    exec: 'terminal',
+    browser: 'globe',
+    web_fetch: 'download',
+    image: 'image',
+    cron: 'clock',
+    tts: 'volume2',
+    file: 'file',
+    canvas: 'penTool',
+    nodes: 'gitBranch',
+    memory: 'database',
+    code_exec: 'code',
+    screenshot: 'camera',
+    extend: 'puzzle',
+    camera_snap: 'camera',
+    camera_record: 'video',
+    screen_record: 'monitor',
+    pdf: 'fileText',
+    skill_creator: 'sparkles',
+    imessage: 'messageSquare',
+    planning: 'brain',
+    // New tools
+    qr_code: 'qrCode',
+    spreadsheet: 'table',
+    calendar_event: 'calendar',
+    clipboard: 'clipboardCopy',
+    shortcuts: 'wand',
+    system_info: 'hardDrive',
+    zip: 'archive',
+    email_send: 'mail',
+    git: 'gitCommit',
+    docker: 'container',
+    ssh: 'server',
+    db_query: 'databaseZap',
+    slides: 'presentation',
+    elevenlabs_tts: 'volume2',
+    elevenlabs_voices: 'mic',
+    twilio_send_sms: 'messageSquare',
+    twilio_send_whatsapp: 'messageCircle',
+    twilio_make_call: 'phone',
+    twilio_agent_call: 'phoneCall'
+  };
+
+  const categoryColors = {
+    system: 'orange',
+    utility: 'blue',
+    web: 'purple',
+    media: 'green',
+    communication: 'purple',
+    device: 'green'
+  };
+
+  // ── Filter by search & category ──
+  const query = (state.toolsSearch || '').toLowerCase();
+  const cat = state.toolsCategory || 'all';
+  const filtered = state.tools.filter(t => {
+    const matchSearch = !query
+      || t.name.toLowerCase().includes(query)
+      || (t.description || '').toLowerCase().includes(query)
+      || (t.category || '').toLowerCase().includes(query);
+    const matchCat = cat === 'all' || t.category === cat;
+    return matchSearch && matchCat;
+  });
+
+  // ── Pagination ──
+  const perPage = 12;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const page = Math.min(state.toolsPage || 0, totalPages - 1);
+  const paged = filtered.slice(page * perPage, (page + 1) * perPage);
+
+  // ── Category pills ──
+  const categories = ['all', ...new Set(state.tools.map(t => t.category).filter(Boolean))];
+  const catPills = categories.map(c => {
+    const isActive = c === cat;
+    const label = c === 'all' ? 'All' : c.charAt(0).toUpperCase() + c.slice(1);
+    const count = c === 'all' ? state.tools.length : state.tools.filter(t => t.category === c).length;
+    return `<button onclick="setToolsCategory('${c}')" style="
+      padding: 6px 14px; border-radius: 20px; border: 1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};
+      background: ${isActive ? 'var(--accent)' : 'transparent'}; color: ${isActive ? '#fff' : 'var(--text-secondary)'};
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    ">${label} <span style="background: ${isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-tertiary)'}; padding: 1px 7px; border-radius: 10px; font-size: 11px;">${count}</span></button>`;
+  }).join('');
+
+  // ── Page buttons ──
+  let pageButtons = '';
+  if (totalPages > 1) {
+    const prevDisabled = page === 0;
+    const nextDisabled = page >= totalPages - 1;
+    let pages = [];
+    for (let i = 0; i < totalPages; i++) {
+      if (i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1) {
+        pages.push(i);
+      } else if (pages[pages.length - 1] !== -1) {
+        pages.push(-1); // ellipsis
+      }
+    }
+    pageButtons = `
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 24px;">
+        <button onclick="setToolsPage(${page - 1})" ${prevDisabled ? 'disabled' : ''} style="
+          padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent;
+          color: ${prevDisabled ? 'var(--text-muted)' : 'var(--text)'}; cursor: ${prevDisabled ? 'default' : 'pointer'};
+          font-size: 13px; opacity: ${prevDisabled ? '0.4' : '1'}; transition: all 0.2s;
+        ">${icon('chevronLeft', 14)} Prev</button>
+        ${pages.map(i => i === -1
+      ? '<span style="color: var(--text-muted); padding: 0 4px;">…</span>'
+      : `<button onclick="setToolsPage(${i})" style="
+              width: 32px; height: 32px; border-radius: 8px; border: 1px solid ${i === page ? 'var(--accent)' : 'var(--border)'};
+              background: ${i === page ? 'var(--accent)' : 'transparent'}; color: ${i === page ? '#fff' : 'var(--text-secondary)'};
+              cursor: pointer; font-size: 13px; font-weight: ${i === page ? '600' : '400'}; transition: all 0.2s;
+            ">${i + 1}</button>`
+    ).join('')}
+        <button onclick="setToolsPage(${page + 1})" ${nextDisabled ? 'disabled' : ''} style="
+          padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent;
+          color: ${nextDisabled ? 'var(--text-muted)' : 'var(--text)'}; cursor: ${nextDisabled ? 'default' : 'pointer'};
+          font-size: 13px; opacity: ${nextDisabled ? '0.4' : '1'}; transition: all 0.2s;
+        ">Next ${icon('chevronRight', 14)}</button>
+      </div>
+      <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+        Showing ${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} of ${filtered.length} tool${filtered.length !== 1 ? 's' : ''}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 class="page-title">Tools</h1>
+        <p class="page-subtitle">${state.tools.length} tools available for AI operations</p>
+      </div>
+      <div style="position: relative; width: 280px;">
+        <input
+          type="text"
+          id="tools-search-input"
+          placeholder="Search tools..."
+          value="${state.toolsSearch || ''}"
+          oninput="setToolsSearch(this.value)"
+          style="
+            width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--bg-secondary);
+            color: var(--text); font-size: 14px; outline: none;
+            transition: border-color 0.2s;
+          "
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'"
+        />
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+          ${icon('search', 16)}
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+      ${catPills}
+    </div>
+
+    ${filtered.length === 0 ? `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <span style="font-size: 48px; display: block; margin-bottom: 12px;">🔍</span>
+        <div style="font-size: 16px; font-weight: 500;">No tools found</div>
+        <div style="font-size: 13px; margin-top: 4px;">Try a different search term or category</div>
+      </div>
+    ` : `
+      <div class="bento-grid">
+        ${paged.map(t => `
+          <div class="bento-item bento-sm" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="stat-icon ${categoryColors[t.category] || 'blue'}" style="width: 40px; height: 40px;">
+                  ${icon(toolIcons[t.name] || 'tool', 18)}
+                </span>
+                <div>
+                  <div style="font-weight: 600; font-size: 15px;">${t.name}</div>
+                  <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">
+                    ${t.category}
+                  </div>
+                </div>
+              </div>
+              <span style="display: flex; align-items: center; gap: 4px; font-size: 11px; padding: 4px 8px; border-radius: 12px; background: ${t.disabled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)'}; color: ${t.disabled ? 'var(--error)' : 'var(--success)'};">
+                ${t.disabled ? icon('x', 10) : icon('check', 10)}
+                ${t.disabled ? 'Off' : 'On'}
+              </span>
+            </div>
+            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; flex: 1;">
+              ${t.description}
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border);">
+              <span style="font-size: 11px; color: var(--text-muted);">
+                ${t.requiresApproval ? '🔐 Approval required' : '⚡ Auto-execute'}
+              </span>
+              <label class="toggle" style="transform: scale(0.8);">
+                <input type="checkbox" ${!t.disabled ? 'checked' : ''} onchange="toggleTool('${t.name}', this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ${pageButtons}
+    `}
+  `;
+}
+
+function renderExtensions() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Extensions</h1>
+        <p class="page-subtitle">AI-created extensions that run on schedules or on-demand</p>
+      </div>
+    </div>
+
+    ${state.extensions.length === 0 ? `
+      <div class="empty-state" style="text-align: center; padding: 60px 20px;">
+        <span style="font-size: 64px; margin-bottom: 20px; display: block;">🧩</span>
+        <h3 style="color: var(--text-primary); margin-bottom: 8px;">No Extensions Yet</h3>
+        <p style="color: var(--text-secondary); max-width: 400px; margin: 0 auto;">
+          Ask the AI to create an extension! For example:<br>
+          <em>"Create an extension that sends me a daily weather report"</em>
+        </p>
+      </div>
+    ` : `
+      <div class="bento-grid">
+        ${state.extensions.map(ext => `
+          <div class="bento-item bento-md" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="stat-icon purple" style="width: 44px; height: 44px;">
+                  ${icon('puzzle', 20)}
+                </span>
+                <div>
+                  <div style="font-weight: 600; font-size: 16px;">${ext.name}</div>
+                  ${ext.schedule ? `
+                    <div style="font-size: 11px; color: var(--accent-purple); display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                      ${icon('clock', 12)} ${ext.schedule}
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                ${ext.running ? `
+                  <span style="display: flex; align-items: center; gap: 4px; font-size: 11px; padding: 4px 8px; border-radius: 12px; background: rgba(34, 197, 94, 0.15); color: var(--success);">
+                    ${icon('activity', 10)} Running
+                  </span>
+                ` : ''}
+                <label class="toggle" style="transform: scale(0.8);">
+                  <input type="checkbox" ${ext.enabled ? 'checked' : ''} onchange="toggleExtension('${ext.name}')">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; flex: 1;">
+              ${ext.description || 'No description'}
+            </div>
+            
+            ${ext.channels?.length ? `
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                ${ext.channels.map(ch => `
+                  <span style="font-size: 10px; padding: 3px 8px; border-radius: 10px; background: var(--surface-hover); color: var(--text-muted);">
+                    ${ch}
+                  </span>
+                `).join('')}
+              </div>
+            ` : ''}
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border);">
+              <span style="font-size: 11px; color: var(--text-muted);">
+                Updated: ${new Date(ext.updatedAt).toLocaleDateString()}
+              </span>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-secondary" onclick="viewExtensionCode('${ext.name}')" title="View Code">
+                  ${icon('code', 14)}
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="runExtension('${ext.name}')" title="Run Now">
+                  ${icon('zap', 14)}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteExtension('${ext.name}')" title="Delete">
+                  ${icon('x', 14)}
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+function renderLogs() {
+  const f = state.logsFilter;
+  const totalPages = Math.ceil(state.logsTotal / 100);
+  const levelColors = { DEBUG: '#6b7280', INFO: '#3b82f6', WARN: '#f59e0b', ERROR: '#ef4444' };
+  const categoryIcons = { chat: 'messageSquare', channel: 'radio', provider: 'bot', tool: 'zap', session: 'settings', dashboard: 'layoutDashboard', system: 'globe', cron: 'clock', extension: 'puzzle', auth: 'shield', heartbeat: 'clock' };
+
+  return `
+    <div class="page-header" style="margin-bottom: 20px;">
+      <h2 style="font-size: 20px; font-weight: 600;">System Logs</h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+        ${state.logsLogPath ? `Log file: <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 12px;">${state.logsLogPath}</code>` : 'No log file configured'}
+        ${state.logsTotal > 0 ? ` · <span id="log-entry-count">${state.logsTotal.toLocaleString()} entries</span>` : ''}
+        <span id="live-indicator" style="display: ${state.logsStreamActive ? 'inline-flex' : 'none'}; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 10px; border-radius: 12px; background: rgba(34, 197, 94, 0.12); color: #22c55e; font-size: 12px; font-weight: 600;">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: livePulse 1.5s ease-in-out infinite;"></span>
+          Live
+        </span>
+      </p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card" style="margin-bottom: 16px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+        <div style="flex: 1; min-width: 180px;">
+          <label class="form-label" style="font-size: 12px;">Search</label>
+          <input type="text" class="form-input" placeholder="Search messages..." id="log-search" value="${f.search}" onkeydown="if(event.key==='Enter')applyLogFilters()">
+        </div>
+        <div style="min-width: 120px;">
+          <label class="form-label" style="font-size: 12px;">Level</label>
+          <select class="form-input" id="log-level" onchange="applyLogFilters()">
+            <option value="">All Levels</option>
+            <option value="DEBUG" ${f.level === 'DEBUG' ? 'selected' : ''}>Debug</option>
+            <option value="INFO" ${f.level === 'INFO' ? 'selected' : ''}>Info</option>
+            <option value="WARN" ${f.level === 'WARN' ? 'selected' : ''}>Warn</option>
+            <option value="ERROR" ${f.level === 'ERROR' ? 'selected' : ''}>Error</option>
+          </select>
+        </div>
+        <div style="min-width: 140px;">
+          <label class="form-label" style="font-size: 12px;">Category</label>
+          <select class="form-input" id="log-category" onchange="applyLogFilters()">
+            <option value="">All Categories</option>
+            <option value="chat" ${f.category === 'chat' ? 'selected' : ''}>Chat</option>
+            <option value="channel" ${f.category === 'channel' ? 'selected' : ''}>Channel</option>
+            <option value="provider" ${f.category === 'provider' ? 'selected' : ''}>Provider</option>
+            <option value="tool" ${f.category === 'tool' ? 'selected' : ''}>Tool</option>
+            <option value="session" ${f.category === 'session' ? 'selected' : ''}>Session</option>
+            <option value="dashboard" ${f.category === 'dashboard' ? 'selected' : ''}>Dashboard</option>
+            <option value="system" ${f.category === 'system' ? 'selected' : ''}>System</option>
+            <option value="cron" ${f.category === 'cron' ? 'selected' : ''}>Cron</option>
+            <option value="extension" ${f.category === 'extension' ? 'selected' : ''}>Extension</option>
+            <option value="auth" ${f.category === 'auth' ? 'selected' : ''}>Auth</option>
+          </select>
+        </div>
+        <div style="min-width: 140px;">
+          <label class="form-label" style="font-size: 12px;">Start Date</label>
+          <input type="date" class="form-input" id="log-start-date" value="${f.startDate}" onchange="applyLogFilters()">
+        </div>
+        <div style="min-width: 140px;">
+          <label class="form-label" style="font-size: 12px;">End Date</label>
+          <input type="date" class="form-input" id="log-end-date" value="${f.endDate}" onchange="applyLogFilters()">
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary btn-sm" onclick="applyLogFilters()" style="height: 36px;">
+            ${icon('search', 14)} Search
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="clearLogFilters()" style="height: 36px;">
+            Clear
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="refreshLogs()" style="height: 36px;" title="Refresh">
+            ${icon('refresh', 14)}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Entries -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+      ${state.logsLoading ? `
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading logs...</div>
+      ` : state.logs.length === 0 ? `
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          ${icon('fileText', 32)}<br><br>
+          No log entries found${f.search || f.level || f.category || f.startDate || f.endDate ? ' matching your filters' : ''}
+        </div>
+      ` : `
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);">
+                <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); width: 170px;">Timestamp</th>
+                <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: var(--text-secondary); width: 70px;">Level</th>
+                <th style="padding: 10px 8px; text-align: left; font-weight: 600; color: var(--text-secondary); width: 100px;">Category</th>
+                <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary);">Message</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody">
+              ${state.logs.map((entry, i) => {
+    const ts = new Date(entry.timestamp);
+    const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString();
+    const levelColor = levelColors[entry.level] || '#6b7280';
+    const catIcon = categoryIcons[entry.category] || 'fileText';
+    const hasData = entry.data && Object.keys(entry.data).length > 0;
+    return `
+                  <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s;"
+                      onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'"
+                      ${hasData ? `onclick="toggleLogDetail(${i})" style="cursor: pointer; border-bottom: 1px solid var(--border-color);"` : ''}>
+                    <td style="padding: 8px 12px; color: var(--text-muted); font-family: monospace; font-size: 12px; white-space: nowrap;">${timeStr}</td>
+                    <td style="padding: 8px; text-align: center;">
+                      <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; color: white; background: ${levelColor};">${entry.level}</span>
+                    </td>
+                    <td style="padding: 8px; color: var(--text-secondary);">
+                      <span style="display: flex; align-items: center; gap: 4px;">${icon(catIcon, 14)} ${entry.category}</span>
+                    </td>
+                    <td style="padding: 8px 12px; color: var(--text-primary); word-break: break-word;">
+                      ${entry.message}
+                      ${hasData ? '<span style="color: var(--text-muted); font-size: 11px; margin-left: 6px;">▸ details</span>' : ''}
+                    </td>
+                  </tr>
+                  ${hasData ? `
+                  <tr id="log-detail-${i}" style="display: none;">
+                    <td colspan="4" style="padding: 8px 12px 12px 12px; background: var(--bg-tertiary);">
+                      <pre style="margin: 0; padding: 10px; background: var(--bg-primary); border-radius: 6px; font-size: 12px; overflow-x: auto; color: var(--text-secondary); border: 1px solid var(--border-color);">${JSON.stringify(entry.data, null, 2)}</pre>
+                    </td>
+                  </tr>
+                  ` : ''}
+                `;
+  }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+    </div>
+
+    <!-- Pagination -->
+    ${totalPages > 1 ? `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 0 4px;">
+        <span style="color: var(--text-muted); font-size: 13px;">
+          Page ${state.logsPage + 1} of ${totalPages}
+        </span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-ghost btn-sm" onclick="changeLogPage(-1)" ${state.logsPage <= 0 ? 'disabled' : ''}>← Previous</button>
+          <button class="btn btn-ghost btn-sm" onclick="changeLogPage(1)" ${state.logsPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+        </div>
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderSettings() {
+  const isAdmin = state.user?.role === 'admin';
+
+  return `
+    <!-- Account Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Account</h3>
+      </div>
+      
+      <div class="user-item" style="margin-bottom: 20px;">
+        <div class="user-item-avatar">${(state.user?.username || 'U')[0].toUpperCase()}</div>
+        <div class="user-item-info">
+          <div class="user-item-name">${state.user?.username || 'User'}</div>
+          <div class="user-item-meta">
+            <span class="role-badge ${state.user?.role}">${state.user?.role || 'user'}</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showChangePasswordModal()">
+          Change Password
+        </button>
+      </div>
+    </div>
+    
+    <!-- General Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">General Settings</h3>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Default Model</label>
+        <select class="form-input" id="default-model">
+          ${state.providers.map(p =>
+    p.models.map(m => `<option value="${m}" ${state.currentModel === m ? 'selected' : ''}>${p.name}: ${m}</option>`).join('')
+  ).join('')}
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Owner Phone Number</label>
+        <input type="text" class="form-input" placeholder="+1234567890" id="owner-phone">
+        <div class="form-hint">Your phone number for WhatsApp pairing approval</div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+    
+    <!-- Logging Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Logging</h3>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Log File Path</label>
+        <input type="text" class="form-input" placeholder="data/openwhale.log" id="log-file-path" value="${state.config?.logFilePath || ''}">
+        <div class="form-hint">Absolute or relative path for the log file. Leave empty for default (data/openwhale.log)</div>
+      </div>
+      
+      <button class="btn btn-secondary" onclick="saveLogSettings()">Save Log Settings</button>
+    </div>
+    
+    <!-- Browser Automation Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Browser Automation</h3>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Browser Backend</label>
+        <select class="form-input" id="browser-backend" onchange="updateBrowserBackend()">
+          <option value="playwright">Playwright (Headless Chrome)</option>
+          <option value="browseros" id="browseros-option" disabled>BrowserOS (Not Available)</option>
+        </select>
+        <div class="form-hint">Choose which browser engine to use for automation</div>
+      </div>
+      
+      <div id="browseros-status" style="margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--bg-tertiary);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="browseros-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);"></span>
+          <span id="browseros-status-text" style="color: var(--text-secondary); font-size: 13px;">Checking BrowserOS...</span>
+        </div>
+        <div id="browseros-tools" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+      </div>
+    </div>
+    
+    <!-- Heartbeat Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">💓 Heartbeat</h3>
+      </div>
+      
+      <div style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+        Periodic AI agent wake-ups to proactively check on tasks, inboxes, and reminders.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+          <input type="checkbox" id="heartbeat-enabled" onchange="toggleHeartbeat()" style="width: 18px; height: 18px; accent-color: var(--accent);">
+          Enable Heartbeat
+        </label>
+      </div>
+
+      <div id="heartbeat-fields">
+        <div class="form-group">
+          <label class="form-label">Interval</label>
+          <select class="form-input" id="heartbeat-interval">
+            <option value="5m">Every 5 minutes</option>
+            <option value="10m">Every 10 minutes</option>
+            <option value="15m">Every 15 minutes</option>
+            <option value="30m" selected>Every 30 minutes</option>
+            <option value="1h">Every hour</option>
+            <option value="2h">Every 2 hours</option>
+          </select>
+          <div class="form-hint">How often the AI wakes up to check on things</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Model Override (optional)</label>
+          <select class="form-input" id="heartbeat-model">
+            <option value="">Use default model</option>
+            ${state.providers.map(p =>
+    p.models.map(m => '<option value="' + m + '">' + p.name + ': ' + m + '</option>').join('')
+  ).join('')}
+          </select>
+          <div class="form-hint">Use a different (cheaper) model for heartbeats to save costs</div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Active Hours Start</label>
+            <input type="time" class="form-input" id="heartbeat-hours-start" placeholder="08:00">
+            <div class="form-hint">Leave empty = always active</div>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Active Hours End</label>
+            <input type="time" class="form-input" id="heartbeat-hours-end" placeholder="24:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Forward Alerts To</label>
+          <select class="form-input" id="heartbeat-forward-to">
+            <option value="">Dashboard Only</option>
+            <option value="all">All Connected Channels</option>
+          </select>
+          <div class="form-hint">Send heartbeat alerts to a connected channel (WhatsApp, Telegram, etc.)</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Custom Prompt</label>
+          <textarea class="form-input" id="heartbeat-prompt" rows="3" placeholder="Read HEARTBEAT.md if it exists..."></textarea>
+          <div class="form-hint">What the AI is told each heartbeat tick. Leave empty for default.</div>
+        </div>
+
+        <div id="heartbeat-status" style="margin: 16px 0; padding: 12px; border-radius: 8px; background: var(--bg-tertiary);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="heartbeat-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);"></span>
+            <span id="heartbeat-status-text" style="color: var(--text-secondary); font-size: 13px;">Loading...</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">📝 HEARTBEAT.md</label>
+          <textarea class="form-input" id="heartbeat-md-editor" rows="8" style="font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 13px; line-height: 1.5; resize: vertical;" placeholder="Loading HEARTBEAT.md..."></textarea>
+          <div class="form-hint">Tasks the AI checks each heartbeat tick. Edit and save directly from here — stored at <code>~/.openwhale/HEARTBEAT.md</code></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveHeartbeatSettings()">Save Heartbeat Settings</button>
+      </div>
+    </div>
+    
+    ${isAdmin ? `
+    <!-- User Management (Admin Only) -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">User Management</h3>
+      </div>
+      
+      <div class="user-list" id="user-list">
+        ${state.users.map(u => `
+          <div class="user-item">
+            <div class="user-item-avatar">${(u.username || 'U')[0].toUpperCase()}</div>
+            <div class="user-item-info">
+              <div class="user-item-name">${u.username}</div>
+              <div class="user-item-meta">
+                <span class="role-badge ${u.role}">${u.role}</span>
+                <span>Created: ${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</span>
+              </div>
+            </div>
+            <div class="user-item-actions">
+              ${u.id !== state.user?.userId ? `
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${u.username}')">
+                  Delete
+                </button>
+              ` : '<span style="color: var(--text-muted); font-size: 12px;">You</span>'}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">Add New User</h4>
+      <div class="add-user-form">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="new-username" placeholder="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="new-password" placeholder="password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-input" id="new-role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addUser()">Add User</button>
+      </div>
+    </div>
+    ` : ''}
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Danger Zone</h3>
+      </div>
+      <button class="btn btn-danger" onclick="resetSetup()">Reset Setup Wizard</button>
+    </div>
+  `;
+}
+
+// Setup Wizard
+function renderSetupWizard() {
+  const steps = ['Welcome', 'Prerequisites', 'AI Providers', 'Channels', 'Skills', 'Complete'];
+
+  return `
+    <div class="wizard-container">
+      <div class="wizard-header">
+        <div class="wizard-logo">🐋</div>
+        <h1 class="wizard-title">Welcome to OpenWhale</h1>
+        <p class="wizard-subtitle">Let's set up your AI assistant</p>
+      </div>
+      
+      <div class="wizard-steps">
+        ${steps.map((s, i) => `
+          ${i > 0 ? `<div class="wizard-step-line ${i <= state.setupStep ? 'completed' : ''}"></div>` : ''}
+          <div class="wizard-step ${i === state.setupStep ? 'active' : ''} ${i < state.setupStep ? 'completed' : ''}">
+            ${i < state.setupStep ? '✓' : i + 1}
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="wizard-content">
+        ${renderSetupStep()}
+      </div>
+    </div>
+  `;
+}
+
+function renderSetupStep() {
+  switch (state.setupStep) {
+    case 0: return renderWelcomeStep();
+    case 1: return renderPrereqStep();
+    case 2: return renderProvidersStep();
+    case 3: return renderChannelsStep();
+    case 4: return renderSkillsStep();
+    case 5: return renderCompleteStep();
+    default: return renderWelcomeStep();
+  }
+}
+
+function renderWelcomeStep() {
+  return `
+    <div class="wizard-section-title">Welcome to OpenWhale!</div>
+    <p class="wizard-section-desc">
+      OpenWhale is your personal AI assistant that can control your computer, manage your calendar,
+      send messages, and much more - all through a simple chat interface.
+    </p>
+    
+    <div style="background: var(--bg-secondary); padding: 20px; border-radius: var(--radius-sm); margin-bottom: 20px">
+      <h4 style="margin-bottom: 12px">What we'll set up:</h4>
+      <ul style="color: var(--text-secondary); padding-left: 20px">
+        <li>Check and install required software</li>
+        <li>Configure AI providers (OpenAI, Anthropic, etc.)</li>
+        <li>Set up messaging channels (WhatsApp, Telegram)</li>
+        <li>Connect external services (GitHub, Spotify, etc.)</li>
+      </ul>
+    </div>
+    
+    <div class="wizard-actions">
+      <div></div>
+      <button class="btn btn-primary" onclick="saveSetupStep(0, {})">
+        Get Started →
+      </button>
+    </div>
+  `;
+}
+
+function renderPrereqStep() {
+  // Core runtimes (required)
+  const corePrereqs = [
+    { id: 'node', name: 'Node.js', desc: 'JavaScript runtime (required)', info: state.prerequisites?.node },
+    { id: 'pnpm', name: 'pnpm', desc: 'Recommended package manager', info: state.prerequisites?.pnpm },
+    { id: 'git', name: 'Git', desc: 'Version control & Git tool', info: state.prerequisites?.git },
+  ];
+
+  // Recommended tools
+  const recommendedPrereqs = [
+    { id: 'python', name: 'Python 3', desc: 'Code execution tool', info: state.prerequisites?.python },
+    { id: 'homebrew', name: 'Homebrew', desc: 'Package manager (macOS)', info: state.prerequisites?.homebrew },
+    { id: 'ffmpeg', name: 'FFmpeg', desc: 'Screen recording & audio/video', info: state.prerequisites?.ffmpeg },
+    { id: 'docker', name: 'Docker', desc: 'Container management tool', info: state.prerequisites?.docker },
+    { id: 'playwright', name: 'Playwright', desc: 'Browser automation (Chromium)', info: state.prerequisites?.playwright },
+  ];
+
+  // Optional / platform-specific
+  const optionalPrereqs = [
+    { id: 'imagesnap', name: 'ImageSnap', desc: 'Camera capture (macOS)', info: state.prerequisites?.imagesnap },
+    { id: 'ssh', name: 'SSH Client', desc: 'Remote server connections', info: state.prerequisites?.ssh },
+  ];
+
+  const renderGroup = (title, items, canInstall) => `
+    <div style="margin-bottom: 20px;">
+      <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">${title}</div>
+      <div class="prereq-list">
+        ${items.map(p => `
+          <div class="prereq-item">
+            <span class="prereq-icon">${p.info?.installed ? '✅' : (canInstall ? '📦' : '❌')}</span>
+            <div class="prereq-info">
+              <div class="prereq-name">${p.name}</div>
+              <div class="prereq-desc">${p.desc}</div>
+            </div>
+            <div class="prereq-status ${p.info?.installed ? 'installed' : 'missing'}">
+              ${p.info?.installed ? (p.info.version || 'Installed') : (canInstall ? `
+                <button class="btn btn-secondary" onclick="installPrerequisite('${p.id}')">
+                  Install
+                </button>
+              ` : 'Not found')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="wizard-section-title">System Check</div>
+    <p class="wizard-section-desc">
+      Checking your system for required and optional tools that enhance OpenWhale's capabilities.
+    </p>
+    <div style="max-height: 400px; overflow-y: auto; margin-bottom: 8px; padding-right: 4px;">
+    ${renderGroup('Core Requirements', corePrereqs, false)}
+    ${renderGroup('Recommended Tools', recommendedPrereqs, true)}
+    ${renderGroup('Optional / Platform', optionalPrereqs, true)}
+    </div>
+    
+    <div class="wizard-actions">
+      <button class="btn btn-secondary" onclick="goBack(0)">
+        ← Back
+      </button>
+      <button class="btn btn-primary" onclick="saveSetupStep(1, {})">
+        Continue →
+      </button>
+    </div>
+  `;
+}
+
+function renderProvidersStep() {
+  return `
+    <div class="wizard-section-title">AI Providers</div>
+    <p class="wizard-section-desc">
+      Configure at least one AI provider to use OpenWhale.
+    </p>
+    
+    <div style="max-height: 380px; overflow-y: auto; padding-right: 4px; margin-bottom: 8px;">
+      <div class="form-group">
+        <label class="form-label">Anthropic API Key (Recommended)</label>
+        <input type="password" class="form-input" id="setup-anthropic" placeholder="sk-ant-...">
+        <div class="form-hint">Get your key from <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">OpenAI API Key</label>
+        <input type="password" class="form-input" id="setup-openai" placeholder="sk-...">
+        <div class="form-hint">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Google AI API Key</label>
+        <input type="password" class="form-input" id="setup-google" placeholder="AIza...">
+        <div class="form-hint">Get your key from <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">DeepSeek API Key</label>
+        <input type="password" class="form-input" id="setup-deepseek" placeholder="sk-...">
+        <div class="form-hint">Get your key from <a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a></div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Ollama (Local)</label>
+        <input type="text" class="form-input" id="setup-ollama" placeholder="http://localhost:11434">
+        <div class="form-hint">No API key needed — run models locally with <a href="https://ollama.com" target="_blank">ollama.com</a></div>
+      </div>
+    </div>
+    
+    <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--border-color);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn btn-secondary" onclick="testAIProvider()" id="test-ai-btn">
+          🧪 Test AI Connection
+        </button>
+        <span id="test-ai-status" style="color: var(--text-secondary); font-size: 13px;"></span>
+      </div>
+    </div>
+    
+    <div class="wizard-actions">
+      <button class="btn btn-secondary" onclick="goBack(1)">
+        ← Back
+      </button>
+      <button class="btn btn-primary" onclick="saveProviderSetup()">
+        Continue →
+      </button>
+    </div>
+  `;
+}
+
+function renderChannelsStep() {
+  return `
+    <div class="wizard-section-title">Communication Channels</div>
+    <p class="wizard-section-desc">
+      Choose how you want to interact with OpenWhale. Enable channels and connect them now.
+    </p>
+    
+    <div class="prereq-list">
+      <div class="prereq-item" style="flex-direction: column; align-items: stretch;">
+        <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+          <span class="prereq-icon">💬</span>
+          <div class="prereq-info">
+            <div class="prereq-name">WhatsApp</div>
+            <div class="prereq-desc">Chat with OpenWhale via WhatsApp</div>
+          </div>
+          ${state.whatsappConnected ? `
+            <span style="color: var(--success); font-weight: 600;">✅ Connected</span>
+          ` : `
+            <label class="toggle">
+              <input type="checkbox" id="setup-whatsapp" checked onchange="render();">
+              <span class="toggle-slider"></span>
+            </label>
+          `}
+        </div>
+        ${!state.whatsappConnected && document.getElementById?.('setup-whatsapp')?.checked !== false ? `
+          <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+            ${state.whatsappQR ? `
+              <div style="text-align: center;">
+                <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">📱 Scan with WhatsApp to connect:</p>
+                <img src="${state.whatsappQR}" alt="WhatsApp QR Code" style="max-width: 200px; border-radius: 8px; background: white; padding: 8px;">
+                <p style="margin-top: 12px; color: var(--text-muted); font-size: 12px;">Open WhatsApp → Settings → Linked Devices → Link a Device</p>
+              </div>
+            ` : state.whatsappConnecting ? `
+              <div style="text-align: center; padding: 20px;">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px; color: var(--text-muted);">Generating QR code...</p>
+              </div>
+            ` : `
+              <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">📱 Scan QR code with WhatsApp to connect</p>
+              <button class="btn btn-primary" onclick="connectChannelInSetup('whatsapp')" style="width: 100%;">
+                📲 Connect WhatsApp
+              </button>
+            `}
+          </div>
+        ` : ''}
+      </div>
+      
+      <div class="prereq-item" style="flex-direction: column; align-items: stretch;">
+        <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+          <span class="prereq-icon">📱</span>
+          <div class="prereq-info">
+            <div class="prereq-name">Telegram</div>
+            <div class="prereq-desc">Chat via Telegram bot</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setup-telegram" ${state.setupTelegramEnabled ? 'checked' : ''} onchange="toggleSetupChannel('telegram', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        ${state.setupTelegramEnabled ? `
+          <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+            <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">Create a Telegram bot with @BotFather</p>
+            <button class="btn btn-primary" onclick="connectChannelInSetup('telegram')" style="width: 100%;">
+              Connect Telegram Bot
+            </button>
+          </div>
+        ` : ''}
+      </div>
+      
+      <div class="prereq-item" style="flex-direction: column; align-items: stretch;">
+        <div style="display: flex; align-items: center; gap: 16px; width: 100%;">
+          <span class="prereq-icon">🎮</span>
+          <div class="prereq-info">
+            <div class="prereq-name">Discord</div>
+            <div class="prereq-desc">Chat via Discord bot</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setup-discord" ${state.setupDiscordEnabled ? 'checked' : ''} onchange="toggleSetupChannel('discord', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        ${state.setupDiscordEnabled ? `
+          <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+            <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">Create a Discord bot at Discord Developer Portal</p>
+            <button class="btn btn-primary" onclick="connectChannelInSetup('discord')" style="width: 100%;">
+              Connect Discord Bot
+            </button>
+          </div>
+        ` : ''}
+      </div>
+      
+      <div class="prereq-item">
+        <span class="prereq-icon">🌐</span>
+        <div class="prereq-info">
+          <div class="prereq-name">Web Dashboard</div>
+          <div class="prereq-desc">Chat from this dashboard (always enabled)</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked disabled>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="wizard-actions">
+      <button class="btn btn-secondary" onclick="goBack(2)">
+        ← Back
+      </button>
+      <button class="btn btn-primary" onclick="saveChannelSetup()">
+        Continue →
+      </button>
+    </div>
+  `;
+}
+
+function renderSkillsStep() {
+  return `
+    <div class="wizard-section-title">Skills & Integrations</div>
+    <p class="wizard-section-desc">
+      Connect external services to give OpenWhale more capabilities. All of these are optional - you can configure them later in Settings.
+    </p>
+    
+    <!-- Google Services (Credentials) -->
+    <div class="form-group" style="background: var(--bg-secondary); padding: 20px; border-radius: var(--radius-sm); margin-bottom: 16px; border: 1px solid var(--border-color);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="font-size: 24px;">🌐</span>
+        <div>
+          <div style="font-weight: 600;">Google Services</div>
+          <div style="color: var(--text-secondary); font-size: 13px;">Gmail, Calendar, Drive, Tasks</div>
+        </div>
+        <span id="google-status" style="margin-left: auto; font-size: 13px; color: var(--text-secondary);">Not connected</span>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+        Paste your Google API credentials JSON to enable Gmail, Calendar, Drive, and Tasks.
+      </p>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <input type="password" class="form-input" id="setup-google-creds" placeholder="Paste Google API credentials JSON..." style="flex: 1;">
+        <button class="btn btn-primary" onclick="saveGoogleCredsInSetup()">
+          Save
+        </button>
+      </div>
+
+      <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-muted);">
+        Create OAuth 2.0 credentials at 
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> → 
+        Download credentials.json → Paste the file contents above
+      </div>
+    </div>
+    
+    <!-- GitHub -->
+    <div class="form-group">
+      <label class="form-label">🐙 GitHub Token</label>
+      <input type="password" class="form-input" id="setup-github" placeholder="ghp_...">
+      <div class="form-hint">
+        Create at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> - enables repo access, issues, PRs
+      </div>
+    </div>
+    
+    <!-- Weather -->
+    <div class="form-group">
+      <label class="form-label">🌤️ OpenWeatherMap API Key</label>
+      <input type="password" class="form-input" id="setup-weather" placeholder="...">
+      <div class="form-hint">
+        Free tier at <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a> - 1000 calls/day
+      </div>
+    </div>
+    
+    <!-- Notion -->
+    <div class="form-group">
+      <label class="form-label">📝 Notion API Key</label>
+      <input type="password" class="form-input" id="setup-notion" placeholder="secret_...">
+      <div class="form-hint">
+        <a href="https://www.notion.so/profile/integrations/form/new-integration" target="_blank">Create new integration</a> → Copy "Internal Integration Secret" → Share pages with the integration
+      </div>
+    </div>
+    
+    <div class="wizard-actions">
+      <button class="btn btn-secondary" onclick="goBack(3)">
+        ← Back
+      </button>
+      <button class="btn btn-primary" onclick="saveSkillSetup()">
+        Continue →
+      </button>
+    </div>
+  `;
+}
+
+function renderCompleteStep() {
+  return `
+    <div style="text-align: center">
+      <div style="font-size: 64px; margin-bottom: 20px">🎉</div>
+      <div class="wizard-section-title">Setup Complete!</div>
+      <p class="wizard-section-desc">
+        OpenWhale is ready to use. You can now start chatting or configure additional settings.
+      </p>
+      
+      <div style="display: flex; gap: 12px; justify-content: center; margin-top: 30px">
+        <button class="btn btn-primary" onclick="completeSetup()">
+          💬 Start Chatting
+        </button>
+        <button class="btn btn-secondary" onclick="state.view = 'settings'; state.setupComplete = true; render()">
+          ⚙️ More Settings
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Event Binding
+function bindEvents() {
+  // Chat input
+  const chatInput = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(chatInput.value);
+        chatInput.value = '';
+      }
+    });
+
+    // Auto-resize
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
+    });
+  }
+
+  if (sendBtn) {
+    sendBtn.addEventListener('click', () => {
+      if (state.isSending) {
+        stopChat();
+      } else {
+        sendMessage(chatInput.value);
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+      }
+    });
+  }
+
+  // Model select
+  const modelSelect = document.getElementById('model-select');
+  if (modelSelect) {
+    modelSelect.addEventListener('change', (e) => {
+      state.currentModel = e.target.value;
+    });
+  }
+
+  // Browser settings init (for settings page)
+  if (state.view === 'settings') {
+    initBrowserSettings();
+    initHeartbeatSettings();
+  }
+}
+
+function bindSetupEvents() {
+  loadPrerequisites();
+}
+
+// Wizard save functions
+window.saveProviderSetup = async function () {
+  const anthropic = document.getElementById('setup-anthropic')?.value;
+  const openai = document.getElementById('setup-openai')?.value;
+  const google = document.getElementById('setup-google')?.value;
+  const deepseek = document.getElementById('setup-deepseek')?.value;
+  const ollama = document.getElementById('setup-ollama')?.value;
+
+  await saveSetupStep(2, {
+    providers: {
+      anthropic: { apiKey: anthropic, enabled: !!anthropic },
+      openai: { apiKey: openai, enabled: !!openai },
+      google: { apiKey: google, enabled: !!google },
+      deepseek: { apiKey: deepseek, enabled: !!deepseek },
+      ollama: { baseUrl: ollama, enabled: !!ollama }
+    }
+  });
+};
+
+window.saveChannelSetup = async function () {
+  const whatsapp = document.getElementById('setup-whatsapp')?.checked ?? state.whatsappConnected;
+  const telegram = state.setupTelegramEnabled || false;
+  const discord = state.setupDiscordEnabled || false;
+
+  await saveSetupStep(3, {
+    channels: { whatsapp, telegram, discord, web: true }
+  });
+};
+
+window.saveSkillSetup = async function () {
+  const github = document.getElementById('setup-github')?.value;
+  const weather = document.getElementById('setup-weather')?.value;
+  const notion = document.getElementById('setup-notion')?.value;
+
+  await saveSetupStep(4, {
+    skills: {
+      github: { apiKey: github, enabled: !!github },
+      weather: { apiKey: weather, enabled: !!weather },
+      notion: { apiKey: notion, enabled: !!notion }
+    }
+  });
+};
+
+window.saveGoogleCredsInSetup = async function () {
+  const creds = document.getElementById('setup-google-creds')?.value;
+  if (!creds) {
+    const statusEl = document.getElementById('google-status');
+    if (statusEl) { statusEl.textContent = 'Please paste credentials'; statusEl.style.color = 'var(--error)'; }
+    return;
+  }
+  try {
+    await saveSkillConfig('google', { apiKey: creds, enabled: true });
+    const statusEl = document.getElementById('google-status');
+    if (statusEl) { statusEl.textContent = 'Configured'; statusEl.style.color = 'var(--success)'; }
+  } catch (e) {
+    const statusEl = document.getElementById('google-status');
+    if (statusEl) { statusEl.textContent = 'Failed: ' + e.message; statusEl.style.color = 'var(--error)'; }
+  }
+};
+
+window.completeSetup = async function () {
+  await saveSetupStep(5, { completed: true });
+};
+
+// Global functions for onclick handlers
+window.toggleChannel = toggleChannel;
+window.connectWhatsApp = connectWhatsApp;
+window.connectTelegram = connectTelegram;
+window.connectDiscord = connectDiscord;
+window.installPrerequisite = installPrerequisite;
+window.saveSetupStep = saveSetupStep;
+window.logout = logout;
+
+// User Management Functions
+
+async function addUser() {
+  const username = document.getElementById('new-username')?.value;
+  const password = document.getElementById('new-password')?.value;
+  const role = document.getElementById('new-role')?.value || 'user';
+
+  if (!username || !password) {
+    await showDialog('Error', 'Username and password are required');
+    return;
+  }
+
+  try {
+    const result = await api('/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, role })
+    });
+
+    if (result.ok) {
+      await loadUsers();
+      render();
+      await showDialog('Success', `User "${username}" created successfully`);
+    } else {
+      await showDialog('Error', result.error || 'Failed to create user');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+}
+
+async function deleteUser(userId, username) {
+  const confirmed = await showConfirm('Delete User', `Are you sure you want to delete "${username}"? This cannot be undone.`);
+  if (!confirmed) return;
+
+  try {
+    const result = await api(`/users/${userId}`, { method: 'DELETE' });
+    if (result.ok) {
+      await loadUsers();
+      render();
+    } else {
+      await showDialog('Error', result.error || 'Failed to delete user');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+}
+
+function showChangePasswordModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'password-modal';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Change Password</h3>
+        <button class="modal-close" onclick="closeModal('password-modal')">✕</button>
+      </div>
+      <form id="change-password-form">
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <input type="password" class="form-input" id="current-password" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" class="form-input" id="new-pw" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <input type="password" class="form-input" id="confirm-pw" required>
+        </div>
+        <div id="pw-error" style="color: var(--accent-red); margin-bottom: 16px; display: none;"></div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('password-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Change Password</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await changePassword();
+  });
+}
+
+async function changePassword() {
+  const currentPassword = document.getElementById('current-password')?.value;
+  const newPassword = document.getElementById('new-pw')?.value;
+  const confirmPassword = document.getElementById('confirm-pw')?.value;
+  const errorDiv = document.getElementById('pw-error');
+
+  if (newPassword !== confirmPassword) {
+    errorDiv.textContent = 'New passwords do not match';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const result = await api('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    if (result.ok) {
+      closeModal('password-modal');
+      await showDialog('Success', 'Password changed successfully');
+    } else {
+      errorDiv.textContent = result.error || 'Failed to change password';
+      errorDiv.style.display = 'block';
+    }
+  } catch (e) {
+    errorDiv.textContent = e.message;
+    errorDiv.style.display = 'block';
+  }
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.remove();
+}
+
+function showDialog(title, message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'dialog-modal';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">${title}</h3>
+          <button class="modal-close" onclick="closeModal('dialog-modal')">✕</button>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">${message}</p>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" id="dialog-ok-btn">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('dialog-ok-btn').addEventListener('click', () => {
+      closeModal('dialog-modal');
+      resolve();
+    });
+  });
+}
+
+window.addUser = addUser;
+window.deleteUser = deleteUser;
+window.showChangePasswordModal = showChangePasswordModal;
+window.changePassword = changePassword;
+window.closeModal = closeModal;
+window.showDialog = showDialog;
+
+// Test AI provider connection
+window.testAIProvider = async function () {
+  const statusEl = document.getElementById('test-ai-status');
+  const btn = document.getElementById('test-ai-btn');
+
+  const anthropicKey = document.getElementById('setup-anthropic')?.value;
+  const openaiKey = document.getElementById('setup-openai')?.value;
+  const googleKey = document.getElementById('setup-google')?.value;
+  const deepseekKey = document.getElementById('setup-deepseek')?.value;
+  const ollamaUrl = document.getElementById('setup-ollama')?.value;
+
+  if (!anthropicKey && !openaiKey && !googleKey && !deepseekKey && !ollamaUrl) {
+    if (statusEl) statusEl.textContent = '⚠️ Enter an API key first';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = '🔄 Testing...';
+
+  try {
+    // Pick the first provider with a key
+    let provider, apiKey;
+    if (anthropicKey) { provider = 'anthropic'; apiKey = anthropicKey; }
+    else if (openaiKey) { provider = 'openai'; apiKey = openaiKey; }
+    else if (googleKey) { provider = 'google'; apiKey = googleKey; }
+    else if (deepseekKey) { provider = 'deepseek'; apiKey = deepseekKey; }
+    else if (ollamaUrl) { provider = 'ollama'; apiKey = ollamaUrl; }
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (state.sessionId) headers['Authorization'] = 'Bearer ' + state.sessionId;
+
+    const response = await fetch('/dashboard/api/setup/test-ai', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ provider, apiKey })
+    });
+    const res = await response.json();
+
+    if (res.ok) {
+      if (statusEl) {
+        statusEl.textContent = 'AI is working! ' + (res.message || '');
+        statusEl.style.color = 'var(--success)';
+      }
+    } else {
+      if (statusEl) {
+        statusEl.textContent = 'Test failed: ' + (res.error || 'Unknown error');
+        statusEl.style.color = 'var(--error)';
+      }
+    }
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = 'Error: ' + e.message;
+      statusEl.style.color = 'var(--error)';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+// Connect Google OAuth
+window.connectGoogleOAuth = async function () {
+  const statusEl = document.getElementById('google-status');
+  if (statusEl) statusEl.textContent = 'Connecting...';
+
+  try {
+    const res = await api('/google/auth-url');
+    if (res.ok && res.authUrl) {
+      // Open in new window for OAuth flow
+      const popup = window.open(res.authUrl, 'google-auth', 'width=500,height=700');
+
+      // Check for completion periodically
+      const checkInterval = setInterval(async () => {
+        try {
+          if (popup?.closed) {
+            clearInterval(checkInterval);
+            // Check if authentication succeeded
+            const status = await api('/google/status');
+            if (status.authenticated) {
+              if (statusEl) {
+                statusEl.textContent = '✅ Connected!';
+                statusEl.style.color = 'var(--success)';
+              }
+            } else {
+              if (statusEl) statusEl.textContent = 'Not connected';
+            }
+          }
+        } catch (e) {
+          clearInterval(checkInterval);
+        }
+      }, 1000);
+    } else {
+      showDialog('Google OAuth Not Configured',
+        `Please copy your Google OAuth credentials JSON file to:\n\n${res.credentialsPath || '~/.openwhale/google/credentials.json'}\n\nYou can get credentials from the Google Cloud Console.`);
+      if (statusEl) statusEl.textContent = 'Not configured';
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Error';
+    showDialog('Error', 'Failed to connect to Google: ' + e.message);
+  }
+};
+
+// Back button handler
+window.goBack = function (step) {
+  state.setupStep = step;
+  render();
+};
+
+// Toggle channel in setup wizard
+window.toggleSetupChannel = function (type, checked) {
+  if (type === 'telegram') state.setupTelegramEnabled = checked;
+  if (type === 'discord') state.setupDiscordEnabled = checked;
+  render();
+};
+
+// Connect channel during setup
+window.connectChannelInSetup = async function (type) {
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Connecting...';
+  }
+
+  try {
+    if (type === 'whatsapp') {
+      // Trigger connection
+      await api('/channels/whatsapp/connect', { method: 'POST' });
+      state.whatsappConnecting = true;
+      render();
+
+      // Poll for QR code and connection status
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await api('/channels/whatsapp/status');
+
+          if (status.connected) {
+            // Connected!
+            clearInterval(pollInterval);
+            state.whatsappConnecting = false;
+            state.whatsappConnected = true;
+            state.whatsappQR = null;
+            render();
+          } else if (status.qrCode) {
+            // Got QR code
+            state.whatsappQR = status.qrCode;
+            render();
+          }
+        } catch (e) {
+          console.error('WhatsApp poll error:', e);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Stop polling after 3 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (state.whatsappConnecting && !state.whatsappConnected) {
+          state.whatsappConnecting = false;
+          showAlert('WhatsApp connection timed out. Please try again.', '⏰ Timeout');
+          render();
+        }
+      }, 180000);
+
+    } else if (type === 'telegram') {
+      // Telegram bot token input
+      const token = await showPrompt('Enter your Telegram Bot Token (from @BotFather):', '', '📱 Telegram Setup');
+      if (token) {
+        const result = await api('/channels/telegram/connect', {
+          method: 'POST',
+          body: JSON.stringify({ telegramBotToken: token })
+        });
+        if (result.ok) {
+          await showAlert(`Telegram bot @${result.botUsername} connected!`, '✅ Success');
+        } else {
+          await showAlert(`Failed: ${result.error}`, '❌ Error');
+        }
+      }
+      render();
+    } else if (type === 'discord') {
+      // Discord bot token input
+      const token = await showPrompt('Enter your Discord Bot Token:', '', '🎮 Discord Setup');
+      if (token) {
+        const result = await api('/channels/discord/connect', {
+          method: 'POST',
+          body: JSON.stringify({ discordBotToken: token })
+        });
+        if (result.ok) {
+          await showAlert(`Discord bot ${result.botUsername} connected!`, '✅ Success');
+        } else {
+          await showAlert(`Failed: ${result.error}`, '❌ Error');
+        }
+      }
+      render();
+    }
+  } catch (e) {
+    await showAlert(`Failed to connect ${type}: ${e.message}`, '❌ Error');
+    state.whatsappConnecting = false;
+    render();
+  }
+};
+
+window.toggleToolCall = function (msgId, index) {
+  const el = document.getElementById(`tool-${msgId}-${index}`);
+  if (el) {
+    el.classList.toggle('expanded');
+    // Also toggle parent chip's expanded class for chevron rotation
+    const chip = el.closest('.tool-call-chip');
+    if (chip) chip.classList.toggle('expanded');
+  }
+};
+
+window.toggleTool = function (name, enabled) {
+  // Update tool state locally (for now - could add API endpoint)
+  const tool = state.tools.find(t => t.name === name);
+  if (tool) {
+    tool.disabled = !enabled;
+    render();
+  }
+};
+
+window.setToolsSearch = function (query) {
+  state.toolsSearch = query;
+  state.toolsPage = 0;
+  render();
+  // Re-focus and restore cursor position
+  requestAnimationFrame(() => {
+    const input = document.getElementById('tools-search-input');
+    if (input) { input.focus(); input.setSelectionRange(query.length, query.length); }
+  });
+};
+
+window.setToolsPage = function (page) {
+  state.toolsPage = Math.max(0, page);
+  render();
+  // Scroll to top of tools area
+  const main = document.querySelector('.main-content');
+  if (main) main.scrollTop = 0;
+};
+
+window.setToolsCategory = function (cat) {
+  state.toolsCategory = cat;
+  state.toolsPage = 0;
+  render();
+};
+
+window.toggleProvider = async function (type, enabled) {
+  if (enabled) {
+    // Disable all other providers first (radio button behavior)
+    for (const p of state.providers) {
+      if (p.type !== type && p.enabled) {
+        await saveProviderConfig(p.type, { enabled: false });
+      }
+    }
+  }
+  await saveProviderConfig(type, { enabled });
+  await loadProviders();
+  render();
+};
+
+window.toggleSkill = async function (id, enabled) {
+  await saveSkillConfig(id, { enabled });
+};
+
+// Extension actions
+window.toggleExtension = async function (name) {
+  try {
+    const result = await api(`/extensions/${name}/toggle`, { method: 'POST' });
+    if (result.ok) {
+      await loadExtensions();
+      render();
+    } else {
+      await showDialog('Error', result.error || 'Failed to toggle extension');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+};
+
+window.runExtension = async function (name) {
+  try {
+    await showDialog('Running', `Executing extension "${name}"...`);
+    const result = await api(`/extensions/${name}/run`, { method: 'POST' });
+    if (result.ok) {
+      await showDialog('Success', `Extension output:\n\n${result.output || 'No output'}`);
+    } else {
+      await showDialog('Error', result.error || 'Extension failed');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+};
+
+window.viewExtensionCode = async function (name) {
+  try {
+    const result = await api(`/extensions/${name}/code`);
+    if (result.ok) {
+      // Create a code viewer modal
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'code-modal';
+      overlay.innerHTML = `
+        <div class="modal-box" style="max-width: 800px; max-height: 80vh;">
+          <div class="modal-header">
+            <h3 class="modal-title">Extension: ${name}</h3>
+            <button class="modal-close" onclick="closeModal('code-modal')">✕</button>
+          </div>
+          <pre style="background: var(--surface); padding: 16px; border-radius: 8px; overflow: auto; max-height: 60vh; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.5;"><code>${result.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+            <button class="btn btn-secondary" onclick="closeModal('code-modal')">Close</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    } else {
+      await showDialog('Error', result.error || 'Failed to load code');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+};
+
+window.deleteExtension = async function (name) {
+  const confirmed = await showConfirm('Delete Extension', `Are you sure you want to delete "${name}"? This cannot be undone.`);
+  if (!confirmed) return;
+
+  try {
+    const result = await api(`/extensions/${name}`, { method: 'DELETE' });
+    if (result.ok) {
+      await loadExtensions();
+      render();
+      await showDialog('Success', `Extension "${name}" deleted`);
+    } else {
+      await showDialog('Error', result.error || 'Failed to delete extension');
+    }
+  } catch (e) {
+    await showDialog('Error', e.message);
+  }
+};
+
+window.saveProvider = async function (type) {
+  const apiKey = document.getElementById(`apikey-${type}`)?.value;
+  const baseUrl = document.getElementById(`baseurl-${type}`)?.value;
+  const selectedModel = document.getElementById(`model-${type}`)?.value;
+
+  // Save provider config with selected model
+  await saveProviderConfig(type, { apiKey, baseUrl, enabled: true, selectedModel });
+
+  // If a model was selected, update state
+  if (selectedModel) {
+    state.currentModel = selectedModel;
+    await showAlert(`Saved! Using ${type} with model ${selectedModel}`, '✅ Success');
+    render();
+  }
+};
+
+window.saveSkill = async function (id) {
+  const apiKey = document.getElementById(`skill-${id}`)?.value;
+  await saveSkillConfig(id, { apiKey, enabled: !!apiKey });
+};
+
+window.saveTwilioConfig = async function () {
+  const sid = document.getElementById('skill-twilio-sid')?.value;
+  const token = document.getElementById('skill-twilio-token')?.value;
+  const phone = document.getElementById('skill-twilio-phone')?.value;
+  if (!sid || !token) {
+    await showAlert('Account SID and Auth Token are required', '❌ Error');
+    return;
+  }
+  const apiKey = JSON.stringify({ sid, authToken: token, phone: phone || '' });
+  await saveSkillConfig('twilio', { apiKey, enabled: true });
+  await showAlert('Twilio configured successfully!', '✅ Success');
+};
+
+window.switchSkillsTab = function (tab) {
+  state.skillsTab = tab;
+  render();
+};
+
+window.editMdSkill = async function (skillPath) {
+  // skillPath is path to SKILL.md, get skill directory
+  const skillDir = skillPath.replace(/\/SKILL\.md$/, '');
+  state.editingSkillDir = skillDir;
+  state.editingSkillPath = skillPath;
+  state.editingSkillContent = null;
+  state.editingSkillTree = [];
+  state.editingSkillLoading = true;
+  render();
+
+  try {
+    // Load file tree
+    const treeRes = await api('/md-skills/tree?dir=' + encodeURIComponent(skillDir));
+    state.editingSkillTree = treeRes.tree || [];
+
+    // Load initial file content
+    const contentRes = await api('/md-skills/content?path=' + encodeURIComponent(skillPath));
+    state.editingSkillContent = contentRes.content;
+  } catch (e) {
+    state.editingSkillContent = '# Error loading skill\n\n' + e.message;
+  }
+  state.editingSkillLoading = false;
+  render();
+};
+
+window.selectSkillFile = async function (filePath) {
+  state.editingSkillPath = filePath;
+  state.editingSkillLoading = true;
+  render();
+
+  try {
+    const res = await api('/md-skills/content?path=' + encodeURIComponent(filePath));
+    state.editingSkillContent = res.content;
+  } catch (e) {
+    state.editingSkillContent = '# Error loading file\n\n' + e.message;
+  }
+  state.editingSkillLoading = false;
+  render();
+};
+
+window.closeMdSkillEditor = function () {
+  state.editingSkillDir = null;
+  state.editingSkillPath = null;
+  state.editingSkillContent = null;
+  state.editingSkillTree = [];
+  state.editingSkillLoading = false;
+  render();
+};
+
+window.showCreateSkillModal = function () {
+  state.showCreateSkillModal = true;
+  render();
+};
+
+// Handle search with focus preservation
+window.handleMdSkillsSearch = function (input) {
+  const cursorPos = input.selectionStart;
+  state.mdSkillsSearch = input.value;
+  state.mdSkillsPage = 0;
+  render();
+  // Restore focus and cursor after render
+  setTimeout(() => {
+    const searchInput = document.getElementById('md-skills-search');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.setSelectionRange(cursorPos, cursorPos);
+    }
+  }, 0);
+};
+
+window.setMdSkillsPage = function (page) {
+  state.mdSkillsPage = page;
+  render();
+  // Scroll to top of skills section
+  const skillsSection = document.querySelector('.skills-grid');
+  if (skillsSection) {
+    skillsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+window.closeCreateSkillModal = function () {
+  state.showCreateSkillModal = false;
+  render();
+};
+
+window.createNewSkill = async function () {
+  const nameInput = document.getElementById('new-skill-name');
+  const descInput = document.getElementById('new-skill-desc');
+
+  const name = nameInput?.value?.trim();
+  const description = descInput?.value?.trim();
+
+  if (!name) {
+    showAlert('Please enter a skill name', 'Validation Error');
+    return;
+  }
+
+  try {
+    const res = await api('/md-skills/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description })
+    });
+
+    if (res.error) {
+      showAlert(res.error, 'Error');
+      return;
+    }
+
+    state.showCreateSkillModal = false;
+    await loadSkills(); // Reload skills list
+    showAlert('Skill created successfully!', 'Success');
+
+    // Open the new skill for editing
+    if (res.path) {
+      editMdSkill(res.path + '/SKILL.md');
+    }
+  } catch (e) {
+    showAlert('Failed to create skill: ' + e.message, 'Error');
+  }
+};
+
+window.promptNewFile = async function () {
+  const fileName = await showPrompt('Enter file name (e.g., guide.md, config.json):', 'New File');
+  if (!fileName) return;
+
+  if (!state.editingSkillDir) {
+    showAlert('No skill directory selected', 'Error');
+    return;
+  }
+
+  try {
+    const res = await api('/md-skills/create-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentDir: state.editingSkillDir,
+        fileName: fileName
+      })
+    });
+
+    if (res.error) {
+      showAlert(res.error, 'Error');
+      return;
+    }
+
+    // Reload tree and open the new file
+    const treeRes = await api('/md-skills/tree?dir=' + encodeURIComponent(state.editingSkillDir));
+    state.editingSkillTree = treeRes.tree || [];
+
+    if (res.path) {
+      await selectSkillFile(res.path);
+    }
+    render();
+    showAlert('File created!', 'Success');
+  } catch (e) {
+    showAlert('Failed to create file: ' + e.message, 'Error');
+  }
+};
+
+window.promptNewFolder = async function () {
+  const folderName = await showPrompt('Enter folder name (e.g., reference, scripts):', 'New Folder');
+  if (!folderName) return;
+
+  if (!state.editingSkillDir) {
+    showAlert('No skill directory selected', 'Error');
+    return;
+  }
+
+  try {
+    const res = await api('/md-skills/create-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        skillDir: state.editingSkillDir,
+        folderName: folderName
+      })
+    });
+
+    if (res.error) {
+      showAlert(res.error, 'Error');
+      return;
+    }
+
+    // Reload tree
+    const treeRes = await api('/md-skills/tree?dir=' + encodeURIComponent(state.editingSkillDir));
+    state.editingSkillTree = treeRes.tree || [];
+    render();
+    showAlert('Folder created!', 'Success');
+  } catch (e) {
+    showAlert('Failed to create folder: ' + e.message, 'Error');
+  }
+};
+
+window.promptNewFileInFolder = async function (folderPath) {
+  const fileName = await showPrompt('Enter file name (e.g., guide.md, script.sh):', 'New File');
+  if (!fileName) return;
+
+  try {
+    const res = await api('/md-skills/create-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentDir: folderPath,
+        fileName: fileName
+      })
+    });
+
+    if (res.error) {
+      showAlert(res.error, 'Error');
+      return;
+    }
+
+    // Reload tree and open the new file
+    const treeRes = await api('/md-skills/tree?dir=' + encodeURIComponent(state.editingSkillDir));
+    state.editingSkillTree = treeRes.tree || [];
+
+    if (res.path) {
+      await selectSkillFile(res.path);
+    }
+    render();
+    showAlert('File created!', 'Success');
+  } catch (e) {
+    showAlert('Failed to create file: ' + e.message, 'Error');
+  }
+};
+
+window.saveMdSkill = async function () {
+  const textarea = document.getElementById('skill-editor-content');
+  if (!textarea || !state.editingSkillPath) return;
+
+  try {
+    await api('/md-skills/save', {
+      method: 'POST',
+      body: JSON.stringify({ path: state.editingSkillPath, content: textarea.value })
+    });
+    await showAlert('Skill saved!', '✅ Success');
+    state.editingSkillPath = null;
+    state.editingSkillContent = null;
+    await loadSkills();
+    render();
+  } catch (e) {
+    await showAlert('Failed to save: ' + e.message, '❌ Error');
+  }
+};
+
+window.saveSettings = async function () {
+  const model = document.getElementById('default-model')?.value;
+  const phone = document.getElementById('owner-phone')?.value;
+
+  try {
+    await api('/config', {
+      method: 'POST',
+      body: JSON.stringify({ defaultModel: model, ownerPhone: phone })
+    });
+    await showAlert('Settings saved!', '✅ Success');
+  } catch (e) {
+    await showAlert('Failed to save: ' + e.message, '❌ Error');
+  }
+};
+
+window.saveLogSettings = async function () {
+  const logPath = document.getElementById('log-file-path')?.value;
+  try {
+    await api('/config', {
+      method: 'POST',
+      body: JSON.stringify({ logFilePath: logPath })
+    });
+    state.config.logFilePath = logPath;
+    await showAlert('Log settings saved!', '✅ Success');
+  } catch (e) {
+    await showAlert('Failed to save: ' + e.message, '❌ Error');
+  }
+};
+
+window.applyLogFilters = async function () {
+  state.logsFilter.search = document.getElementById('log-search')?.value || '';
+  state.logsFilter.level = document.getElementById('log-level')?.value || '';
+  state.logsFilter.category = document.getElementById('log-category')?.value || '';
+  state.logsFilter.startDate = document.getElementById('log-start-date')?.value || '';
+  state.logsFilter.endDate = document.getElementById('log-end-date')?.value || '';
+  state.logsPage = 0;
+  await loadLogs();
+  render();
+};
+
+window.clearLogFilters = async function () {
+  state.logsFilter = { level: '', category: '', startDate: '', endDate: '', search: '' };
+  state.logsPage = 0;
+  await loadLogs();
+  render();
+};
+
+window.refreshLogs = async function () {
+  await loadLogs();
+  render();
+};
+
+window.changeLogPage = async function (delta) {
+  state.logsPage = Math.max(0, state.logsPage + delta);
+  await loadLogs();
+  render();
+};
+
+window.toggleLogDetail = function (index) {
+  const row = document.getElementById('log-detail-' + index);
+  if (row) {
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  }
+};
+
+// Browser automation settings
+window.updateBrowserBackend = async function () {
+  const backend = document.getElementById('browser-backend')?.value;
+
+  try {
+    await api('/settings/browser', {
+      method: 'POST',
+      body: JSON.stringify({ backend })
+    });
+    await showAlert(`Browser backend set to ${backend === 'browseros' ? 'BrowserOS' : 'Playwright'}`, '✅ Success');
+  } catch (e) {
+    await showAlert('Failed to update: ' + e.message, '❌ Error');
+  }
+};
+
+window.checkBrowserOSStatus = async function () {
+  const indicator = document.getElementById('browseros-indicator');
+  const statusText = document.getElementById('browseros-status-text');
+  const toolsDiv = document.getElementById('browseros-tools');
+  const browserosOption = document.getElementById('browseros-option');
+  const backendSelect = document.getElementById('browser-backend');
+
+  if (!indicator) return; // Not on settings page
+
+  try {
+    const status = await api('/settings/browser/status');
+    const settings = await api('/settings/browser');
+
+    if (status.browseros?.available) {
+      // Fully available - MCP enabled and responding
+      indicator.style.background = '#10b981';
+      statusText.textContent = `BrowserOS running at ${status.browseros.url}`;
+      if (status.browseros.version) {
+        statusText.textContent += ` (v${status.browseros.version})`;
+      }
+      const toolCount = status.browseros.toolCount || 42;
+      toolsDiv.textContent = `${toolCount} browser automation tools available`;
+
+      // Enable the BrowserOS option
+      if (browserosOption) {
+        browserosOption.disabled = false;
+        browserosOption.textContent = 'BrowserOS (Full Browser)';
+      }
+
+      // Set current selection
+      if (backendSelect && settings.backend) {
+        backendSelect.value = settings.backend;
+      }
+    } else if (status.browseros?.running) {
+      // Running but MCP not enabled
+      indicator.style.background = '#f59e0b';
+      statusText.textContent = 'BrowserOS running, but MCP server not enabled';
+      toolsDiv.innerHTML = `<span style="color: #f59e0b;">⚠️ Enable MCP server:</span> Open BrowserOS → <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">chrome://browseros/mcp</code> → Enable`;
+    } else {
+      // Not running
+      indicator.style.background = '#6b7280';
+      statusText.textContent = status.browseros?.error || 'BrowserOS not running';
+      toolsDiv.innerHTML = '<a href="https://browseros.com" target="_blank" style="color: var(--primary);">Download BrowserOS</a> or run: npm run cli browser install';
+    }
+  } catch (e) {
+    indicator.style.background = '#ef4444';
+    statusText.textContent = 'Failed to check status';
+    toolsDiv.textContent = e.message || '';
+  }
+};
+
+// Check BrowserOS status when settings page loads
+window.initBrowserSettings = function () {
+  setTimeout(checkBrowserOSStatus, 500);
+};
+
+// ============== HEARTBEAT SETTINGS ==============
+
+window.initHeartbeatSettings = async function () {
+  try {
+    const config = await api('/settings/heartbeat');
+    const enabledCheckbox = document.getElementById('heartbeat-enabled');
+    const intervalSelect = document.getElementById('heartbeat-interval');
+    const modelSelect = document.getElementById('heartbeat-model');
+    const hoursStart = document.getElementById('heartbeat-hours-start');
+    const hoursEnd = document.getElementById('heartbeat-hours-end');
+    const promptTextarea = document.getElementById('heartbeat-prompt');
+
+    if (enabledCheckbox) enabledCheckbox.checked = config.enabled || false;
+    if (intervalSelect && config.every) intervalSelect.value = config.every;
+    if (modelSelect && config.model) modelSelect.value = config.model;
+    if (hoursStart && config.activeHoursStart) hoursStart.value = config.activeHoursStart;
+    if (hoursEnd && config.activeHoursEnd) hoursEnd.value = config.activeHoursEnd;
+    if (promptTextarea && config.prompt) promptTextarea.value = config.prompt;
+
+    // Load forward-to dropdown with connected channels
+    await loadForwardToChannels(config.forwardTo || '');
+
+    // Update field visibility
+    const fields = document.getElementById('heartbeat-fields');
+    if (fields) fields.style.opacity = config.enabled ? '1' : '0.5';
+
+    // Load HEARTBEAT.md content into editor
+    await loadHeartbeatMd();
+
+    // Refresh status
+    await refreshHeartbeatStatus();
+  } catch (e) {
+    console.warn('[Heartbeat] Failed to load settings:', e);
+  }
+};
+
+window.saveHeartbeatSettings = async function () {
+  const enabled = document.getElementById('heartbeat-enabled')?.checked || false;
+  const every = document.getElementById('heartbeat-interval')?.value || '30m';
+  const model = document.getElementById('heartbeat-model')?.value || '';
+  const activeHoursStart = document.getElementById('heartbeat-hours-start')?.value || '';
+  const activeHoursEnd = document.getElementById('heartbeat-hours-end')?.value || '';
+  const prompt = document.getElementById('heartbeat-prompt')?.value || '';
+
+  const forwardTo = document.getElementById('heartbeat-forward-to')?.value || '';
+
+  try {
+    await api('/settings/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify({ enabled, every, model, activeHoursStart, activeHoursEnd, prompt, forwardTo })
+    });
+
+    // Also save HEARTBEAT.md content if editor exists
+    const mdEditor = document.getElementById('heartbeat-md-editor');
+    if (mdEditor) {
+      await api('/settings/heartbeat/md', {
+        method: 'POST',
+        body: JSON.stringify({ content: mdEditor.value })
+      });
+    }
+
+    await showAlert('Heartbeat settings and HEARTBEAT.md saved!', '✅ Success');
+    await refreshHeartbeatStatus();
+  } catch (e) {
+    await showAlert('Failed to save: ' + e.message, '❌ Error');
+  }
+};
+
+window.toggleHeartbeat = function () {
+  const enabled = document.getElementById('heartbeat-enabled')?.checked || false;
+  const fields = document.getElementById('heartbeat-fields');
+  if (fields) fields.style.opacity = enabled ? '1' : '0.5';
+};
+
+async function loadHeartbeatMd() {
+  const editor = document.getElementById('heartbeat-md-editor');
+  if (!editor) return;
+  try {
+    const result = await api('/settings/heartbeat/md');
+    editor.value = result.content || '';
+  } catch {
+    editor.value = '';
+    editor.placeholder = 'Failed to load HEARTBEAT.md';
+  }
+}
+
+window.saveHeartbeatMd = async function () {
+  const editor = document.getElementById('heartbeat-md-editor');
+  if (!editor) return;
+  try {
+    await api('/settings/heartbeat/md', {
+      method: 'POST',
+      body: JSON.stringify({ content: editor.value })
+    });
+    await showAlert('HEARTBEAT.md saved!', '✅ Success');
+    await refreshHeartbeatStatus();
+  } catch (e) {
+    await showAlert('Failed to save HEARTBEAT.md: ' + e.message, '❌ Error');
+  }
+};
+
+async function refreshHeartbeatStatus() {
+  const indicator = document.getElementById('heartbeat-indicator');
+  const statusText = document.getElementById('heartbeat-status-text');
+  if (!indicator || !statusText) return;
+
+  try {
+    const status = await api('/settings/heartbeat/status');
+    if (status.running) {
+      indicator.style.background = '#22c55e';
+      let text = 'Running — every ' + status.every;
+      if (status.lastRunAt) {
+        const ago = timeSince(new Date(status.lastRunAt));
+        text += ' (last: ' + ago + ' ago';
+        if (status.lastResult) text += ', result: ' + status.lastResult;
+        text += ')';
+      }
+      if (status.heartbeatMdExists) text += ' • HEARTBEAT.md found';
+      statusText.textContent = text;
+    } else if (status.enabled) {
+      indicator.style.background = '#f59e0b';
+      statusText.textContent = 'Enabled but not running (save settings to start)';
+    } else {
+      indicator.style.background = 'var(--text-muted)';
+      statusText.textContent = 'Disabled';
+    }
+  } catch {
+    indicator.style.background = 'var(--text-muted)';
+    statusText.textContent = 'Unable to fetch status';
+  }
+}
+
+function timeSince(date) {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return seconds + 's';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return minutes + 'm';
+  const hours = Math.floor(minutes / 60);
+  return hours + 'h';
+}
+
+// ============== FORWARD-TO CHANNEL DROPDOWN ==============
+
+async function loadForwardToChannels(currentValue) {
+  const select = document.getElementById('heartbeat-forward-to');
+  if (!select) return;
+
+  // Keep first two static options, remove any dynamic ones
+  while (select.options.length > 2) select.remove(2);
+
+  try {
+    const result = await api('/settings/heartbeat/channels');
+    if (result.channels && result.channels.length > 0) {
+      const separator = document.createElement('option');
+      separator.disabled = true;
+      separator.textContent = '── Connected Channels ──';
+      select.appendChild(separator);
+
+      for (const ch of result.channels) {
+        const opt = document.createElement('option');
+        opt.value = ch;
+        const labels = {
+          whatsapp: '📱 WhatsApp',
+          telegram: '✈️ Telegram',
+          discord: '🎮 Discord',
+          imessage: '💬 iMessage',
+          slack: '💼 Slack',
+          twitter: '🐦 Twitter'
+        };
+        opt.textContent = labels[ch] || ch;
+        select.appendChild(opt);
+      }
+    }
+  } catch (e) {
+    console.warn('[Heartbeat] Failed to load channels:', e);
+  }
+
+  // Set saved value
+  if (currentValue) select.value = currentValue;
+}
+
+// ============== TOAST NOTIFICATIONS ==============
+
+let toastContainer = null;
+
+function ensureToastContainer() {
+  if (toastContainer && document.body.contains(toastContainer)) return toastContainer;
+  toastContainer = document.createElement('div');
+  toastContainer.id = 'heartbeat-toast-container';
+  toastContainer.style.cssText = 'position: fixed; top: 16px; right: 16px; z-index: 100000; display: flex; flex-direction: column; gap: 8px; pointer-events: none;';
+  document.body.appendChild(toastContainer);
+  return toastContainer;
+}
+
+function showHeartbeatToast(alert) {
+  const container = ensureToastContainer();
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    pointer-events: auto;
+    max-width: 380px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+    color: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    font-size: 13px;
+    line-height: 1.5;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    animation: slideIn 0.3s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.3s;
+  `;
+
+  const forwarded = alert.forwardedTo && alert.forwardedTo.length > 0
+    ? ' → ' + alert.forwardedTo.join(', ')
+    : '';
+  // Simple markdown to HTML for toast
+  const formatMd = (text) => {
+    return text
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^[-•] (.+)$/gm, '• $1')
+      .replace(/\n/g, '<br>');
+  };
+  const preview = alert.text.length > 300 ? alert.text.slice(0, 300) + '…' : alert.text;
+  toast.innerHTML = '<div style="font-weight: 600; margin-bottom: 4px;">💓 Heartbeat Alert' + forwarded + '</div>'
+    + '<div style="opacity: 0.9;">' + formatMd(preview) + '</div>';
+
+  toast.onclick = () => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100px)';
+    setTimeout(() => toast.remove(), 300);
+  };
+
+  container.appendChild(toast);
+
+  // Auto-dismiss after 10s
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100px)';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 10000);
+}
+
+// Add CSS animation
+if (!document.getElementById('heartbeat-toast-style')) {
+  const style = document.createElement('style');
+  style.id = 'heartbeat-toast-style';
+  style.textContent = '@keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }';
+  document.head.appendChild(style);
+}
+
+// ============== HEARTBEAT ALERT POLLING ==============
+
+let heartbeatAlertPollInterval = null;
+let lastHeartbeatAlertId = null;
+
+function startHeartbeatAlertPolling() {
+  // Only poll if not already running
+  if (heartbeatAlertPollInterval) return;
+
+  heartbeatAlertPollInterval = setInterval(async () => {
+    try {
+      const url = lastHeartbeatAlertId
+        ? '/settings/heartbeat/alerts?since=' + encodeURIComponent(lastHeartbeatAlertId)
+        : '/settings/heartbeat/alerts';
+      const result = await api(url);
+      if (result.alerts && result.alerts.length > 0) {
+        for (const alert of result.alerts) {
+          showHeartbeatToast(alert);
+          lastHeartbeatAlertId = alert.id;
+        }
+      }
+    } catch {
+      // Silently ignore polling errors
+    }
+  }, 15000); // Poll every 15 seconds
+}
+
+function stopHeartbeatAlertPolling() {
+  if (heartbeatAlertPollInterval) {
+    clearInterval(heartbeatAlertPollInterval);
+    heartbeatAlertPollInterval = null;
+  }
+}
+
+// Start polling whenever page is loaded
+startHeartbeatAlertPolling();
+
+window.resetSetup = async function () {
+  const confirmed = await showConfirm('This will reset all configuration.', '⚠️ Reset Setup?');
+  if (confirmed) {
+    try {
+      await api('/setup/reset', { method: 'POST' });
+      state.setupComplete = false;
+      state.setupStep = 0;
+      state.view = 'setup';
+      render();
+    } catch (e) {
+      await showAlert('Failed to reset: ' + e.message, '❌ Error');
+    }
+  }
+};
+
+window.viewChannelMessages = async function (type) {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.onclick = (e) => {
+    if (e.target === overlay) overlay.remove();
+  };
+
+  const channelNames = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    discord: 'Discord',
+    web: 'Web',
+    imessage: 'iMessage'
+  };
+
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 700px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border);">
+        <h2 style="margin: 0;">${channelNames[type] || type} Messages</h2>
+        <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 24px;">&times;</button>
+      </div>
+      <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          Loading messages...
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Fetch messages
+  try {
+    const res = await fetch('/dashboard/api/channels/' + type + '/messages');
+    const data = await res.json();
+
+    const modalBody = overlay.querySelector('.modal-body');
+
+    // Handle WhatsApp conversations format
+    if (type === 'whatsapp' && data.conversations) {
+      if (data.conversations.length === 0) {
+        modalBody.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">' +
+          '<div style="font-size: 48px; margin-bottom: 16px;">📱</div>' +
+          '<div>No WhatsApp messages yet</div>' +
+          '<div style="font-size: 12px; margin-top: 8px;">Messages will appear here after sending or receiving via WhatsApp</div>' +
+          '</div>';
+        return;
+      }
+
+      // Show stats summary
+      let html = '<div style="display: flex; gap: 16px; margin-bottom: 20px; padding: 12px; background: var(--surface-2); border-radius: 8px;">' +
+        '<div><strong>' + (data.stats?.sent || 0) + '</strong> <span style="color: var(--text-muted);">sent</span></div>' +
+        '<div><strong>' + (data.stats?.received || 0) + '</strong> <span style="color: var(--text-muted);">received</span></div>' +
+        '<div><strong>' + data.conversations.length + '</strong> <span style="color: var(--text-muted);">conversations</span></div>' +
+        '</div>';
+
+      // Render conversations
+      for (const conv of data.conversations) {
+        const displayName = conv.contactName || conv.contact;
+        html += '<div style="margin-bottom: 24px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">' +
+          '<div style="padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">' +
+          '<div style="font-weight: 600;">📱 ' + escapeHtml(displayName) + '</div>' +
+          '<div style="font-size: 11px; color: var(--text-muted);">' + conv.messages.length + ' messages</div>' +
+          '</div>' +
+          '<div style="padding: 16px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">';
+
+        for (const msg of conv.messages) {
+          const isOutbound = msg.direction === 'outbound';
+          const bgColor = isOutbound ? 'var(--accent)' : 'var(--surface-2)';
+          const align = isOutbound ? 'margin-left: auto;' : '';
+          const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const date = new Date(msg.timestamp).toLocaleDateString();
+          const content = msg.content ? escapeHtml(msg.content.slice(0, 300)) + (msg.content.length > 300 ? '...' : '') : '[media]';
+
+          html += '<div style="padding: 10px 14px; border-radius: 12px; background: ' + bgColor + '; max-width: 80%; ' + align + '">' +
+            '<div style="white-space: pre-wrap; word-break: break-word; font-size: 14px;">' + content + '</div>' +
+            '<div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right;">' + (isOutbound ? '✓ ' : '') + time + ' • ' + date + '</div>' +
+            '</div>';
+        }
+
+        html += '</div></div>';
+      }
+
+      modalBody.innerHTML = html;
+      return;
+    }
+
+    // Fallback for other channels (original format)
+    if (!data.ok || !data.messages || data.messages.length === 0) {
+      modalBody.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">' +
+        '<div style="font-size: 48px; margin-bottom: 16px;">💬</div>' +
+        '<div>No messages yet</div>' +
+        '<div style="font-size: 12px; margin-top: 8px;">Messages will appear here when users interact via ' + (channelNames[type] || type) + '</div>' +
+        '</div>';
+      return;
+    }
+
+    // Render messages (original format for non-WhatsApp)
+    let messagesHtml = '';
+    for (const msg of data.messages) {
+      const isUser = msg.role === 'user';
+      const bgColor = isUser ? 'var(--accent)' : 'var(--surface-2)';
+      const align = isUser ? 'margin-left: auto;' : '';
+      const sender = isUser ? msg.userId : 'OpenWhale';
+      const time = new Date(msg.timestamp).toLocaleString();
+      const content = escapeHtml(msg.content.slice(0, 500)) + (msg.content.length > 500 ? '...' : '');
+
+      messagesHtml += '<div class="chat-message ' + msg.role + '" style="margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; background: ' + bgColor + '; max-width: 85%; ' + align + '">' +
+        '<div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">' + sender + ' • ' + time + '</div>' +
+        '<div style="white-space: pre-wrap; word-break: break-word;">' + content + '</div>' +
+        '</div>';
+    }
+    modalBody.innerHTML = messagesHtml;
+
+  } catch (err) {
+    const modalBody = overlay.querySelector('.modal-body');
+    modalBody.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error);">Error loading messages: ' + err.message + '</div>';
+  }
+};
+
+// Helpers
+
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function getChannelIcon(type) {
+  const iconMap = {
+    whatsapp: 'smartphone',
+    telegram: 'send',
+    discord: 'messageSquare',
+    slack: 'messageSquare',
+    web: 'globe',
+    websocket: 'globe',
+    imessage: 'smartphone'
+  };
+  return icon(iconMap[type] || 'radio');
+}
+
+function getProviderIcon(type) {
+  const iconMap = {
+    anthropic: 'brain',
+    openai: 'sparkles',
+    google: 'sparkles',
+    ollama: 'cpu',
+    deepseek: 'brain',
+    groq: 'zap',
+    together: 'sparkles'
+  };
+  return icon(iconMap[type] || 'bot');
+}
+
+// Expose functions globally for inline onclick handlers (required for ES modules)
+window.clearChat = clearChat;
+window.loadBirdConfig = loadBirdConfig;
+window.saveTwitterCookies = saveTwitterCookies;
+window.checkBirdCLI = checkBirdCLI;
+
+// iMessage handlers
+window.installImsg = async function () {
+  const btn = document.getElementById('btn-install-imsg');
+  const statusEl = document.getElementById('imessage-status');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Installing...'; }
+  if (statusEl) statusEl.textContent = 'Installing imsg CLI... this may take a minute.';
+
+  try {
+    const res = await api('/channels/imessage/install', { method: 'POST' });
+    if (res.ok) {
+      if (statusEl) { statusEl.textContent = '✅ ' + (res.message || 'imsg installed!'); statusEl.style.color = 'var(--success)'; }
+      if (btn) { btn.textContent = '✅ Installed'; }
+      if (res.alreadyInstalled) {
+        await showAlert('imsg CLI is already installed!', '✅ Ready');
+      } else {
+        await showAlert('imsg CLI installed successfully! You can now connect iMessage.', '✅ Installed');
+      }
+    } else {
+      if (statusEl) { statusEl.textContent = '❌ ' + (res.error || 'Install failed'); statusEl.style.color = 'var(--error)'; }
+      if (btn) { btn.disabled = false; btn.textContent = '⬇️ Install imsg CLI'; }
+      await showAlert(res.error || 'Installation failed', '❌ Error');
+    }
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'var(--error)'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⬇️ Install imsg CLI'; }
+    await showAlert('Installation failed: ' + e.message, '❌ Error');
+  }
+};
+
+window.connectIMessage = async function () {
+  const btn = document.getElementById('btn-connect-imsg');
+  const statusEl = document.getElementById('imessage-status');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Connecting...'; }
+  if (statusEl) statusEl.textContent = 'Connecting to iMessage...';
+
+  try {
+    const res = await api('/channels/imessage/connect', { method: 'POST' });
+    if (res.ok) {
+      if (statusEl) { statusEl.textContent = '✅ Connected!'; statusEl.style.color = 'var(--success)'; }
+      await showAlert(res.message || 'iMessage connected!', '✅ Success');
+      await loadChannels();
+      render();
+    } else {
+      if (statusEl) { statusEl.textContent = '❌ ' + (res.error || 'Connection failed'); statusEl.style.color = 'var(--error)'; }
+      if (btn) { btn.disabled = false; btn.textContent = '📱 Connect iMessage'; }
+      await showAlert(res.error || 'Connection failed', '❌ Error');
+    }
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'var(--error)'; }
+    if (btn) { btn.disabled = false; btn.textContent = '📱 Connect iMessage'; }
+    await showAlert('Failed to connect: ' + e.message, '❌ Error');
+  }
+};
