@@ -17,7 +17,7 @@ Rectangle {
     Component.onCompleted: loadUsers()
     function loadUsers() {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/api/users");
+        xhr.open("GET", root.apiBase + "/users");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -31,7 +31,7 @@ Rectangle {
     function addUser() {
         if (!newUsername || !newPassword) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/users");
+        xhr.open("POST", root.apiBase + "/users");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) { showAddUser = false; newUsername = ""; newPassword = ""; loadUsers(); }
@@ -40,7 +40,7 @@ Rectangle {
     }
     function deleteUser(u) {
         var xhr = new XMLHttpRequest();
-        xhr.open("DELETE", root.apiBase + "/api/users/" + u);
+        xhr.open("DELETE", root.apiBase + "/users/" + u);
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) loadUsers(); };
         xhr.send();
@@ -48,7 +48,7 @@ Rectangle {
     function connectWhatsApp() {
         waConnecting = true; waQrCode = "";
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/channels/whatsapp/connect");
+        xhr.open("POST", root.apiBase + "/channels/whatsapp/connect");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) pollWAQR(); };
@@ -56,7 +56,7 @@ Rectangle {
     }
     function pollWAQR() {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/api/channels/whatsapp/status");
+        xhr.open("GET", root.apiBase + "/channels/whatsapp/status");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
@@ -69,7 +69,7 @@ Rectangle {
     function connectCh(t, tok) {
         if (!tok) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/channels/" + t);
+        xhr.open("POST", root.apiBase + "/channels/" + t);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) console.log(t + " saved"); };

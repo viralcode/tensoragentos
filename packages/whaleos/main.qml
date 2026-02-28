@@ -81,4 +81,55 @@ Window {
         sessionId = "";
         openWindows = [];
     }
+
+    // ── Toast Notification System ──
+    function showToast(message, type) {
+        toastText.text = message;
+        toastText.color = "#fff";
+        if (type === "success") {
+            toastBg.color = Qt.rgba(0.13, 0.77, 0.37, 0.95);
+            toastIcon.text = "✓";
+            toastIcon.color = "#fff";
+        } else if (type === "error") {
+            toastBg.color = Qt.rgba(0.94, 0.27, 0.27, 0.95);
+            toastIcon.text = "✕";
+            toastIcon.color = "#fff";
+        } else {
+            toastBg.color = Qt.rgba(0.23, 0.51, 0.96, 0.95);
+            toastIcon.text = "ℹ";
+            toastIcon.color = "#fff";
+        }
+        toastContainer.opacity = 1.0;
+        toastContainer.y = 20;
+        toastTimer.restart();
+    }
+
+    Item {
+        id: toastContainer
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: -60; z: 99999
+        width: toastRow.width + 32; height: 44
+        opacity: 0.0
+
+        Behavior on opacity { NumberAnimation { duration: 300 } }
+        Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+            id: toastBg
+            anchors.fill: parent; radius: 12
+            color: Qt.rgba(0.13, 0.77, 0.37, 0.95)
+
+            Row {
+                id: toastRow
+                anchors.centerIn: parent; spacing: 8
+                Text { id: toastIcon; text: "✓"; font.pixelSize: 16; font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                Text { id: toastText; text: ""; font.pixelSize: 13; font.weight: Font.DemiBold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+            }
+        }
+
+        Timer {
+            id: toastTimer; interval: 3000
+            onTriggered: { toastContainer.opacity = 0.0; toastContainer.y = -60; }
+        }
+    }
 }

@@ -25,7 +25,7 @@ Rectangle {
     function loadAgents() {
         loading = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/api/agents");
+        xhr.open("GET", root.apiBase + "/agents");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -48,7 +48,7 @@ Rectangle {
     function createAgent() {
         if (!newName) return;
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/agents");
+        xhr.open("POST", root.apiBase + "/agents");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
@@ -70,7 +70,7 @@ Rectangle {
 
     function deleteAgent(agentId) {
         var xhr = new XMLHttpRequest();
-        xhr.open("DELETE", root.apiBase + "/api/agents/" + agentId);
+        xhr.open("DELETE", root.apiBase + "/agents/" + agentId);
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) loadAgents(); };
         xhr.send();
@@ -78,7 +78,7 @@ Rectangle {
 
     function toggleAgent(agentId, enabled) {
         var xhr = new XMLHttpRequest();
-        xhr.open("PUT", root.apiBase + "/api/agents/" + agentId);
+        xhr.open("PUT", root.apiBase + "/agents/" + agentId);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) loadAgents(); };

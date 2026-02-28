@@ -47,7 +47,7 @@ Rectangle {
 
     function loadAgents() {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/api/agents");
+        xhr.open("GET", root.apiBase + "/agents");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
@@ -549,7 +549,7 @@ Rectangle {
 
         // Use the agent/chat/completions endpoint for streaming
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/chat");
+        xhr.open("POST", root.apiBase + "/chat");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {

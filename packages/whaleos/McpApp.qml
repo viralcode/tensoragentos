@@ -17,7 +17,7 @@ Rectangle {
     function loadTools() {
         loading = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/api/tools");
+        xhr.open("GET", root.apiBase + "/tools");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -88,7 +88,7 @@ Rectangle {
 
     function toggleTool(toolName, enabled) {
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/api/tools/" + toolName + "/toggle");
+        xhr.open("POST", root.apiBase + "/tools/" + toolName + "/toggle");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() { if (xhr.readyState === 4) loadTools(); };
