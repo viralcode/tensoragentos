@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? Math.min(450, parent.height - 70) : 48
+    height: chatExpanded ? (chatFullScreen ? parent.height - 20 : Math.min(450, parent.height - 70)) : 48
     radius: root.radiusLg
     color: "transparent"
     clip: true
@@ -12,10 +12,11 @@ Rectangle {
     Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
     property bool chatExpanded: false
+    property bool chatFullScreen: false
     property bool isSending: false
     property var messages: []
     property string selectedAgent: "main"
-    property var agentList: [{ id: "main", name: "OpenWhale", description: "Default AI" }]
+    property var agentList: [{ id: "main", name: "TensorAgent AI", description: "Default AI" }]
     property bool showAgentPicker: false
     property string streamingText: ""
     property bool isStreaming: false
@@ -40,6 +41,10 @@ Rectangle {
         }
         // Clean up markdown bold markers
         cleaned = cleaned.replace(/\*\*/g, "");
+        // Rebrand names
+        cleaned = cleaned.replace(/OpenWhale/g, "TensorAgent AI");
+        cleaned = cleaned.replace(/AInux OS/g, "TensorAgent OS");
+        cleaned = cleaned.replace(/AInux/g, "TensorAgent OS");
         return cleaned.trim();
     }
 
@@ -172,12 +177,41 @@ Rectangle {
                 MouseArea { id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { messages = []; } }
             }
 
+            // Fullscreen toggle
+            Rectangle {
+                width: 28; height: 28; radius: 6
+                color: fsMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+
+                Canvas {
+                    anchors.centerIn: parent; width: 12; height: 12
+                    property bool fs: chatFullScreen
+                    onFsChanged: requestPaint()
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, 12, 12);
+                        ctx.strokeStyle = chatFullScreen ? "#60a5fa" : "#94a3b8"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+                        if (chatFullScreen) {
+                            // Contract icon
+                            ctx.strokeRect(2, 2, 8, 8);
+                            ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(8, 4); ctx.lineTo(8, 8); ctx.stroke();
+                        } else {
+                            // Expand icon
+                            ctx.beginPath(); ctx.moveTo(1, 4); ctx.lineTo(1, 1); ctx.lineTo(4, 1); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(11, 1); ctx.lineTo(11, 4); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(1, 8); ctx.lineTo(1, 11); ctx.lineTo(4, 11); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(8, 11); ctx.lineTo(11, 11); ctx.lineTo(11, 8); ctx.stroke();
+                        }
+                    }
+                }
+
+                MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chatFullScreen = !chatFullScreen }
+            }
+
             // Collapse
             Rectangle {
                 width: 28; height: 28; radius: 6
                 color: collMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Text { anchors.centerIn: parent; text: "▾"; font.pixelSize: 12; color: root.textSecondary }
-                MouseArea { id: collMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chatExpanded = false }
+                MouseArea { id: collMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { chatExpanded = false; chatFullScreen = false; } }
             }
         }
     }
