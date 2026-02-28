@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# AInux Shell — Boot-to-agent Wayland session launcher
+# Called by systemd ainux-shell.service
+#
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=ainux
+export GDK_BACKEND=wayland
+export QT_QPA_PLATFORM=wayland
+export MOZ_ENABLE_WAYLAND=1
+
+# Ensure runtime dir exists
+mkdir -p "${XDG_RUNTIME_DIR}"
+chmod 700 "${XDG_RUNTIME_DIR}"
+
+echo ""
+echo "  🐋 ═══════════════════════════════════════════"
+echo "  🐋  AInux — AI Agentic Operating System"
+echo "  🐋  Booting into agent shell..."
+echo "  🐋 ═══════════════════════════════════════════"
+echo ""
+
+# Start PipeWire audio (if not already running)
+if command -v pipewire &> /dev/null; then
+    pipewire &
+    pipewire-pulse &
+    wireplumber &
+    echo "[ainux-shell] PipeWire audio started"
+fi
+
+# Launch Cage (kiosk Wayland compositor) with our browser
+# Cage runs a single fullscreen application — no desktop, no taskbar
+exec cage -- /opt/ainux/bin/ainux-browser

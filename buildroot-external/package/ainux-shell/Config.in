@@ -1,0 +1,6 @@
+config BR2_PACKAGE_AINUX_SHELL
+	bool "ainux-shell"
+	depends on BR2_PACKAGE_CAGE
+	help
+	  AInux shell — boots directly into the agentic GUI via
+	  Cage Wayland compositor running a fullscreen Chromium.

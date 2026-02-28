@@ -1,0 +1,39 @@
+[Unit]
+Description=AInux Agentic Shell (Cage + Chromium)
+Documentation=https://github.com/viralcode/openwhale
+After=ainux-kernel.service openwhale.service
+Wants=ainux-kernel.service openwhale.service
+ConditionPathExists=/opt/ainux/bin/ainux-browser
+
+[Service]
+Type=simple
+User=ainux
+Group=ainux
+
+# Launch Cage (kiosk Wayland compositor) running our browser
+ExecStart=/usr/bin/cage -- /opt/ainux/bin/ainux-browser
+
+# Wayland / DRM environment
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+Environment=WLR_NO_HARDWARE_CURSORS=1
+Environment=XDG_SESSION_TYPE=wayland
+Environment=GDK_BACKEND=wayland
+
+# Restart if the compositor crashes
+Restart=on-failure
+RestartSec=3
+StartLimitBurst=10
+StartLimitIntervalSec=120
+
+# TTY assignment (boot to this on tty1)
+TTYPath=/dev/tty1
+TTYVTDisallocate=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ainux-shell
+
+[Install]
+WantedBy=graphical.target

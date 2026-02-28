@@ -1,0 +1,37 @@
+[Unit]
+Description=AInux Kernel Orchestrator
+Documentation=https://github.com/viralcode/openwhale
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ainux
+Group=ainux
+WorkingDirectory=/opt/ainux/core
+ExecStart=/usr/bin/node /opt/ainux/core/kernel.js
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Environment
+Environment=NODE_ENV=production
+Environment=AINUX_HOME=/opt/ainux
+Environment=AINUX_DATA=/home/ainux/.ainux
+Environment=OPENWHALE_PORT=7777
+Environment=CDP_PORT=9222
+
+# Security hardening
+NoNewPrivileges=false
+ProtectSystem=strict
+ReadWritePaths=/home/ainux/.ainux /opt/ainux/openwhale /tmp
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ainux-kernel
+
+[Install]
+WantedBy=multi-user.target

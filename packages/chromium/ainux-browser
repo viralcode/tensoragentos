@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# AInux Browser — Chromium wrapper with WebMCP + kiosk mode
+# Launched by ainux-shell (Cage compositor)
+#
+
+AINUX_CHROMIUM="/opt/ainux/chromium/chrome"
+AINUX_DATA="${HOME}/.ainux"
+OPENWHALE_PORT="${OPENWHALE_PORT:-7777}"
+CDP_PORT="${CDP_PORT:-9222}"
+
+# Ensure user data dir exists
+mkdir -p "${AINUX_DATA}/browser"
+
+# Wait for OpenWhale to be ready
+echo "[ainux-browser] Waiting for OpenWhale on port ${OPENWHALE_PORT}..."
+for i in $(seq 1 60); do
+    if curl -sf "http://localhost:${OPENWHALE_PORT}/api/health" > /dev/null 2>&1; then
+        echo "[ainux-browser] OpenWhale is ready!"
+        break
+    fi
+    sleep 1
+done
+
+exec "${AINUX_CHROMIUM}" \
+    --ozone-platform=wayland \
+    --enable-features=WebMCP,ExperimentalWebPlatformFeatures,VaapiVideoDecoder,VaapiVideoEncoder \
+    --remote-debugging-port=${CDP_PORT} \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-translate \
+    --disable-default-apps \
+    --disable-popup-blocking \
+    --disable-background-timer-throttling \
+    --disable-backgrounding-occluded-windows \
+    --disable-renderer-backgrounding \
+    --disable-component-update \
+    --disable-sync \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --autoplay-policy=no-user-gesture-required \
+    --enable-gpu-rasterization \
+    --enable-zero-copy \
+    --enable-accelerated-video-decode \
+    --user-data-dir="${AINUX_DATA}/browser" \
+    --app="http://localhost:${OPENWHALE_PORT}/dashboard" \
+    --start-fullscreen \
+    --kiosk \
+    "$@"

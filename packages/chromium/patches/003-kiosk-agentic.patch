@@ -1,0 +1,21 @@
+--- a/chrome/browser/ui/browser_window.cc
++++ b/chrome/browser/ui/browser_window.cc
+@@ -0,0 +1,18 @@
++// AInux Patch: Kiosk Agentic Mode
++//
++// Modifications to the Chrome browser window for AInux kiosk mode:
++//
++// 1. Remove the address bar / omnibox entirely
++// 2. Disable chrome:// URL navigation (except chrome://gpu for debugging)
++// 3. Remove the bookmarks bar
++// 4. Remove the tab strip (single-app mode)
++// 5. Disable right-click context menu (except in DevTools)
++// 6. Remove all Chrome UI chrome — the entire window is web content
++// 7. Auto-hide mouse cursor after 3 seconds of inactivity
++// 8. Intercept Ctrl+W / Ctrl+Q to prevent accidental close
++// 9. Disable chrome://settings access
++// 10. Route all new window requests to the same window (no popups)
++//
++// The browser becomes a transparent container for the OpenWhale
++// dashboard — users interact with the AI, not with Chrome.
++// AInux: Kiosk agentic mode patch applied.

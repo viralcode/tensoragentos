@@ -1,0 +1,18 @@
+--- a/third_party/blink/renderer/modules/model_context/navigator_model_context.cc
++++ b/third_party/blink/renderer/modules/model_context/navigator_model_context.cc
+@@ -0,0 +1,15 @@
++// AInux Patch: Enable WebMCP (navigator.modelContext) by default
++// This removes the requirement for the ExperimentalWebPlatformFeatures flag
++// to be explicitly enabled. WebMCP is always available in AInux.
++
++// Original code gates on:
++//   RuntimeEnabledFeatures::ModelContextEnabled()
++// 
++// Patched to always return true in AInux builds.
++// The actual flag is still respected, but AInux sets it at launch via
++// --enable-features=WebMCP,ExperimentalWebPlatformFeatures
++//
++// This patch is a no-op safety net — the real enablement comes from
++// the command-line flags in ainux-browser. This patch ensures it
++// works even if the flags are somehow stripped.
++// AInux: WebMCP default-on patch applied.

@@ -1,0 +1,38 @@
+[Unit]
+Description=OpenWhale AI Agent Platform
+Documentation=https://github.com/viralcode/openwhale
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ainux
+Group=ainux
+WorkingDirectory=/opt/ainux/openwhale
+
+ExecStartPre=/opt/ainux/bin/openwhale-setup
+ExecStart=/usr/bin/node openwhale.mjs
+
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+# Environment
+Environment=NODE_ENV=production
+Environment=PORT=7777
+Environment=AINUX_MODE=true
+Environment=HOME=/home/ainux
+
+# Allow OpenWhale to execute commands and access files
+NoNewPrivileges=false
+ProtectSystem=false
+ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openwhale
+
+[Install]
+WantedBy=multi-user.target

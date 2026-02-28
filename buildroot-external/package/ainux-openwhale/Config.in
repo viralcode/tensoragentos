@@ -1,0 +1,7 @@
+config BR2_PACKAGE_AINUX_OPENWHALE
+	bool "ainux-openwhale"
+	depends on BR2_PACKAGE_NODEJS
+	help
+	  OpenWhale — Self-Extensible Multi-Agent AI Assistant.
+	  Cloned from github.com/viralcode/openwhale and installed
+	  with pnpm. Runs as a systemd service on port 7777.

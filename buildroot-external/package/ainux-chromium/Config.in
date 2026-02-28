@@ -1,0 +1,8 @@
+config BR2_PACKAGE_AINUX_CHROMIUM
+	bool "ainux-chromium"
+	depends on BR2_PACKAGE_MESA3D
+	depends on BR2_PACKAGE_WAYLAND
+	help
+	  Chromium browser built from source with WebMCP
+	  (navigator.modelContext) enabled by default.
+	  Includes AInux patches for kiosk mode and deep CDP hooks.

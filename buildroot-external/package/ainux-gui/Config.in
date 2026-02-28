@@ -1,0 +1,7 @@
+config BR2_PACKAGE_AINUX_GUI
+	bool "ainux-gui"
+	depends on BR2_PACKAGE_NODEJS
+	help
+	  AInux agentic GUI — React-based interface served by
+	  OpenWhale's dashboard, with agent grid, command palette,
+	  task streams, and WebMCP bridge panel.

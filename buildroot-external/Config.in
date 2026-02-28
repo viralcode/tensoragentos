@@ -1,0 +1,4 @@
+source "$BR2_EXTERNAL_AINUX_PATH/package/ainux-chromium/Config.in"
+source "$BR2_EXTERNAL_AINUX_PATH/package/ainux-openwhale/Config.in"
+source "$BR2_EXTERNAL_AINUX_PATH/package/ainux-shell/Config.in"
+source "$BR2_EXTERNAL_AINUX_PATH/package/ainux-gui/Config.in"

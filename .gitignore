@@ -1,0 +1,28 @@
+# VM disk images (too large for git)
+vm/*.qcow2
+vm/*.img
+vm/*.fd
+vm/*.dmg
+vm/cidata/
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts
+build/
+*.o
+*.so
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Gemini
+.gemini/
+packages/openwhale/repo/
+packages/openwhale/src/

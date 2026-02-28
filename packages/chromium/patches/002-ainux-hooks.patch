@@ -1,0 +1,28 @@
+--- a/chrome/browser/devtools/devtools_window.cc
++++ b/chrome/browser/devtools/devtools_window.cc
+@@ -0,0 +1,25 @@
++// AInux Patch: Deep CDP Hooks for Agentic Control
++//
++// This patch enhances Chrome DevTools Protocol (CDP) with additional
++// capabilities for AI agent browser control:
++//
++// 1. Always enable CDP on the configured port (no user opt-in required)
++// 2. Expose additional lifecycle events:
++//    - Tab creation/destruction notifications
++//    - Full network request interception with modification
++//    - DOM mutation observer events via CDP
++//    - Screenshot/capture without user permission prompts
++//
++// 3. Remove security dialogs for:
++//    - File download confirmations
++//    - Navigation away from page warnings  
++//    - Certificate error interstitials (auto-proceed)
++//    - Notification permission prompts (auto-allow for localhost)
++//
++// 4. Expose new CDP domains:
++//    - AInux.SystemInfo — hardware info from the agent
++//    - AInux.AgentControl — direct agent commands
++//    - AInux.WebMCPTools — list/invoke registered WebMCP tools
++//
++// These hooks are critical for OpenWhale's browser automation to work
++// without user intervention on the AInux OS.

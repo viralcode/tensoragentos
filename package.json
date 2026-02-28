@@ -1,0 +1,20 @@
+{
+    "name": "ainux",
+    "version": "0.1.0",
+    "description": "AInux — Bootable AI Agentic Operating System powered by OpenWhale",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "node packages/core/src/kernel.js",
+        "build:gui": "cd packages/gui && npm run build",
+        "build:iso": "bash scripts/build-iso.sh",
+        "test:qemu": "bash scripts/run-qemu.sh",
+        "lint": "eslint packages/*/src/**/*.{js,jsx}"
+    },
+    "workspaces": [
+        "packages/core",
+        "packages/gui"
+    ],
+    "author": "Jijo John",
+    "license": "MIT"
+}
