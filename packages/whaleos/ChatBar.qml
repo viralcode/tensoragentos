@@ -334,8 +334,8 @@ Rectangle {
 
         ListView {
             id: messageList
-            anchors.fill: parent; anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
-            anchors.topMargin: Math.round(8 * root.sf); anchors.bottomMargin: Math.round(4 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(16 * root.sf)
+            anchors.topMargin: Math.round(12 * root.sf); anchors.bottomMargin: Math.round(8 * root.sf)
             model: messages; spacing: Math.round(16 * root.sf); clip: true
 
             delegate: Item {
@@ -386,7 +386,7 @@ Rectangle {
                     anchors.top: toolCol.visible ? toolCol.bottom : parent.top
                     anchors.right: modelData.role === "user" ? parent.right : undefined
                     anchors.left: modelData.role !== "user" ? parent.left : undefined
-                    spacing: Math.round(8 * root.sf)
+                    spacing: Math.round(10 * root.sf)
                     layoutDirection: modelData.role === "user" ? Qt.RightToLeft : Qt.LeftToRight
 
                     // Avatar for assistant
@@ -407,8 +407,8 @@ Rectangle {
                     Rectangle {
                         id: msgBubble
                         width: modelData.role === "user"
-                            ? Math.min(messageList.width * 0.72, userMsgMetrics.width + Math.round(36 * root.sf))
-                            : messageList.width - Math.round(44 * root.sf)
+                            ? Math.min(messageList.width * 0.68, userMsgMetrics.width + Math.round(36 * root.sf))
+                            : messageList.width - Math.round(48 * root.sf)
                         height: msgContentCol.height + Math.round(18 * root.sf)
                         radius: Math.round(12 * root.sf)
 
@@ -430,7 +430,7 @@ Rectangle {
                             id: msgContentCol
                             anchors.left: parent.left; anchors.right: parent.right
                             anchors.top: parent.top
-                            anchors.margins: modelData.role === "user" ? Math.round(10 * root.sf) : Math.round(4 * root.sf)
+                            anchors.margins: modelData.role === "user" ? Math.round(12 * root.sf) : Math.round(8 * root.sf)
                             spacing: Math.round(4 * root.sf)
 
                             Row {

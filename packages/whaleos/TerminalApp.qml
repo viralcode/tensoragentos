@@ -16,6 +16,7 @@ Rectangle {
     Component.onCompleted: {
         appendLine("TensorAgent OS — Terminal");
         appendLine("System shell access. Type commands and press Enter.");
+        appendLine("Type 'help' for available shortcuts.");
         appendLine("");
         cmdInput.forceActiveFocus();
     }
@@ -60,7 +61,7 @@ Rectangle {
         Column {
             id: termCol
             width: parent.width
-            spacing: Math.round(0 * root.sf)
+            spacing: 0
 
             // ── Output Lines ──
             Repeater {
@@ -72,6 +73,7 @@ Rectangle {
                         if (modelData.indexOf("ainux@tensoragent:") === 0) return "#60a5fa";
                         if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
                         if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
+                        if (modelData.indexOf("command not found") >= 0) return "#f59e0b";
                         return "#d4d4d8";
                     }
                     font.pixelSize: Math.round(13 * root.sf)
@@ -85,7 +87,7 @@ Rectangle {
             Row {
                 visible: !isRunning
                 width: termCol.width
-                spacing: Math.round(0 * root.sf)
+                spacing: 0
 
                 Text {
                     id: promptText
@@ -151,7 +153,7 @@ Rectangle {
             Row {
                 visible: isRunning
                 width: termCol.width
-                spacing: Math.round(0 * root.sf)
+                spacing: 0
 
                 Text {
                     text: getPrompt()
@@ -223,45 +225,55 @@ Rectangle {
         if (cmd === "clear") { outputLines = []; return; }
         if (cmd === "exit") { appendLine("Use the close button to close the terminal."); return; }
 
+        // OpenWhale convenience commands
+        if (cmd === "ow-restart" || cmd === "openwhale-restart") {
+            cmd = "sudo systemctl restart openwhale.service && echo 'OpenWhale restarted successfully'";
+        } else if (cmd === "ow-status" || cmd === "openwhale-status") {
+            cmd = "systemctl status openwhale.service --no-pager -l 2>&1";
+        } else if (cmd === "ow-logs" || cmd === "openwhale-logs") {
+            cmd = "sudo journalctl -u openwhale.service -n 40 --no-pager 2>&1";
+        } else if (cmd === "gui-restart") {
+            cmd = "sudo systemctl restart ainux-gui.service && echo 'GUI restarted'";
+        } else if (cmd === "gui-status") {
+            cmd = "systemctl status ainux-gui.service --no-pager -l 2>&1";
+        } else if (cmd === "help") {
+            appendLine("");
+            appendLine("TensorAgent OS Terminal - Available shortcuts:");
+            appendLine("  ow-restart     Restart OpenWhale service");
+            appendLine("  ow-status      OpenWhale service status");
+            appendLine("  ow-logs        OpenWhale recent logs");
+            appendLine("  gui-restart    Restart the GUI service");
+            appendLine("  gui-status     GUI service status");
+            appendLine("  clear          Clear terminal");
+            appendLine("  Ctrl+L         Clear terminal");
+            appendLine("  Ctrl+C         Cancel / interrupt");
+            appendLine("  help           Show this help");
+            appendLine("");
+            appendLine("All standard Linux commands are available (ls, cat, grep, apt, etc.)");
+            appendLine("");
+            return;
+        }
+
         isRunning = true;
 
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/exec");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.timeout = 20000;
+        // Use sysManager.runCommand() — runs via QProcess/bash on the real system
+        var resultStr = sysManager.runCommand(cmd, currentCwd);
+        isRunning = false;
 
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                isRunning = false;
-                if (xhr.status === 200) {
-                    try {
-                        var data = JSON.parse(xhr.responseText);
-                        if (data.cwd) currentCwd = data.cwd;
-                        if (data.stdout) appendLines(data.stdout);
-                        if (data.stderr) {
-                            var errParts = data.stderr.split("\n");
-                            for (var i = 0; i < errParts.length; i++) {
-                                if (errParts[i]) appendLine("Error: " + errParts[i]);
-                            }
-                        }
-                    } catch(e) {
-                        appendLine("Error: " + (xhr.responseText || "Unknown error"));
-                    }
-                } else if (xhr.status === 0) {
-                    appendLine("Error: Helper service not reachable (port 7778)");
-                } else {
-                    appendLine("Error: HTTP " + xhr.status);
+        try {
+            var data = JSON.parse(resultStr);
+            if (data.cwd) currentCwd = data.cwd;
+            if (data.stdout) appendLines(data.stdout);
+            if (data.stderr) {
+                var errParts = data.stderr.split("\n");
+                for (var i = 0; i < errParts.length; i++) {
+                    if (errParts[i]) appendLine(errParts[i]);
                 }
-                cmdInput.forceActiveFocus();
             }
-        };
+        } catch(e) {
+            appendLine("Error: " + (resultStr || "Unknown error"));
+        }
 
-        xhr.ontimeout = function() {
-            isRunning = false;
-            appendLine("Error: Command timed out (15s limit)");
-            cmdInput.forceActiveFocus();
-        };
-
-        xhr.send(JSON.stringify({ command: cmd }));
+        cmdInput.forceActiveFocus();
     }
 }

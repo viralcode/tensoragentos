@@ -332,6 +332,53 @@ public:
         qDebug() << "SystemManager: Opening file:" << path;
         return true;
     }
+
+    // ════════════════════════════════════════════════
+    // ── Shell Command Execution (for Terminal) ──
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE QString runCommand(const QString &command, const QString &cwd) {
+        QProcess proc;
+        proc.setWorkingDirectory(cwd.isEmpty() ? "/home/ainux" : cwd);
+        proc.setProcessChannelMode(QProcess::SeparateChannels);
+
+        // Run via bash -c to support pipes, redirects, etc.
+        proc.start("/bin/bash", QStringList() << "-c" << command);
+
+        if (!proc.waitForStarted(5000)) {
+            QJsonObject result;
+            result["stdout"] = "";
+            result["stderr"] = "Failed to start command";
+            result["exitCode"] = -1;
+            result["cwd"] = cwd;
+            return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
+        }
+
+        proc.waitForFinished(30000); // 30 second timeout
+
+        QString stdoutStr = QString::fromUtf8(proc.readAllStandardOutput());
+        QString stderrStr = QString::fromUtf8(proc.readAllStandardError());
+
+        // Determine new cwd after cd commands
+        QString newCwd = cwd.isEmpty() ? "/home/ainux" : cwd;
+        if (command.trimmed().startsWith("cd ")) {
+            // Run pwd to get the actual new directory
+            QProcess pwdProc;
+            pwdProc.setWorkingDirectory(newCwd);
+            pwdProc.start("/bin/bash", QStringList() << "-c" << command + " && pwd");
+            if (pwdProc.waitForFinished(3000)) {
+                QString pwd = QString::fromUtf8(pwdProc.readAllStandardOutput()).trimmed();
+                if (!pwd.isEmpty()) newCwd = pwd;
+            }
+        }
+
+        QJsonObject result;
+        result["stdout"] = stdoutStr;
+        result["stderr"] = stderrStr;
+        result["exitCode"] = proc.exitCode();
+        result["cwd"] = newCwd;
+        return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
+    }
 };
 
 #endif // SYSTEMMANAGER_H
