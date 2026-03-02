@@ -803,7 +803,8 @@ Rectangle {
                 Keys.onEscapePressed: {
                     if (showSuggestions) showSuggestions = false;
                     else if (showAgentPicker) showAgentPicker = false;
-                    else chatExpanded = false;
+                    else if (chatFullScreen) { chatFullScreen = false; }
+                    else { chatExpanded = false; chatInput.focus = false; }
                 }
             }
 
