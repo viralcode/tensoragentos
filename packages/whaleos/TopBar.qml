@@ -303,7 +303,10 @@ Rectangle {
                 spacing: Math.round(8 * root.sf)
 
                 Image {
-                    width: Math.round(22 * root.sf); height: Math.round(22 * root.sf)
+                    Layout.preferredWidth: Math.round(22 * root.sf)
+                    Layout.preferredHeight: Math.round(22 * root.sf)
+                    Layout.maximumWidth: Math.round(22 * root.sf)
+                    Layout.maximumHeight: Math.round(22 * root.sf)
                     source: "assets/whale_logo.png"
                     fillMode: Image.PreserveAspectFit
                     smooth: true; mipmap: true

@@ -206,7 +206,18 @@ Rectangle {
                     onSChanged: requestPaint()
                 }
 
-                MouseArea { id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { messages = []; streamingSteps = []; activePlan = null; } }
+                MouseArea {
+                    id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        messages = []; streamingSteps = []; activePlan = null; streamingContent = "";
+                        // Clear server-side history too
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("DELETE", root.apiBase + "/chat/history");
+                        xhr.setRequestHeader("Content-Type", "application/json");
+                        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+                        xhr.send();
+                    }
+                }
             }
 
             Rectangle {

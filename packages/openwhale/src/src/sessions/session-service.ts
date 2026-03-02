@@ -597,9 +597,11 @@ export async function processMessageStream(
         maxIterations?: number;
         emit: (event: string, data: unknown) => void;
         abortSignal?: AbortSignal;
+        workDir?: string;
     }
 ): Promise<ChatMessage> {
-    const { model = currentModel, maxIterations = 25, emit, abortSignal } = options;
+    const { model = currentModel, maxIterations = 25, emit, abortSignal, workDir } = options;
+    const effectiveWorkDir = workDir || process.cwd();
 
     const provider = registry.getProvider(model);
     if (!provider) {
@@ -676,7 +678,7 @@ export async function processMessageStream(
         }));
 
     const now = new Date();
-    const runtimeInfo = `OS: ${process.platform} ${process.arch} | Host: ${hostname()} | Node: ${process.version} | Time: ${now.toISOString()} | CWD: ${process.cwd()}`;
+    const runtimeInfo = `OS: ${process.platform} ${process.arch} | Host: ${hostname()} | Node: ${process.version} | Time: ${now.toISOString()} | CWD: ${effectiveWorkDir}`;
     const baseToolNames = allTools.map(t => t.name);
     const skillToolNames = skillTools.map(t => t.name);
 
@@ -741,10 +743,10 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
         ? systemPrompt + "\n\n" + memoryContext
         : systemPrompt;
 
-    const sandboxConfig = createSandboxConfig(process.cwd(), false);
+    const sandboxConfig = createSandboxConfig(effectiveWorkDir, false);
     const context: ToolCallContext = {
         sessionId,
-        workspaceDir: process.cwd(),
+        workspaceDir: effectiveWorkDir,
         sandboxed: sandboxConfig.enabled,
     };
 

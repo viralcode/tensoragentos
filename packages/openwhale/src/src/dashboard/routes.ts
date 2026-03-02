@@ -1059,7 +1059,7 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
 
     // Stream chat message via SSE for real-time step updates
     dashboard.post("/api/chat/stream", async (c) => {
-        const { message, model: requestModel } = await c.req.json();
+        const { message, model: requestModel, workDir } = await c.req.json();
 
         // Resolve model (same logic as /api/chat)
         let effectiveModel = requestModel;
@@ -1117,6 +1117,7 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
                     model: effectiveModel,
                     emit,
                     abortSignal: abortController.signal,
+                    workDir: workDir || undefined,
                 }).then(() => {
                     try { controller.close(); } catch { }
                 }).catch((err) => {
