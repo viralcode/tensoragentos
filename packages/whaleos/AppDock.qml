@@ -24,7 +24,7 @@ Rectangle {
                 { appId: "skills",     label: "Skills" },
                 { appId: "apps",       label: "Extensions" },
                 { appId: "providers",  label: "Providers" },
-                { appId: "mcp",        label: "Tools" },
+                { appId: "mcp",        label: "MCP Apps" },
                 { appId: "agents",     label: "Agents" },
                 { appId: "terminal",   label: "Terminal" }
             ]

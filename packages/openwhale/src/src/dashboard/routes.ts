@@ -27,6 +27,7 @@ import {
     clearChatHistory,
 } from "../sessions/session-service.js";
 import { registry } from "../providers/index.js";
+import { getAllServers, startServer, stopServer, configureServer, getAllMCPTools } from "../mcp/mcp-registry.js";
 import { createAnthropicProvider } from "../providers/anthropic.js";
 import { createOpenAIProvider, createDeepSeekProvider } from "../providers/openai-compatible.js";
 import { createGoogleProvider } from "../providers/google.js";
@@ -1140,6 +1141,40 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
                 "Connection": "keep-alive",
             },
         });
+    });
+
+    // ============== MCP SERVERS ==============
+
+    // List all MCP servers with status
+    dashboard.get("/api/mcp/servers", (c) => {
+        return c.json({ servers: getAllServers() });
+    });
+
+    // Start an MCP server
+    dashboard.post("/api/mcp/servers/:id/start", async (c) => {
+        const id = c.req.param("id");
+        const result = await startServer(id);
+        return c.json(result);
+    });
+
+    // Stop an MCP server
+    dashboard.post("/api/mcp/servers/:id/stop", (c) => {
+        const id = c.req.param("id");
+        const result = stopServer(id);
+        return c.json(result);
+    });
+
+    // Configure environment variables for a server
+    dashboard.post("/api/mcp/servers/:id/configure", async (c) => {
+        const id = c.req.param("id");
+        const { env } = await c.req.json();
+        const result = configureServer(id, env);
+        return c.json(result);
+    });
+
+    // Get tools from all running MCP servers
+    dashboard.get("/api/mcp/tools", (c) => {
+        return c.json({ tools: getAllMCPTools() });
     });
 
     // ============== CHANNELS ==============

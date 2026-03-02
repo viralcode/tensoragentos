@@ -39,6 +39,7 @@ import {
 } from "./session-manager.js";
 import { getMemoryContext } from "../memory/memory-files.js";
 import { compactIfNeeded } from "./compaction.js";
+import { getAllMCPTools, callMCPTool } from "../mcp/mcp-registry.js";
 
 // ============== TYPES ==============
 
@@ -659,6 +660,16 @@ export async function processMessageStream(
         },
     });
 
+    // Add MCP server tools (from running MCP servers)
+    const mcpTools = getAllMCPTools();
+    for (const mt of mcpTools) {
+        tools.push({
+            name: mt.prefixedName,
+            description: mt.description,
+            parameters: mt.parameters,
+        });
+    }
+
     const skillTools = skillRegistry.getAllTools();
     for (const skillTool of skillTools) {
         tools.push({
@@ -848,22 +859,30 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
                         toolInfo.result = "WhatsApp image sending is available via WhatsApp channel directly";
                         toolInfo.status = "completed";
                     } else {
-                        const tool = toolRegistry.get(tc.name);
-                        if (tool) {
-                            const result = await toolRegistry.execute(tc.name, tc.arguments, context);
+                        // Try MCP tools first (prefixed with mcp_)
+                        if (tc.name.startsWith("mcp_")) {
+                            const result = await callMCPTool(tc.name, tc.arguments as Record<string, unknown>);
                             toolInfo.result = result.content || result.error;
-                            toolInfo.metadata = result.metadata;
+                            toolInfo.metadata = result.metadata as Record<string, unknown>;
                             toolInfo.status = result.success ? "completed" : "error";
                         } else {
-                            const skillTool = skillTools.find(st => st.name === tc.name);
-                            if (skillTool) {
-                                const result = await skillTool.execute(tc.arguments, context);
+                            const tool = toolRegistry.get(tc.name);
+                            if (tool) {
+                                const result = await toolRegistry.execute(tc.name, tc.arguments, context);
                                 toolInfo.result = result.content || result.error;
                                 toolInfo.metadata = result.metadata;
                                 toolInfo.status = result.success ? "completed" : "error";
                             } else {
-                                toolInfo.result = `Unknown tool: ${tc.name}`;
-                                toolInfo.status = "error";
+                                const skillTool = skillTools.find(st => st.name === tc.name);
+                                if (skillTool) {
+                                    const result = await skillTool.execute(tc.arguments, context);
+                                    toolInfo.result = result.content || result.error;
+                                    toolInfo.metadata = result.metadata;
+                                    toolInfo.status = result.success ? "completed" : "error";
+                                } else {
+                                    toolInfo.result = `Unknown tool: ${tc.name}`;
+                                    toolInfo.status = "error";
+                                }
                             }
                         }
                     }

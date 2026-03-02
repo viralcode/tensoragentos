@@ -29,6 +29,7 @@ export type LogCategory =
     | "extension"
     | "auth"
     | "codebase"
+    | "mcp"
     | "heartbeat";
 
 export interface LogEntry {

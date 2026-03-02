@@ -5,255 +5,341 @@ import QtQuick.Controls
 Rectangle {
     anchors.fill: parent; color: "transparent"
 
-    property var allTools: []
-    property var filteredTools: []
+    property var allServers: []
+    property var filteredServers: []
     property bool loading: true
     property string searchText: ""
-    property string activeCategory: "all"
-    property var categories: ["all"]
+    property string activeFilter: "all"  // "all", "running", "1", "2", "3"
+    property var configServerId: ""
+    property var configEnvVars: []
+    property var configValues: ({})
+    property bool showConfigDialog: false
 
-    Component.onCompleted: loadTools()
+    Component.onCompleted: loadServers()
 
-    function loadTools() {
+    function loadServers() {
         loading = true;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", root.apiBase + "/tools");
+        xhr.open("GET", root.apiBase + "/mcp/servers");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    try { var d = JSON.parse(xhr.responseText); allTools = d.tools || []; } catch(e) {}
-                }
-                if (allTools.length === 0) {
-                    allTools = [
-                        { name: "exec", description: "Execute shell commands and scripts", category: "system", disabled: false, requiresApproval: true },
-                        { name: "browser", description: "Web browsing and automation with Playwright", category: "web", disabled: false, requiresApproval: false },
-                        { name: "web_fetch", description: "Fetch and parse web content", category: "web", disabled: false, requiresApproval: false },
-                        { name: "file", description: "Read and write files on the host system", category: "system", disabled: false, requiresApproval: true },
-                        { name: "image", description: "Generate and manipulate images", category: "media", disabled: false, requiresApproval: false },
-                        { name: "screenshot", description: "Capture screenshots of the screen", category: "media", disabled: false, requiresApproval: false },
-                        { name: "tts", description: "Text-to-speech synthesis", category: "media", disabled: false, requiresApproval: false },
-                        { name: "memory", description: "Persistent vector memory with semantic search", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "db_query", description: "SQLite database operations and queries", category: "utility", disabled: false, requiresApproval: true },
-                        { name: "code_exec", description: "Execute code in sandboxed environment", category: "system", disabled: false, requiresApproval: true },
-                        { name: "cron", description: "Schedule and manage cron jobs", category: "system", disabled: false, requiresApproval: true },
-                        { name: "canvas", description: "Draw and create visual content", category: "media", disabled: true, requiresApproval: false },
-                        { name: "nodes", description: "Node-based workflow automation", category: "utility", disabled: true, requiresApproval: false },
-                        { name: "extend", description: "Create custom tool extensions", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "planning", description: "Task decomposition and planning", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "git", description: "Git version control operations", category: "system", disabled: false, requiresApproval: true },
-                        { name: "docker", description: "Docker container management", category: "system", disabled: true, requiresApproval: true },
-                        { name: "ssh", description: "SSH remote server access", category: "system", disabled: true, requiresApproval: true },
-                        { name: "qr_code", description: "Generate and decode QR codes", category: "utility", disabled: true, requiresApproval: false },
-                        { name: "spreadsheet", description: "Create and edit spreadsheets", category: "utility", disabled: true, requiresApproval: false },
-                        { name: "zip", description: "Compress and extract archives", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "email_send", description: "Send emails via SMTP", category: "communication", disabled: true, requiresApproval: true },
-                        { name: "pdf", description: "Generate and parse PDF documents", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "system_info", description: "System hardware and OS information", category: "system", disabled: false, requiresApproval: false },
-                        { name: "camera_snap", description: "Capture photos from camera", category: "device", disabled: true, requiresApproval: true },
-                        { name: "camera_record", description: "Record video from camera", category: "device", disabled: true, requiresApproval: true },
-                        { name: "screen_record", description: "Record screen activity", category: "device", disabled: true, requiresApproval: true },
-                        { name: "skill_creator", description: "Create and edit AI skills", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "clipboard", description: "Read and write system clipboard", category: "utility", disabled: false, requiresApproval: false },
-                        { name: "shortcuts", description: "macOS Shortcuts automation", category: "system", disabled: true, requiresApproval: false },
-                        { name: "calendar_event", description: "Create calendar events", category: "utility", disabled: true, requiresApproval: false },
-                        { name: "slides", description: "Create presentation slides", category: "media", disabled: true, requiresApproval: false },
-                        { name: "ollama", description: "Local LLM inference — run Llama, Mistral, Phi locally", category: "ai", disabled: false, requiresApproval: false },
-                        { name: "jupyter", description: "JupyterLab notebooks for data science and ML", category: "ai", disabled: false, requiresApproval: false },
-                        { name: "vscode", description: "VS Code Server — browser-based IDE on port 8443", category: "dev", disabled: false, requiresApproval: false },
-                        { name: "huggingface", description: "Download and manage models from Hugging Face Hub", category: "ai", disabled: false, requiresApproval: false },
-                        { name: "ffmpeg", description: "Audio/video processing, conversion, and streaming", category: "media", disabled: false, requiresApproval: false },
-                        { name: "tmux", description: "Terminal multiplexer — persistent shell sessions", category: "dev", disabled: false, requiresApproval: false },
-                        { name: "htop_monitor", description: "Interactive system monitor — CPU, memory, processes", category: "system", disabled: false, requiresApproval: false },
-                        { name: "ripgrep", description: "Ultra-fast text search across files and codebases", category: "dev", disabled: false, requiresApproval: false },
-                        { name: "langchain", description: "LangChain agent orchestration framework", category: "ai", disabled: false, requiresApproval: false },
-                        { name: "chromadb", description: "Vector database for RAG and semantic search", category: "ai", disabled: false, requiresApproval: false },
-                        { name: "imagemagick", description: "Image processing, conversion, and manipulation", category: "media", disabled: false, requiresApproval: false }
-                    ];
-                }
-                // Extract categories
-                var cats = ["all"];
-                for (var i = 0; i < allTools.length; i++) {
-                    var cat = allTools[i].category || "other";
-                    if (cats.indexOf(cat) === -1) cats.push(cat);
-                }
-                categories = cats;
-                filterTools();
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    allServers = d.servers || [];
+                } catch(e) {}
+                filterServers();
                 loading = false;
             }
         };
         xhr.send();
     }
 
-    function filterTools() {
+    function filterServers() {
         var result = [];
         var q = searchText.toLowerCase();
-        for (var i = 0; i < allTools.length; i++) {
-            var t = allTools[i];
-            var matchSearch = !q || t.name.toLowerCase().indexOf(q) >= 0 || (t.description || "").toLowerCase().indexOf(q) >= 0;
-            var matchCat = activeCategory === "all" || t.category === activeCategory;
-            if (matchSearch && matchCat) result.push(t);
+        for (var i = 0; i < allServers.length; i++) {
+            var s = allServers[i];
+            if (q && s.name.toLowerCase().indexOf(q) === -1 && s.description.toLowerCase().indexOf(q) === -1) continue;
+            if (activeFilter === "running" && !s.running) continue;
+            if (activeFilter === "1" && s.tier !== 1) continue;
+            if (activeFilter === "2" && s.tier !== 2) continue;
+            if (activeFilter === "3" && s.tier !== 3) continue;
+            result.push(s);
         }
-        filteredTools = result;
+        filteredServers = result;
     }
 
-    function toggleTool(toolName, enabled) {
+    function startServer(serverId) {
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/tools/" + toolName + "/toggle");
-        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/start");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
-                if (xhr.status === 200) { root.showToast(toolName + (enabled ? " enabled" : " disabled"), "success"); }
-                else { root.showToast("Failed to toggle " + toolName, "error"); }
-                loadTools();
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    if (d.success) {
+                        root.showToast(serverId + " started with " + (d.tools ? d.tools.length : 0) + " tools", "success");
+                    } else {
+                        root.showToast(d.error || "Failed to start " + serverId, "error");
+                    }
+                } catch(e) {}
+                loadServers();
             }
         };
-        xhr.send(JSON.stringify({ disabled: !enabled }));
+        xhr.send("{}");
     }
 
+    function stopServer(serverId) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/stop");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                root.showToast(serverId + " stopped", "info");
+                loadServers();
+            }
+        };
+        xhr.send("{}");
+    }
+
+    function configureServer(serverId, envObj) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/configure");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                root.showToast("Configuration saved for " + serverId, "success");
+                loadServers();
+            }
+        };
+        xhr.send(JSON.stringify({ env: envObj }));
+    }
+
+    function openConfig(serverId, envVars) {
+        configServerId = serverId;
+        configEnvVars = envVars;
+        configValues = {};
+        showConfigDialog = true;
+    }
+
+    function getTierLabel(tier) {
+        if (tier === 1) return "CORE";
+        if (tier === 2) return "PRO";
+        return "STORE";
+    }
+    function getTierColor(tier) {
+        if (tier === 1) return "#22c55e";
+        if (tier === 2) return "#a855f7";
+        return "#3b82f6";
+    }
     function getCategoryColor(cat) {
-        if (cat === "system") return "#f59e0b";
-        if (cat === "web") return "#a855f7";
-        if (cat === "media") return "#22c55e";
-        if (cat === "utility") return "#3b82f6";
-        if (cat === "communication") return "#a855f7";
-        if (cat === "device") return "#22c55e";
-        return "#6366f1";
-    }
-
-    function getToolIcon(name) {
-        var icons = { exec: "\uf120", browser: "\uf0ac", web_fetch: "\uf019", file: "\uf15b", image: "\uf03e",
-            screenshot: "\uf030", tts: "\uf028", memory: "\uf1c0", db_query: "\uf1c0", code_exec: "\uf121",
-            cron: "\uf017", canvas: "\uf304", nodes: "\uf126", extend: "\uf12e", planning: "\uf5dc",
-            git: "\uf841", docker: "\uf395", ssh: "\uf233", qr_code: "\uf029", spreadsheet: "\uf0ce",
-            zip: "\uf187", email_send: "\uf0e0", pdf: "\uf1c1", system_info: "\uf0a0",
-            camera_snap: "\uf030", camera_record: "\uf03d", screen_record: "\uf108",
-            skill_creator: "\uf0d0", clipboard: "\uf328", shortcuts: "\uf0d0",
-            calendar_event: "\uf073", slides: "\uf1c4" };
-        return icons[name] || "\uf0e7";
+        if (cat === "ai") return "#f59e0b";
+        if (cat === "search") return "#06b6d4";
+        if (cat === "data") return "#10b981";
+        if (cat === "dev") return "#8b5cf6";
+        if (cat === "productivity") return "#ec4899";
+        if (cat === "analytics") return "#f97316";
+        return "#64748b";
     }
 
     Flickable {
         anchors.fill: parent; anchors.margins: Math.round(24 * root.sf)
-        contentHeight: toolsCol.height; clip: true
+        contentHeight: mainCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Column {
-            id: toolsCol; width: parent.width; spacing: Math.round(18 * root.sf)
+            id: mainCol; width: parent.width; spacing: Math.round(20 * root.sf)
 
-            // Header
+            // ─── Header ───
             RowLayout {
                 width: parent.width
                 Column {
                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                    Text { text: "Tools"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
-                    Text { text: allTools.length + " tools available for AI operations"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
+                    Text { text: "MCP Apps"; font.pixelSize: Math.round(20 * root.sf); font.bold: true; color: root.textPrimary }
+                    Text { text: allServers.length + " servers available · " + allServers.filter(function(s){return s.running}).length + " running"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                 }
-                // Search
                 Rectangle {
-                    width: Math.round(180 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
-                    color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
-                    RowLayout {
-                        anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
-                        Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-                        TextInput {
-                            Layout.fillWidth: true; color: "#ffffff"; font.pixelSize: Math.round(12 * root.sf); clip: true
-                            onTextChanged: { searchText = text; filterTools(); }
-                            Text { anchors.fill: parent; text: "Search tools..."; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
-                        }
+                    width: Math.round(220 * root.sf); height: Math.round(32 * root.sf)
+                    radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
+                    border.color: Qt.rgba(1,1,1,0.1)
+                    TextInput {
+                        anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+                        font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary
+                        clip: true; selectByMouse: true
+                        onTextChanged: { searchText = text; filterServers() }
+                        Text { anchors.fill: parent; text: "Search apps..."; color: Qt.rgba(1,1,1,0.25); visible: !parent.text; font.pixelSize: Math.round(12 * root.sf) }
                     }
+                }
+                Rectangle {
+                    width: Math.round(90 * root.sf); height: Math.round(32 * root.sf)
+                    radius: Math.round(8 * root.sf); color: "#6366f1"
+                    Text { anchors.centerIn: parent; text: "↻ Refresh"; font.pixelSize: Math.round(11 * root.sf); color: "white" }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: loadServers() }
                 }
             }
 
-            // Category pills
+            // ─── Filter Pills ───
             Flow {
-                width: parent.width; spacing: Math.round(10 * root.sf)
+                width: parent.width; spacing: Math.round(8 * root.sf)
                 Repeater {
-                    model: categories
+                    model: [
+                        { key: "all", label: "All" },
+                        { key: "running", label: "Running" },
+                        { key: "1", label: "Core" },
+                        { key: "2", label: "Pro" },
+                        { key: "3", label: "Store" }
+                    ]
                     Rectangle {
-                        width: catLabel.width + (catCount.visible ? catCount.width + 22 : 20); height: Math.round(34 * root.sf); radius: 17
-                        color: activeCategory === modelData ? root.accentBlue : "transparent"
-                        border.color: activeCategory === modelData ? root.accentBlue : root.borderColor; border.width: 1
-
-                        Row {
-                            anchors.centerIn: parent; spacing: Math.round(5 * root.sf)
-                            Text { id: catLabel; text: modelData === "all" ? "All" : modelData.charAt(0).toUpperCase() + modelData.slice(1); font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: activeCategory === modelData ? "#fff" : root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
-                            Rectangle {
-                                id: catCount; visible: true; width: ccText.width + 8; height: Math.round(16 * root.sf); radius: 8
-                                color: activeCategory === modelData ? Qt.rgba(1,1,1,0.2) : root.bgElevated
-                                anchors.verticalCenter: parent.verticalCenter
-                                Text { id: ccText; anchors.centerIn: parent; font.pixelSize: Math.round(9 * root.sf);
-                                    color: activeCategory === modelData ? "#fff" : root.textMuted
-                                    text: {
-                                        if (modelData === "all") return allTools.length;
-                                        var c = 0; for (var i = 0; i < allTools.length; i++) { if (allTools[i].category === modelData) c++; }
-                                        return c;
-                                    }
-                                }
-                            }
+                        width: Math.round(70 * root.sf); height: Math.round(28 * root.sf)
+                        radius: Math.round(14 * root.sf)
+                        color: activeFilter === modelData.key ? "#6366f1" : Qt.rgba(1,1,1,0.06)
+                        border.color: activeFilter === modelData.key ? "#818cf8" : Qt.rgba(1,1,1,0.1)
+                        Text {
+                            anchors.centerIn: parent; text: modelData.label
+                            font.pixelSize: Math.round(11 * root.sf); font.bold: activeFilter === modelData.key
+                            color: activeFilter === modelData.key ? "white" : root.textSecondary
                         }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { activeCategory = modelData; filterTools(); } }
+                        MouseArea {
+                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                            onClicked: { activeFilter = modelData.key; filterServers() }
+                        }
                     }
                 }
             }
 
-            Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
+            // ─── Loading Indicator ───
+            Text {
+                visible: loading
+                text: "Loading MCP servers..."
+                font.pixelSize: Math.round(13 * root.sf); color: root.textSecondary
+            }
 
-            // Tools grid (2-column)
+            // ─── Server Cards Grid ───
             Grid {
-                id: toolsGrid; width: parent.width; columns: 2; spacing: Math.round(8 * root.sf)
+                width: parent.width
+                columns: Math.max(1, Math.floor(parent.width / Math.round(320 * root.sf)))
+                rowSpacing: Math.round(14 * root.sf)
+                columnSpacing: Math.round(14 * root.sf)
+                visible: !loading
+
                 Repeater {
-                    model: filteredTools
+                    model: filteredServers
                     Rectangle {
-                        width: (toolsGrid.width - 8) / 2; height: Math.round(140 * root.sf)
-                        radius: root.radiusMd; color: root.bgCard
-                        border.color: root.borderColor; border.width: 1
-                        clip: true
+                        width: Math.round(300 * root.sf); height: Math.round(160 * root.sf)
+                        radius: Math.round(12 * root.sf)
+                        color: Qt.rgba(1,1,1,0.04)
+                        border.color: modelData.running ? Qt.rgba(0.39, 0.82, 0.38, 0.4) : Qt.rgba(1,1,1,0.08)
+                        border.width: modelData.running ? 2 : 1
+
+                        // Subtle glow for running servers
+                        Rectangle {
+                            anchors.fill: parent; radius: parent.radius
+                            visible: modelData.running
+                            color: "transparent"
+                            border.color: Qt.rgba(0.39, 0.82, 0.38, 0.15)
+                            border.width: 3
+                        }
 
                         Column {
-                            anchors.left: parent.left; anchors.right: parent.right
-                            anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
+                            anchors.fill: parent; anchors.margins: Math.round(14 * root.sf)
+                            spacing: Math.round(8 * root.sf)
 
+                            // Top row: name + tier badge + status
+                            RowLayout {
+                                width: parent.width
+                                Text {
+                                    text: modelData.name
+                                    font.pixelSize: Math.round(14 * root.sf); font.bold: true
+                                    color: root.textPrimary; Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                                // Tier badge
+                                Rectangle {
+                                    width: Math.round(42 * root.sf); height: Math.round(18 * root.sf)
+                                    radius: Math.round(4 * root.sf)
+                                    color: Qt.rgba(0,0,0,0.3); border.color: getTierColor(modelData.tier)
+                                    Text {
+                                        anchors.centerIn: parent; text: getTierLabel(modelData.tier)
+                                        font.pixelSize: Math.round(9 * root.sf); font.bold: true
+                                        color: getTierColor(modelData.tier)
+                                    }
+                                }
+                                // Status dot
+                                Rectangle {
+                                    width: Math.round(10 * root.sf); height: Math.round(10 * root.sf)
+                                    radius: width / 2
+                                    color: modelData.running ? "#22c55e" : Qt.rgba(1,1,1,0.2)
+                                }
+                            }
+
+                            // Category pill
+                            Rectangle {
+                                width: catLabel.width + Math.round(12 * root.sf); height: Math.round(18 * root.sf)
+                                radius: Math.round(9 * root.sf)
+                                color: Qt.rgba(0,0,0,0.3); border.color: getCategoryColor(modelData.category)
+                                Text {
+                                    id: catLabel; anchors.centerIn: parent
+                                    text: modelData.category; font.pixelSize: Math.round(9 * root.sf)
+                                    color: getCategoryColor(modelData.category); font.capitalization: Font.AllUppercase
+                                }
+                            }
+
+                            // Description
+                            Text {
+                                width: parent.width; text: modelData.description
+                                font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
+                                wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
+                            }
+
+                            // Tool count when running
+                            Text {
+                                visible: modelData.running
+                                text: modelData.toolCount + " tools active"
+                                font.pixelSize: Math.round(10 * root.sf); color: "#22c55e"
+                            }
+
+                            // Bottom row: action buttons
                             RowLayout {
                                 width: parent.width; spacing: Math.round(8 * root.sf)
-                                Rectangle {
-                                    width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8
-                                    color: Qt.rgba(getCategoryColor(modelData.category).r || 0.3, getCategoryColor(modelData.category).g || 0.5, getCategoryColor(modelData.category).b || 0.9, 0.15)
-                                    Text { anchors.centerIn: parent; text: getToolIcon(modelData.name); font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf); color: getCategoryColor(modelData.category) }
-                                }
-                                Column {
-                                    Layout.fillWidth: true; spacing: Math.round(1 * root.sf)
-                                    Text { text: modelData.name; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#ffffff" }
-                                    Text { text: (modelData.category || "").toUpperCase(); font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; font.letterSpacing: 0.5 }
-                                }
-                                // On/Off badge
-                                Rectangle {
-                                    width: onOffText.width + 12; height: Math.round(18 * root.sf); radius: 9
-                                    color: modelData.disabled ? Qt.rgba(0.94,0.27,0.27,0.15) : Qt.rgba(0.13,0.77,0.37,0.15)
-                                    Text { id: onOffText; anchors.centerIn: parent; text: modelData.disabled ? "Off" : "On"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: modelData.disabled ? "#ef4444" : root.accentGreen }
-                                }
-                            }
 
-                            Text {
-                                text: modelData.description || ""; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
-                                wrapMode: Text.WordWrap; width: parent.width; lineHeight: 1.3
-                                maximumLineCount: 3; elide: Text.ElideRight
-                            }
-
-                            RowLayout {
-                                width: parent.width; spacing: Math.round(4 * root.sf)
-                                Text { text: modelData.requiresApproval ? "\uf023 Approval required" : "\u26A1 Auto-execute"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; Layout.fillWidth: true }
-                                // Toggle
+                                // Configure button (if needs env vars)
                                 Rectangle {
-                                    width: Math.round(34 * root.sf); height: Math.round(18 * root.sf); radius: 9
-                                    color: !modelData.disabled ? root.accentBlue : Qt.rgba(1,1,1,0.1)
-                                    Rectangle {
-                                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: 7; y: 2
-                                        x: !modelData.disabled ? 18 : 2; color: "white"
-                                        Behavior on x { NumberAnimation { duration: 150 } }
+                                    visible: modelData.needsConfig
+                                    width: Math.round(80 * root.sf); height: Math.round(26 * root.sf)
+                                    radius: Math.round(6 * root.sf)
+                                    color: configMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
+                                    border.color: Qt.rgba(1,1,1,0.15)
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                    Text {
+                                        anchors.centerIn: parent; text: "⚙ Config"
+                                        font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8"
                                     }
-                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggleTool(modelData.name, modelData.disabled) }
+                                    MouseArea {
+                                        id: configMouse; anchors.fill: parent
+                                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: openConfig(modelData.id, modelData.envVars)
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                // Start/Stop button
+                                Rectangle {
+                                    width: Math.round(80 * root.sf); height: Math.round(26 * root.sf)
+                                    radius: Math.round(6 * root.sf)
+                                    color: modelData.running
+                                        ? (stopMouse.containsMouse ? Qt.rgba(0.94,0.27,0.22,0.2) : Qt.rgba(0.94,0.27,0.22,0.1))
+                                        : (startMouse.containsMouse ? Qt.rgba(0.13,0.78,0.27,0.2) : Qt.rgba(0.13,0.78,0.27,0.1))
+                                    border.color: modelData.running ? "#ef4444" : "#22c55e"
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData.running ? "■ Stop" : "▶ Start"
+                                        font.pixelSize: Math.round(10 * root.sf); font.bold: true
+                                        color: modelData.running ? "#ef4444" : "#22c55e"
+                                    }
+                                    MouseArea {
+                                        id: startMouse; anchors.fill: parent
+                                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        visible: !modelData.running
+                                        onClicked: {
+                                            if (modelData.needsConfig && !modelData.configured) {
+                                                openConfig(modelData.id, modelData.envVars);
+                                            } else {
+                                                startServer(modelData.id);
+                                            }
+                                        }
+                                    }
+                                    MouseArea {
+                                        id: stopMouse; anchors.fill: parent
+                                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        visible: modelData.running
+                                        onClicked: stopServer(modelData.id)
+                                    }
                                 }
                             }
                         }
@@ -261,13 +347,106 @@ Rectangle {
                 }
             }
 
-            // Empty state
+            // ─── Empty State ───
+            Text {
+                visible: !loading && filteredServers.length === 0
+                text: "No servers found matching your search"
+                font.pixelSize: Math.round(13 * root.sf); color: root.textSecondary
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════
+    // Configuration Dialog
+    // ═══════════════════════════════════════════
+    Rectangle {
+        id: configDialog
+        visible: showConfigDialog
+        anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.6)
+        z: 100
+
+        MouseArea { anchors.fill: parent; onClicked: showConfigDialog = false }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.round(400 * root.sf); height: configDialogCol.height + Math.round(40 * root.sf)
+            radius: Math.round(16 * root.sf)
+            color: Qt.rgba(0.1, 0.1, 0.14, 0.95)
+            border.color: Qt.rgba(1,1,1,0.15)
+
+            MouseArea { anchors.fill: parent } // Prevent click-through
+
             Column {
-                width: parent.width; spacing: Math.round(8 * root.sf); visible: filteredTools.length === 0 && !loading
-                Item { width: Math.round(1 * root.sf); height: Math.round(30 * root.sf) }
-                Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: Math.round(32 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
-                Text { text: "No tools found"; font.pixelSize: Math.round(14 * root.sf); color: root.textSecondary; anchors.horizontalCenter: parent.horizontalCenter }
-                Text { text: "Try a different search term or category"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
+                id: configDialogCol
+                anchors.left: parent.left; anchors.right: parent.right
+                anchors.top: parent.top; anchors.margins: Math.round(20 * root.sf)
+                spacing: Math.round(14 * root.sf)
+
+                Text {
+                    text: "Configure " + configServerId
+                    font.pixelSize: Math.round(16 * root.sf); font.bold: true; color: root.textPrimary
+                }
+                Text {
+                    text: "Enter the required API keys to enable this MCP server."
+                    font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
+                    width: parent.width; wrapMode: Text.WordWrap
+                }
+
+                Repeater {
+                    model: configEnvVars
+                    Column {
+                        width: parent.width; spacing: Math.round(4 * root.sf)
+                        Text {
+                            text: modelData; font.pixelSize: Math.round(11 * root.sf)
+                            color: root.textSecondary; font.bold: true
+                        }
+                        Rectangle {
+                            width: parent.width; height: Math.round(34 * root.sf)
+                            radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
+                            border.color: Qt.rgba(1,1,1,0.12)
+                            TextInput {
+                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+                                font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary
+                                clip: true; selectByMouse: true; echoMode: TextInput.Password
+                                onTextChanged: {
+                                    var cv = configValues;
+                                    cv[modelData] = text;
+                                    configValues = cv;
+                                }
+                                Text {
+                                    anchors.fill: parent; text: "Enter value..."
+                                    color: Qt.rgba(1,1,1,0.2); visible: !parent.text
+                                    font.pixelSize: Math.round(12 * root.sf)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    width: parent.width; spacing: Math.round(10 * root.sf)
+                    Item { Layout.fillWidth: true }
+                    Rectangle {
+                        width: Math.round(80 * root.sf); height: Math.round(30 * root.sf)
+                        radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
+                        Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: showConfigDialog = false }
+                    }
+                    Rectangle {
+                        width: Math.round(120 * root.sf); height: Math.round(30 * root.sf)
+                        radius: Math.round(8 * root.sf); color: "#6366f1"
+                        Text { anchors.centerIn: parent; text: "Save & Start"; font.pixelSize: Math.round(11 * root.sf); font.bold: true; color: "white" }
+                        MouseArea {
+                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                configureServer(configServerId, configValues);
+                                showConfigDialog = false;
+                                // Auto-start after configuring
+                                Qt.callLater(function() { startServer(configServerId) });
+                            }
+                        }
+                    }
+                }
             }
         }
     }
