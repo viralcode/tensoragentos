@@ -107,14 +107,14 @@ Rectangle {
     Rectangle {
         id: chatHeader
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: Math.round(44 * root.sf); visible: chatExpanded
+        height: Math.round(52 * root.sf); visible: chatExpanded
         color: Qt.rgba(0.06, 0.06, 0.10, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
 
             Canvas {
                 width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
@@ -137,7 +137,7 @@ Rectangle {
 
             Text {
                 text: getAgentName()
-                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
             }
 
             Rectangle {
@@ -334,9 +334,9 @@ Rectangle {
 
         ListView {
             id: messageList
-            anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(16 * root.sf)
-            anchors.topMargin: Math.round(12 * root.sf); anchors.bottomMargin: Math.round(8 * root.sf)
-            model: messages; spacing: Math.round(16 * root.sf); clip: true
+            anchors.fill: parent; anchors.leftMargin: Math.round(20 * root.sf); anchors.rightMargin: Math.round(20 * root.sf)
+            anchors.topMargin: Math.round(16 * root.sf); anchors.bottomMargin: Math.round(12 * root.sf)
+            model: messages; spacing: Math.round(20 * root.sf); clip: true
 
             delegate: Item {
                 width: messageList.width
@@ -349,7 +349,7 @@ Rectangle {
                     anchors.leftMargin: modelData.role !== "user" ? Math.round(36 * root.sf) : 0
                     anchors.rightMargin: modelData.role === "user" ? parent.width * 0.15 : parent.width * 0.05
                     visible: modelData.toolCalls && modelData.toolCalls.length > 0
-                    spacing: Math.round(3 * root.sf)
+                    spacing: Math.round(6 * root.sf)
                     bottomPadding: visible ? Math.round(8 * root.sf) : 0
 
                     Repeater {
@@ -386,7 +386,7 @@ Rectangle {
                     anchors.top: toolCol.visible ? toolCol.bottom : parent.top
                     anchors.right: modelData.role === "user" ? parent.right : undefined
                     anchors.left: modelData.role !== "user" ? parent.left : undefined
-                    spacing: Math.round(10 * root.sf)
+                    spacing: Math.round(12 * root.sf)
                     layoutDirection: modelData.role === "user" ? Qt.RightToLeft : Qt.LeftToRight
 
                     // Avatar for assistant
@@ -409,8 +409,8 @@ Rectangle {
                         width: modelData.role === "user"
                             ? Math.min(messageList.width * 0.68, userMsgMetrics.width + Math.round(36 * root.sf))
                             : messageList.width - Math.round(48 * root.sf)
-                        height: msgContentCol.height + Math.round(18 * root.sf)
-                        radius: Math.round(12 * root.sf)
+                        height: msgContentCol.height + Math.round(24 * root.sf)
+                        radius: Math.round(14 * root.sf)
 
                         color: modelData.role === "user"
                             ? Qt.rgba(0.24, 0.45, 0.95, 0.18)
@@ -430,8 +430,8 @@ Rectangle {
                             id: msgContentCol
                             anchors.left: parent.left; anchors.right: parent.right
                             anchors.top: parent.top
-                            anchors.margins: modelData.role === "user" ? Math.round(12 * root.sf) : Math.round(8 * root.sf)
-                            spacing: Math.round(4 * root.sf)
+                            anchors.margins: modelData.role === "user" ? Math.round(14 * root.sf) : Math.round(12 * root.sf)
+                            spacing: Math.round(6 * root.sf)
 
                             Row {
                                 spacing: Math.round(6 * root.sf)
@@ -451,9 +451,9 @@ Rectangle {
                             Text {
                                 width: parent.width
                                 text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
-                                font.pixelSize: Math.round(13 * root.sf)
+                                font.pixelSize: Math.round(13.5 * root.sf)
                                 color: modelData.role === "user" ? "#e0e7ff" : "#e4e4e7"
-                                wrapMode: Text.Wrap; lineHeight: 1.5
+                                wrapMode: Text.Wrap; lineHeight: 1.6
                                 textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
                             }
                         }
@@ -694,9 +694,9 @@ Rectangle {
     Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
-        anchors.bottomMargin: Math.round(5 * root.sf)
-        height: Math.round(44 * root.sf); radius: Math.round(12 * root.sf)
+        anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
+        anchors.bottomMargin: Math.round(8 * root.sf)
+        height: Math.round(48 * root.sf); radius: Math.round(14 * root.sf)
         color: Qt.rgba(0.06, 0.06, 0.10, 0.95)
         border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
@@ -704,7 +704,7 @@ Rectangle {
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(6 * root.sf); spacing: Math.round(8 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
 
             Canvas {
                 width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); visible: !chatExpanded
@@ -729,7 +729,7 @@ Rectangle {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: "#e4e4e7"; font.pixelSize: Math.round(13 * root.sf); clip: true
+                color: "#e4e4e7"; font.pixelSize: Math.round(14 * root.sf); clip: true
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -770,7 +770,7 @@ Rectangle {
 
             Rectangle {
                 visible: chatExpanded
-                width: agentPillText.width + Math.round(14 * root.sf); height: Math.round(22 * root.sf); radius: Math.round(11 * root.sf)
+                width: agentPillText.width + Math.round(18 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(13 * root.sf)
                 color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
                 border.color: Qt.rgba(0.2, 0.83, 0.6, 0.2); border.width: 1
 
@@ -781,7 +781,7 @@ Rectangle {
             }
 
             Rectangle {
-                width: Math.round(34 * root.sf); height: Math.round(34 * root.sf); radius: Math.round(10 * root.sf)
+                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
 
                 color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.06)
                 Behavior on color { ColorAnimation { duration: 150 } }
