@@ -185,109 +185,201 @@ Rectangle {
             Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
 
             // ═══════════════════════════════════════════════════
-            // ── Ollama Local Provider (Special Card) ──
+            // ── Ollama Local Provider ──
             // ═══════════════════════════════════════════════════
             Rectangle {
-                width: parent.width; height: ollamaCol.height + 28
-                radius: root.radiusMd
-                color: ollamaOnline ? Qt.rgba(0.05, 0.12, 0.08, 0.8) : root.bgCard
-                border.color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.4) : root.borderColor
+                width: parent.width; height: ollamaCol.height + Math.round(40 * root.sf)
+                radius: Math.round(14 * root.sf)
+                color: root.bgCard
+                border.color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.25) : root.borderColor
                 border.width: 1
+
+                // Subtle gradient accent at top
+                Rectangle {
+                    anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+                    height: Math.round(3 * root.sf); radius: parent.radius
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: ollamaOnline ? "#22c55e" : "#64748b" }
+                        GradientStop { position: 0.5; color: ollamaOnline ? "#16a34a" : "#475569" }
+                        GradientStop { position: 1.0; color: ollamaOnline ? "#15803d" : "#334155" }
+                    }
+                }
 
                 Column {
                     id: ollamaCol; anchors.left: parent.left; anchors.right: parent.right
-                    anchors.top: parent.top; anchors.margins: Math.round(16 * root.sf); spacing: Math.round(12 * root.sf)
+                    anchors.top: parent.top; anchors.margins: Math.round(20 * root.sf)
+                    anchors.topMargin: Math.round(24 * root.sf)
+                    spacing: Math.round(16 * root.sf)
 
-                    // Header
+                    // ── Header Row ──
                     RowLayout {
-                        width: parent.width; spacing: Math.round(12 * root.sf)
+                        width: parent.width; spacing: Math.round(14 * root.sf)
 
                         // Ollama icon
                         Rectangle {
-                            width: Math.round(40 * root.sf); height: Math.round(40 * root.sf); radius: 10
-                            color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.15) : Qt.rgba(1, 1, 1, 0.06)
+                            width: Math.round(44 * root.sf); height: Math.round(44 * root.sf); radius: Math.round(12 * root.sf)
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.2) : Qt.rgba(1, 1, 1, 0.08) }
+                                GradientStop { position: 1.0; color: ollamaOnline ? Qt.rgba(0.08, 0.5, 0.24, 0.15) : Qt.rgba(1, 1, 1, 0.03) }
+                            }
 
                             Text {
-                                anchors.centerIn: parent; text: "O"
-                                font.pixelSize: Math.round(18 * root.sf); font.weight: Font.Black
-                                color: ollamaOnline ? "#22c55e" : root.textMuted
+                                anchors.centerIn: parent; text: "🦙"
+                                font.pixelSize: Math.round(22 * root.sf)
                             }
                         }
 
                         Column {
-                            Layout.fillWidth: true; spacing: Math.round(3 * root.sf)
+                            Layout.fillWidth: true; spacing: Math.round(4 * root.sf)
                             Text {
-                                text: "Ollama — Local LLM"
-                                font.pixelSize: Math.round(15 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary
+                                text: "Ollama"
+                                font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: root.textPrimary
                             }
                             Text {
-                                text: ollamaChecking ? "Checking..." :
-                                      ollamaOnline ? ollamaModels.length + " model" + (ollamaModels.length !== 1 ? "s" : "") + " installed — No API key needed" :
-                                      "Offline — run: sudo systemctl start ollama"
-                                font.pixelSize: Math.round(11 * root.sf)
-                                color: ollamaOnline ? "#22c55e" : "#f59e0b"
+                                text: "Run LLMs locally — no API key needed"
+                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
                             }
                         }
 
-                        // Status indicator
+                        // Status pill
                         Rectangle {
-                            width: Math.round(12 * root.sf); height: Math.round(12 * root.sf); radius: 6
-                            color: ollamaChecking ? "#f59e0b" : (ollamaOnline ? "#22c55e" : "#ef4444")
+                            width: statusPillText.width + Math.round(20 * root.sf)
+                            height: Math.round(26 * root.sf); radius: Math.round(13 * root.sf)
+                            color: ollamaChecking ? Qt.rgba(0.96, 0.62, 0.04, 0.12) :
+                                   ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.12) :
+                                   Qt.rgba(0.94, 0.27, 0.27, 0.12)
+                            border.color: ollamaChecking ? Qt.rgba(0.96, 0.62, 0.04, 0.25) :
+                                          ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.25) :
+                                          Qt.rgba(0.94, 0.27, 0.27, 0.25)
+                            border.width: 1
 
-                            SequentialAnimation on opacity {
-                                running: ollamaChecking; loops: Animation.Infinite
-                                NumberAnimation { to: 0.3; duration: 500 }
-                                NumberAnimation { to: 1.0; duration: 500 }
+                            Row {
+                                anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+
+                                Rectangle {
+                                    width: Math.round(7 * root.sf); height: Math.round(7 * root.sf); radius: Math.round(4 * root.sf)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: ollamaChecking ? "#f59e0b" : (ollamaOnline ? "#22c55e" : "#ef4444")
+
+                                    SequentialAnimation on opacity {
+                                        running: ollamaChecking; loops: Animation.Infinite
+                                        NumberAnimation { to: 0.3; duration: 500 }
+                                        NumberAnimation { to: 1.0; duration: 500 }
+                                    }
+                                }
+
+                                Text {
+                                    id: statusPillText; anchors.verticalCenter: parent.verticalCenter
+                                    text: ollamaChecking ? "Checking" : (ollamaOnline ? "Online" : "Offline")
+                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold
+                                    color: ollamaChecking ? "#f59e0b" : (ollamaOnline ? "#22c55e" : "#ef4444")
+                                }
                             }
                         }
 
                         // Refresh button
                         Rectangle {
-                            width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(8 * root.sf)
+                            width: Math.round(34 * root.sf); height: Math.round(34 * root.sf); radius: Math.round(10 * root.sf)
                             color: refreshMa.containsMouse ? Qt.rgba(1,1,1,0.1) : Qt.rgba(1,1,1,0.04)
-                            Text { anchors.centerIn: parent; text: "R"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Bold; color: root.textSecondary }
+                            border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent; text: "↻"
+                                font.pixelSize: Math.round(16 * root.sf); color: root.textSecondary
+                            }
                             MouseArea { id: refreshMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: checkOllama() }
+                        }
+                    }
+
+                    // ── Model count info ──
+                    Text {
+                        visible: ollamaOnline
+                        text: ollamaModels.length + " model" + (ollamaModels.length !== 1 ? "s" : "") + " installed"
+                        font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium
+                        color: "#22c55e"
+                    }
+
+                    // ── Offline hint ──
+                    Rectangle {
+                        visible: !ollamaOnline && !ollamaChecking
+                        width: parent.width; height: offlineCol.height + Math.round(20 * root.sf)
+                        radius: Math.round(8 * root.sf)
+                        color: Qt.rgba(0.94, 0.27, 0.27, 0.06)
+                        border.color: Qt.rgba(0.94, 0.27, 0.27, 0.12); border.width: 1
+
+                        Column {
+                            id: offlineCol; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Ollama service is not running"
+                                font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: "#fca5a5"
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Run: sudo systemctl start ollama"
+                                font.pixelSize: Math.round(11 * root.sf); font.family: "monospace"; color: root.textMuted
+                            }
                         }
                     }
 
                     // ── Installed Models List ──
                     Rectangle {
-                        width: parent.width; height: modelsListCol.height + 16; radius: Math.round(8 * root.sf)
-                        color: Qt.rgba(0, 0, 0, 0.25); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                        width: parent.width; height: modelsListCol.height + Math.round(20 * root.sf)
+                        radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(0, 0, 0, 0.2); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
                         visible: ollamaOnline
 
                         Column {
                             id: modelsListCol; anchors.left: parent.left; anchors.right: parent.right
-                            anchors.top: parent.top; anchors.margins: Math.round(8 * root.sf); spacing: Math.round(4 * root.sf)
+                            anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf)
+                            spacing: Math.round(6 * root.sf)
 
                             // Header
                             RowLayout {
-                                width: parent.width; spacing: Math.round(8 * root.sf)
-                                Text { text: "Installed Models"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; Layout.fillWidth: true }
-                                Text { text: "SIZE"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted }
-                                Rectangle { width: Math.round(70 * root.sf); height: 1; color: "transparent" }
+                                width: parent.width; spacing: Math.round(10 * root.sf)
+                                Text {
+                                    text: "Installed Models"
+                                    font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary
+                                    Layout.fillWidth: true
+                                }
+                                Text { text: "SIZE"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.textMuted; Layout.rightMargin: Math.round(90 * root.sf) }
                             }
 
+                            // Divider
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
+
                             // No models
-                            Text {
-                                visible: ollamaModels.length === 0
-                                text: "No models installed yet. Pull one below!"
-                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
-                                topPadding: Math.round(8 * root.sf); bottomPadding: Math.round(8 * root.sf)
+                            Column {
+                                visible: ollamaModels.length === 0; width: parent.width
+                                spacing: Math.round(6 * root.sf)
+                                topPadding: Math.round(12 * root.sf); bottomPadding: Math.round(12 * root.sf)
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "No models installed yet"
+                                    font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: root.textSecondary
+                                }
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "Pull a model below to get started"
+                                    font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                }
                             }
 
                             // Model rows
                             Repeater {
                                 model: ollamaModels
                                 Rectangle {
-                                    width: modelsListCol.width; height: Math.round(36 * root.sf); radius: Math.round(6 * root.sf)
-                                    color: modelRowMa.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"
+                                    width: modelsListCol.width; height: Math.round(42 * root.sf); radius: Math.round(8 * root.sf)
+                                    color: modelRowMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
 
                                     RowLayout {
-                                        anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
-                                        spacing: Math.round(8 * root.sf)
+                                        anchors.fill: parent
+                                        anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf)
+                                        spacing: Math.round(10 * root.sf)
 
-                                        // Model icon
+                                        // Model dot
                                         Rectangle {
                                             width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: 4
                                             color: "#22c55e"
@@ -295,22 +387,29 @@ Rectangle {
 
                                         // Model name
                                         Text {
-                                            text: modelData.name; font.pixelSize: Math.round(12 * root.sf)
+                                            text: modelData.name
+                                            font.pixelSize: Math.round(13 * root.sf)
                                             font.weight: Font.Medium; font.family: "monospace"; color: "#ffffff"
                                             Layout.fillWidth: true
                                         }
 
                                         // Size
                                         Text {
-                                            text: modelData.size; font.pixelSize: Math.round(10 * root.sf)
-                                            color: root.textMuted
+                                            text: modelData.size
+                                            font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                            Layout.preferredWidth: Math.round(50 * root.sf)
+                                            horizontalAlignment: Text.AlignRight
                                         }
 
                                         // Use button
                                         Rectangle {
-                                            width: Math.round(48 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(6 * root.sf)
-                                            color: useMa.containsMouse ? Qt.darker(root.accentBlue, 1.2) : root.accentBlue
-                                            Text { anchors.centerIn: parent; text: "Use"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                                            width: Math.round(54 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
+                                            color: useMa.containsMouse ? Qt.darker(root.accentBlue, 1.15) : root.accentBlue
+
+                                            Text {
+                                                anchors.centerIn: parent; text: "Use"
+                                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                                            }
                                             MouseArea {
                                                 id: useMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                                 onClicked: connectOllamaToOpenWhale(modelData.name)
@@ -319,9 +418,14 @@ Rectangle {
 
                                         // Delete button
                                         Rectangle {
-                                            width: Math.round(26 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(6 * root.sf)
-                                            color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.2) : Qt.rgba(1,1,1,0.04)
-                                            Text { anchors.centerIn: parent; text: "X"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#ef4444" }
+                                            width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
+                                            color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1,1,1,0.04)
+                                            border.color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.2) : "transparent"; border.width: 1
+
+                                            Text {
+                                                anchors.centerIn: parent; text: "✕"
+                                                font.pixelSize: Math.round(11 * root.sf); color: "#ef4444"
+                                            }
                                             MouseArea {
                                                 id: delMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                                 onClicked: deleteOllamaModel(modelData.name)
@@ -329,7 +433,13 @@ Rectangle {
                                         }
                                     }
 
-                                    MouseArea { id: modelRowMa; anchors.fill: parent; hoverEnabled: true; propagateComposedEvents: true; onClicked: mouse.accepted = false; onPressed: mouse.accepted = false; onReleased: mouse.accepted = false }
+                                    MouseArea {
+                                        id: modelRowMa; anchors.fill: parent; hoverEnabled: true
+                                        propagateComposedEvents: true
+                                        onClicked: function(mouse) { mouse.accepted = false; }
+                                        onPressed: function(mouse) { mouse.accepted = false; }
+                                        onReleased: function(mouse) { mouse.accepted = false; }
+                                    }
                                 }
                             }
                         }
@@ -337,40 +447,46 @@ Rectangle {
 
                     // ── Pull New Model ──
                     Rectangle {
-                        width: parent.width; height: Math.round(38 * root.sf); radius: Math.round(8 * root.sf)
+                        width: parent.width; height: Math.round(44 * root.sf); radius: Math.round(10 * root.sf)
                         color: Qt.rgba(0, 0, 0, 0.2); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
                         visible: ollamaOnline
 
                         RowLayout {
-                            anchors.fill: parent; anchors.margins: Math.round(4 * root.sf); spacing: Math.round(6 * root.sf)
+                            anchors.fill: parent; anchors.margins: Math.round(6 * root.sf); spacing: Math.round(8 * root.sf)
 
                             Rectangle {
-                                Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: Math.round(6 * root.sf)
-                                color: Qt.rgba(0, 0, 0, 0.3)
+                                Layout.fillWidth: true; height: Math.round(32 * root.sf); radius: Math.round(8 * root.sf)
+                                color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
 
                                 TextInput {
-                                    id: pullInput; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
-                                    color: "#fff"; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"
+                                    id: pullInput; anchors.fill: parent; anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
+                                    color: "#fff"; font.pixelSize: Math.round(13 * root.sf); font.family: "monospace"
                                     clip: true; verticalAlignment: TextInput.AlignVCenter
                                     Keys.onReturnPressed: pullOllamaModel(pullInput.text.trim())
+
                                     Text {
                                         anchors.fill: parent; verticalAlignment: Text.AlignVCenter
-                                        text: "e.g. llama3.2, mistral, codellama, phi3, gemma2..."
-                                        color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(11 * root.sf)
+                                        text: "Model name (e.g. llama3.2, mistral)"
+                                        color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf)
                                         visible: !parent.text
                                     }
                                 }
                             }
 
                             Rectangle {
-                                width: pullBtnRow.width + Math.round(16 * root.sf); height: Math.round(30 * root.sf); radius: Math.round(6 * root.sf)
+                                width: pullBtnRow.width + Math.round(20 * root.sf); height: Math.round(32 * root.sf)
+                                radius: Math.round(8 * root.sf)
                                 color: ollamaPulling ? Qt.rgba(1,1,1,0.06) : (pullBtnMa.containsMouse ? "#16a34a" : "#22c55e")
                                 enabled: !ollamaPulling
 
                                 Row {
-                                    id: pullBtnRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
-                                    Text { text: ollamaPulling ? "..." : "+"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Bold; color: ollamaPulling ? root.textMuted : "#fff"; anchors.verticalCenter: parent.verticalCenter }
-                                    Text { text: ollamaPulling ? "Pulling" : "Pull"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: ollamaPulling ? root.textMuted : "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                                    id: pullBtnRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+                                    Text {
+                                        text: ollamaPulling ? "Pulling..." : "↓ Pull"
+                                        font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold
+                                        color: ollamaPulling ? root.textMuted : "#fff"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
                                 }
 
                                 MouseArea {
@@ -381,22 +497,57 @@ Rectangle {
                         }
                     }
 
-                    // Quick-pull popular models
-                    Flow {
-                        width: parent.width; spacing: Math.round(6 * root.sf)
-                        visible: ollamaOnline && ollamaModels.length < 3
+                    // ── Quick-pull popular models ──
+                    Column {
+                        width: parent.width; spacing: Math.round(8 * root.sf)
+                        visible: ollamaOnline
 
-                        Text { text: "Popular:"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; anchors.verticalCenter: parent.children.length > 1 ? parent.children[1].verticalCenter : undefined }
+                        Text {
+                            text: "Popular Models"
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textMuted
+                        }
 
-                        Repeater {
-                            model: ["llama3.2", "mistral", "codellama", "phi3", "gemma2", "qwen2.5"]
-                            Rectangle {
-                                width: quickLabel.width + 16; height: Math.round(24 * root.sf); radius: 12
-                                color: quickMa.containsMouse ? Qt.rgba(1,1,1,0.1) : Qt.rgba(1,1,1,0.04)
-                                border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                        Flow {
+                            width: parent.width; spacing: Math.round(8 * root.sf)
 
-                                Text { id: quickLabel; anchors.centerIn: parent; text: modelData; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary; font.family: "monospace" }
-                                MouseArea { id: quickMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: pullOllamaModel(modelData) }
+                            Repeater {
+                                model: [
+                                    { name: "llama3.2", desc: "Meta 3B" },
+                                    { name: "mistral", desc: "7B" },
+                                    { name: "codellama", desc: "Code 7B" },
+                                    { name: "phi3", desc: "Microsoft 3.8B" },
+                                    { name: "gemma2", desc: "Google 2B" },
+                                    { name: "qwen2.5", desc: "Alibaba 7B" }
+                                ]
+
+                                Rectangle {
+                                    width: quickCol.width + Math.round(24 * root.sf); height: Math.round(38 * root.sf)
+                                    radius: Math.round(10 * root.sf)
+                                    color: quickMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.03)
+                                    border.color: quickMa.containsMouse ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : Qt.rgba(1,1,1,0.08)
+                                    border.width: 1
+
+                                    Row {
+                                        id: quickCol; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+
+                                        Text {
+                                            text: modelData.name
+                                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
+                                            font.family: "monospace"; color: "#e2e8f0"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                        Text {
+                                            text: modelData.desc
+                                            font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: quickMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: pullOllamaModel(modelData.name)
+                                    }
+                                }
                             }
                         }
                     }
