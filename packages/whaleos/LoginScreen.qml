@@ -5,216 +5,374 @@ import QtQuick.Layouts
 Rectangle {
     id: loginScreen
     anchors.fill: parent
-    color: root.bgVoid
+    color: "#050510"
 
-    // Subtle gradient wallpaper
+    property bool loginBusy: false
+    property real glowPhase: 0
+
+    // ── Animated phase for effects ──
+    Timer {
+        running: true; repeat: true; interval: 40
+        onTriggered: glowPhase += 0.02
+    }
+
+    // ════════════════════════════════════════
+    // ── Aurora Background (matches desktop) ──
+    // ════════════════════════════════════════
+
+    // Base deep gradient
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0a0a0f" }
-            GradientStop { position: 0.5; color: "#0d0d14" }
-            GradientStop { position: 1.0; color: "#0a0f0a" }
+            GradientStop { position: 0.0; color: "#050510" }
+            GradientStop { position: 0.3; color: "#0a0f20" }
+            GradientStop { position: 0.6; color: "#0c1025" }
+            GradientStop { position: 1.0; color: "#08061a" }
         }
     }
 
-    // Subtle dot pattern overlay
+    // Aurora glow - top center (cyan/teal)
+    Rectangle {
+        x: parent.width * 0.15; y: parent.height * 0.0
+        width: parent.width * 0.7; height: parent.height * 0.5
+        radius: width / 2; opacity: 0.08 + Math.sin(glowPhase) * 0.02
+        rotation: -5
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#0ea5e9" }
+            GradientStop { position: 0.4; color: "#06b6d4" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Aurora glow - center (purple/indigo)
+    Rectangle {
+        x: parent.width * 0.2; y: parent.height * 0.1
+        width: parent.width * 0.65; height: parent.height * 0.55
+        radius: width / 2; opacity: 0.10 + Math.sin(glowPhase * 0.7 + 1) * 0.03
+        rotation: 10
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#7c3aed" }
+            GradientStop { position: 0.5; color: "#1d4ed8" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Warm accent - bottom (rose/pink)
+    Rectangle {
+        x: parent.width * 0.5; y: parent.height * 0.5
+        width: parent.width * 0.5; height: parent.height * 0.4
+        radius: width / 2; opacity: 0.05
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#f43f5e" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Star field
     Canvas {
-        anchors.fill: parent
-        opacity: 0.03
+        anchors.fill: parent; opacity: 0.4
         onPaint: {
             var ctx = getContext("2d");
-            ctx.fillStyle = "#ffffff";
-            var step = Math.round(30 * root.sf);
-            for (var x = 0; x < width; x += step) {
-                for (var y = 0; y < height; y += step) {
-                    ctx.beginPath();
-                    ctx.arc(x, y, 1, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+            var seed = 42;
+            function rand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; }
+            for (var i = 0; i < 80; i++) {
+                var sx = rand() * width; var sy = rand() * height;
+                var sr = rand() * 1.2 + 0.3; var so = rand() * 0.5 + 0.1;
+                ctx.beginPath(); ctx.fillStyle = "rgba(255, 255, 255, " + so + ")";
+                ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
             }
         }
     }
 
-    // ── Center Login Card ──
-    ColumnLayout {
+    // ════════════════════════════════════════
+    // ── Login Card ──
+    // ════════════════════════════════════════
+
+    Rectangle {
+        id: loginCard
         anchors.centerIn: parent
-        spacing: Math.round(24 * root.sf)
-        width: Math.round(340 * root.sf)
+        width: Math.round(380 * root.sf)
+        height: cardContent.height + Math.round(60 * root.sf)
+        radius: Math.round(20 * root.sf)
+        color: Qt.rgba(0.06, 0.06, 0.10, 0.75)
+        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.width: 1
 
-        // Avatar circle
+        // Glassmorphism top shine
         Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            width: Math.round(88 * root.sf)
-            height: Math.round(88 * root.sf)
-            radius: width / 2
-            color: root.bgElevated
-            border.color: root.borderColor
-            border.width: 1
-
-            Canvas {
-                anchors.centerIn: parent
-                width: Math.round(48 * root.sf); height: Math.round(48 * root.sf)
-                property real s: root.sf
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.save(); ctx.scale(s, s);
-                    ctx.beginPath(); ctx.fillStyle = "#60a5fa";
-                    ctx.moveTo(7, 32);
-                    ctx.quadraticCurveTo(3, 19, 12, 14);
-                    ctx.quadraticCurveTo(20, 7, 32, 10);
-                    ctx.quadraticCurveTo(42, 12, 44, 22);
-                    ctx.quadraticCurveTo(48, 29, 43, 34);
-                    ctx.quadraticCurveTo(44, 38, 48, 36);
-                    ctx.quadraticCurveTo(50, 33, 49, 42);
-                    ctx.quadraticCurveTo(46, 46, 41, 38);
-                    ctx.quadraticCurveTo(32, 42, 24, 40);
-                    ctx.quadraticCurveTo(14, 39, 7, 32);
-                    ctx.fill();
-                    ctx.beginPath(); ctx.fillStyle = "#0f172a";
-                    ctx.arc(18, 20, 2.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.fillStyle = "#fff";
-                    ctx.arc(19, 19, 1, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.moveTo(27, 10); ctx.lineTo(27, 3); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(24, 3); ctx.quadraticCurveTo(27, -2, 30, 3); ctx.stroke();
-                    ctx.restore();
-                }
-                onSChanged: requestPaint()
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+            height: Math.round(1 * root.sf); radius: parent.radius
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.3; color: Qt.rgba(1, 1, 1, 0.12) }
+                GradientStop { position: 0.7; color: Qt.rgba(0.55, 0.35, 1.0, 0.15) }
+                GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
-        // Title
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: "TensorAgent OS"
-            font.pixelSize: Math.round(22 * root.sf)
-            font.weight: Font.DemiBold
-            color: root.textPrimary
+        // Subtle glow behind card
+        Rectangle {
+            anchors.centerIn: parent; z: -1
+            width: parent.width + Math.round(60 * root.sf)
+            height: parent.height + Math.round(60 * root.sf)
+            radius: Math.round(40 * root.sf)
+            opacity: 0.06 + Math.sin(glowPhase * 0.5) * 0.02
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#3b82f6" }
+                GradientStop { position: 0.5; color: "#7c3aed" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
         }
 
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: "Sign in to continue"
-            font.pixelSize: Math.round(13 * root.sf)
-            color: root.textSecondary
-        }
-
-        // Login form
         ColumnLayout {
-            Layout.fillWidth: true
-            spacing: Math.round(12 * root.sf)
+            id: cardContent
+            anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+            anchors.margins: Math.round(30 * root.sf)
+            spacing: Math.round(20 * root.sf)
 
-            // Username field
-            Rectangle {
-                Layout.fillWidth: true
-                height: Math.round(44 * root.sf)
-                radius: root.radiusMd
-                color: root.bgSurface
-                border.color: userField.activeFocus ? root.accentBlue : root.borderColor
-                border.width: 1
-
-                TextInput {
-                    id: userField
-                    anchors.fill: parent
-                    anchors.leftMargin: Math.round(14 * root.sf)
-                    anchors.rightMargin: Math.round(14 * root.sf)
-                    verticalAlignment: TextInput.AlignVCenter
-                    color: root.textPrimary
-                    font.pixelSize: Math.round(14 * root.sf)
-                    clip: true
-                    text: "ainux"
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Username"
-                        color: root.textMuted
-                        font.pixelSize: Math.round(14 * root.sf)
-                        visible: !parent.text && !parent.activeFocus
-                    }
-                }
-            }
-
-            // Password field
-            Rectangle {
-                Layout.fillWidth: true
-                height: Math.round(44 * root.sf)
-                radius: root.radiusMd
-                color: root.bgSurface
-                border.color: passField.activeFocus ? root.accentBlue : root.borderColor
-                border.width: 1
-
-                TextInput {
-                    id: passField
-                    anchors.fill: parent
-                    anchors.leftMargin: Math.round(14 * root.sf)
-                    anchors.rightMargin: Math.round(14 * root.sf)
-                    verticalAlignment: TextInput.AlignVCenter
-                    color: root.textPrimary
-                    font.pixelSize: Math.round(14 * root.sf)
-                    echoMode: TextInput.Password
-                    clip: true
-                    text: "ainux"
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Password"
-                        color: root.textMuted
-                        font.pixelSize: Math.round(14 * root.sf)
-                        visible: !parent.text && !parent.activeFocus
-                    }
-
-                    Keys.onReturnPressed: doLogin()
-                }
-            }
-
-            // Error message
-            Text {
-                id: errorText
+            // ── Animated Whale Logo ──
+            Item {
                 Layout.alignment: Qt.AlignHCenter
-                text: ""
-                color: root.accentRed
-                font.pixelSize: Math.round(12 * root.sf)
-                visible: text !== ""
+                Layout.preferredWidth: Math.round(80 * root.sf)
+                Layout.preferredHeight: Math.round(80 * root.sf)
+
+                // Pulsing ring
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round((76 + Math.sin(glowPhase * 1.5) * 4) * root.sf)
+                    height: width; radius: width / 2
+                    color: "transparent"
+                    border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15 + Math.sin(glowPhase) * 0.05)
+                    border.width: Math.round(1.5 * root.sf)
+                }
+
+                // Inner circle
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(68 * root.sf); height: width; radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(0.15, 0.25, 0.55, 0.6) }
+                        GradientStop { position: 1.0; color: Qt.rgba(0.10, 0.10, 0.25, 0.4) }
+                    }
+                    border.color: Qt.rgba(0.4, 0.6, 1.0, 0.2); border.width: 1
+                }
+
+                // Whale canvas
+                Canvas {
+                    anchors.centerIn: parent
+                    width: Math.round(44 * root.sf); height: Math.round(44 * root.sf)
+                    property real s: root.sf
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
+                        ctx.beginPath(); ctx.fillStyle = "#93c5fd";
+                        ctx.moveTo(7, 29);
+                        ctx.quadraticCurveTo(3, 17, 11, 12);
+                        ctx.quadraticCurveTo(19, 6, 29, 9);
+                        ctx.quadraticCurveTo(38, 11, 39, 20);
+                        ctx.quadraticCurveTo(42, 27, 38, 31);
+                        ctx.quadraticCurveTo(39, 34, 42, 32);
+                        ctx.quadraticCurveTo(44, 30, 43, 38);
+                        ctx.quadraticCurveTo(40, 41, 36, 34);
+                        ctx.quadraticCurveTo(28, 37, 21, 36);
+                        ctx.quadraticCurveTo(12, 35, 7, 29);
+                        ctx.fill();
+                        ctx.beginPath(); ctx.fillStyle = "#0f172a";
+                        ctx.arc(16, 18, 2, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.fillStyle = "#fff";
+                        ctx.arc(17, 17, 0.8, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = "#93c5fd"; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.moveTo(24, 9); ctx.lineTo(24, 3); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(21, 3); ctx.quadraticCurveTo(24, -1, 27, 3); ctx.stroke();
+                        ctx.restore();
+                    }
+                    onSChanged: requestPaint()
+                }
             }
 
-            // Sign in button
-            Rectangle {
-                Layout.fillWidth: true
-                height: Math.round(44 * root.sf)
-                radius: root.radiusMd
-                color: loginMouse.pressed ? Qt.darker(root.accentBlue, 1.2) :
-                       loginMouse.containsMouse ? Qt.lighter(root.accentBlue, 1.1) : root.accentBlue
+            // ── Title ──
+            Column {
+                Layout.alignment: Qt.AlignHCenter; spacing: Math.round(6 * root.sf)
 
                 Text {
-                    anchors.centerIn: parent
-                    text: loginBusy ? "Signing in..." : "Sign In"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "TensorAgent OS"
+                    font.pixelSize: Math.round(24 * root.sf)
+                    font.weight: Font.Bold
+                    font.letterSpacing: Math.round(1 * root.sf)
                     color: "#ffffff"
-                    font.pixelSize: Math.round(14 * root.sf)
-                    font.weight: Font.Medium
                 }
 
-                MouseArea {
-                    id: loginMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: doLogin()
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: {
+                        var hour = new Date().getHours();
+                        if (hour < 12) return "Good morning";
+                        if (hour < 17) return "Good afternoon";
+                        return "Good evening";
+                    }
+                    font.pixelSize: Math.round(13 * root.sf)
+                    color: Qt.rgba(0.6, 0.7, 0.9, 0.7)
                 }
             }
-        }
 
-        // Version
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: Math.round(16 * root.sf)
-            text: "Powered by OpenWhale Engine"
-            font.pixelSize: Math.round(11 * root.sf)
-            color: root.textMuted
+            // ── Form ──
+            ColumnLayout {
+                Layout.fillWidth: true; spacing: Math.round(14 * root.sf)
+
+                // Username
+                Column {
+                    Layout.fillWidth: true; spacing: Math.round(6 * root.sf)
+                    Text { text: "Username"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: Qt.rgba(0.6, 0.7, 0.9, 0.6) }
+                    Rectangle {
+                        width: parent.width; height: Math.round(44 * root.sf); radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(1, 1, 1, 0.04)
+                        border.color: userField.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.08)
+                        border.width: userField.activeFocus ? 1.5 : 1
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                        Row {
+                            anchors.fill: parent; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
+                            // User icon
+                            Canvas {
+                                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                                anchors.verticalCenter: parent.verticalCenter
+                                property real s: root.sf; property bool focused: userField.activeFocus
+                                onPaint: {
+                                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                    ctx.save(); ctx.scale(s, s);
+                                    ctx.strokeStyle = focused ? "#6b8aff" : "#555"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+                                    ctx.beginPath(); ctx.arc(9, 6, 3.5, 0, Math.PI * 2); ctx.stroke();
+                                    ctx.beginPath(); ctx.arc(9, 18, 7, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
+                                    ctx.restore();
+                                }
+                                onFocusedChanged: requestPaint(); onSChanged: requestPaint()
+                            }
+                            TextInput {
+                                id: userField; width: parent.width - Math.round(28 * root.sf)
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: "#fff"; font.pixelSize: Math.round(14 * root.sf); clip: true
+                                text: "ainux"
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: "Enter username"; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(14 * root.sf); visible: !parent.text && !parent.activeFocus }
+                            }
+                        }
+                    }
+                }
+
+                // Password
+                Column {
+                    Layout.fillWidth: true; spacing: Math.round(6 * root.sf)
+                    Text { text: "Password"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: Qt.rgba(0.6, 0.7, 0.9, 0.6) }
+                    Rectangle {
+                        width: parent.width; height: Math.round(44 * root.sf); radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(1, 1, 1, 0.04)
+                        border.color: passField.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.08)
+                        border.width: passField.activeFocus ? 1.5 : 1
+                        Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                        Row {
+                            anchors.fill: parent; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
+                            // Lock icon
+                            Canvas {
+                                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                                anchors.verticalCenter: parent.verticalCenter
+                                property real s: root.sf; property bool focused: passField.activeFocus
+                                onPaint: {
+                                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                    ctx.save(); ctx.scale(s, s);
+                                    ctx.strokeStyle = focused ? "#6b8aff" : "#555"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+                                    ctx.strokeRect(4, 8, 10, 9);
+                                    ctx.beginPath(); ctx.arc(9, 8, 3.5, Math.PI, 0); ctx.stroke();
+                                    ctx.beginPath(); ctx.arc(9, 12, 1, 0, Math.PI * 2); ctx.fill();
+                                    ctx.restore();
+                                }
+                                onFocusedChanged: requestPaint(); onSChanged: requestPaint()
+                            }
+                            TextInput {
+                                id: passField; width: parent.width - Math.round(28 * root.sf)
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: "#fff"; font.pixelSize: Math.round(14 * root.sf)
+                                echoMode: TextInput.Password; clip: true
+                                text: "ainux"
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: "Enter password"; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(14 * root.sf); visible: !parent.text && !parent.activeFocus }
+                                Keys.onReturnPressed: doLogin()
+                            }
+                        }
+                    }
+                }
+
+                // Error message
+                Text {
+                    id: errorText; Layout.alignment: Qt.AlignHCenter
+                    text: ""; color: "#f87171"; font.pixelSize: Math.round(12 * root.sf); visible: text !== ""
+                }
+
+                // Sign In button
+                Rectangle {
+                    Layout.fillWidth: true; height: Math.round(46 * root.sf)
+                    radius: Math.round(10 * root.sf)
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: loginMouse.pressed ? "#2563eb" : loginMouse.containsMouse ? "#4f7df7" : "#3b82f6" }
+                        GradientStop { position: 1.0; color: loginMouse.pressed ? "#5b21b6" : loginMouse.containsMouse ? "#8b5cf6" : "#7c3aed" }
+                    }
+
+                    // Button glow
+                    Rectangle {
+                        anchors.centerIn: parent; z: -1
+                        width: parent.width; height: parent.height + Math.round(8 * root.sf)
+                        radius: Math.round(14 * root.sf)
+                        opacity: loginMouse.containsMouse ? 0.3 : 0.15
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#3b82f6" }
+                            GradientStop { position: 1.0; color: "#7c3aed" }
+                        }
+                    }
+
+                    Row {
+                        anchors.centerIn: parent; spacing: Math.round(8 * root.sf)
+                        Text {
+                            text: loginBusy ? "" : "→"; font.pixelSize: Math.round(16 * root.sf)
+                            font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter
+                            visible: !loginBusy
+                        }
+                        Text {
+                            text: loginBusy ? "Signing in..." : "Sign In"
+                            font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold
+                            color: "#ffffff"; anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    MouseArea {
+                        id: loginMouse; anchors.fill: parent; hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor; onClicked: doLogin()
+                    }
+                }
+            }
+
+            // ── Footer ──
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Math.round(8 * root.sf)
+                text: "Powered by TensorAgent Engine"
+                font.pixelSize: Math.round(10 * root.sf)
+                color: Qt.rgba(1, 1, 1, 0.2)
+            }
         }
     }
 
-    property bool loginBusy: false
+    // ── Bottom version bar ──
+    Text {
+        anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottomMargin: Math.round(16 * root.sf)
+        text: "v0.1.0"
+        font.pixelSize: Math.round(10 * root.sf)
+        color: Qt.rgba(1, 1, 1, 0.15)
+    }
 
     function doLogin() {
         if (loginBusy) return;
