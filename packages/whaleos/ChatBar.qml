@@ -29,6 +29,33 @@ Rectangle {
     property var chatHistory: []
     property int historyIndex: -1
 
+    // Per-conversation work folder
+    property string currentWorkFolder: ""
+
+    // Generate a slug from the first message for a readable folder name
+    function generateWorkFolder(firstMsg) {
+        // Take first ~30 chars, lowercase, replace non-alphanum with underscore
+        var slug = firstMsg.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 30);
+        if (!slug) slug = "task";
+        // Add timestamp for uniqueness
+        var d = new Date();
+        var ts = d.getFullYear() + "-" +
+            ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+            ("0" + d.getDate()).slice(-2) + "_" +
+            ("0" + d.getHours()).slice(-2) +
+            ("0" + d.getMinutes()).slice(-2);
+        return slug + "_" + ts;
+    }
+
+    // Start a new conversation with a fresh work folder
+    function startNewConversation() {
+        currentWorkFolder = "";
+        messages = [];
+        streamingContent = "";
+        streamingSteps = [];
+        activePlan = null;
+    }
+
     // Simple markdown to StyledText converter
     function mdToStyled(text) {
         if (!text) return "";
@@ -865,6 +892,12 @@ Rectangle {
         var msg = chatInput.text.trim();
         if (!msg || isSending) return;
 
+        // Handle /new, /reset, /clear locally — reset work folder for fresh conversation
+        var lowerMsg = msg.toLowerCase();
+        if (lowerMsg === "/new" || lowerMsg === "/reset" || lowerMsg === "/clear") {
+            startNewConversation();
+        }
+
         chatExpanded = true;
         showSuggestions = false;
         showAgentPicker = false;
@@ -876,7 +909,10 @@ Rectangle {
         historyIndex = -1;
 
         // Create per-conversation workspace folder on first message
-        var workDir = "/home/" + root.currentUser + "/Works/" + root.sessionId;
+        if (!currentWorkFolder) {
+            currentWorkFolder = generateWorkFolder(msg);
+        }
+        var workDir = "/home/" + root.currentUser + "/Works/" + currentWorkFolder;
         sysManager.createDir(workDir);
 
         var msgs = messages.slice();
