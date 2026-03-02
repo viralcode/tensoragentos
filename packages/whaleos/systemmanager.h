@@ -9,6 +9,9 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QDateTime>
 
 class SystemManager : public QObject {
     Q_OBJECT
@@ -159,6 +162,135 @@ public:
             return f.readAll().trimmed();
         }
         return "ainux";
+    }
+
+    // ════════════════════════════════════════════════
+    // ── File System Operations (kernel level) ──
+    // ════════════════════════════════════════════════
+
+    // ── Create directory (mkdir -p) ──
+    Q_INVOKABLE bool createDir(const QString &path) {
+        if (path.isEmpty()) return false;
+        QDir dir;
+        bool ok = dir.mkpath(path);
+        if (ok) qDebug() << "SystemManager: Created directory:" << path;
+        else qWarning() << "SystemManager: Failed to create directory:" << path;
+        return ok;
+    }
+
+    // ── List directory contents → JSON array ──
+    Q_INVOKABLE QString listDirectory(const QString &path) {
+        QJsonArray items;
+        QDir dir(path);
+        if (!dir.exists()) return "[]";
+
+        dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+        dir.setSorting(QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
+        QFileInfoList entries = dir.entryInfoList();
+
+        for (const QFileInfo &info : entries) {
+            QJsonObject item;
+            item["name"] = info.fileName();
+            item["path"] = info.absoluteFilePath();
+            item["isDir"] = info.isDir();
+            item["size"] = info.isDir() ? 0 : (qint64)info.size();
+            item["modified"] = info.lastModified().toString("yyyy-MM-dd HH:mm");
+            item["permissions"] = info.isReadable() ? (info.isWritable() ? "rw" : "r") : "-";
+
+            // File extension for icon mapping
+            if (!info.isDir()) {
+                item["ext"] = info.suffix().toLower();
+            }
+            items.append(item);
+        }
+        return QString::fromUtf8(QJsonDocument(items).toJson(QJsonDocument::Compact));
+    }
+
+    // ── Read file contents ──
+    Q_INVOKABLE QString readFileContent(const QString &path) {
+        QFile file(path);
+        if (!file.exists()) return "";
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return "";
+        QString content = file.readAll();
+        file.close();
+        return content;
+    }
+
+    // ── Write file contents ──
+    Q_INVOKABLE bool writeFileContent(const QString &path, const QString &content) {
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qWarning() << "SystemManager: Cannot write to:" << path;
+            return false;
+        }
+        file.write(content.toUtf8());
+        file.close();
+        return true;
+    }
+
+    // ── Delete file or directory ──
+    Q_INVOKABLE bool deleteFile(const QString &path) {
+        QFileInfo info(path);
+        if (!info.exists()) return false;
+
+        bool ok;
+        if (info.isDir()) {
+            QDir dir(path);
+            ok = dir.removeRecursively();
+        } else {
+            ok = QFile::remove(path);
+        }
+        if (ok) qDebug() << "SystemManager: Deleted:" << path;
+        else qWarning() << "SystemManager: Delete failed:" << path;
+        return ok;
+    }
+
+    // ── Rename/move file or directory ──
+    Q_INVOKABLE bool renameFile(const QString &oldPath, const QString &newPath) {
+        QFile file(oldPath);
+        bool ok = file.rename(newPath);
+        if (ok) qDebug() << "SystemManager: Renamed:" << oldPath << "->" << newPath;
+        return ok;
+    }
+
+    // ── Get file info as JSON ──
+    Q_INVOKABLE QString getFileInfo(const QString &path) {
+        QFileInfo info(path);
+        if (!info.exists()) return "{}";
+
+        QJsonObject obj;
+        obj["name"] = info.fileName();
+        obj["path"] = info.absoluteFilePath();
+        obj["isDir"] = info.isDir();
+        obj["size"] = (qint64)info.size();
+        obj["modified"] = info.lastModified().toString("yyyy-MM-dd HH:mm");
+        obj["ext"] = info.suffix().toLower();
+        obj["exists"] = true;
+        return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Clipboard Operations (via xclip) ──
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE bool copyToClipboard(const QString &text) {
+        QProcess proc;
+        proc.start("xclip", QStringList() << "-selection" << "clipboard");
+        proc.waitForStarted(3000);
+        proc.write(text.toUtf8());
+        proc.closeWriteChannel();
+        proc.waitForFinished(3000);
+        return proc.exitCode() == 0;
+    }
+
+    Q_INVOKABLE QString pasteFromClipboard() {
+        QProcess proc;
+        proc.start("xclip", QStringList() << "-selection" << "clipboard" << "-o");
+        proc.waitForFinished(3000);
+        if (proc.exitCode() == 0) {
+            return proc.readAllStandardOutput().trimmed();
+        }
+        return "";
     }
 };
 

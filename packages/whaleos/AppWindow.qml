@@ -103,6 +103,7 @@ Rectangle {
                 if (appId === "terminal") return "TerminalApp.qml";
                 if (appId === "mcp") return "McpApp.qml";
                 if (appId === "agents") return "AgentsApp.qml";
+                if (appId === "files") return "FileManagerApp.qml";
                 return "";
             }
         }

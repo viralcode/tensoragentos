@@ -6,6 +6,16 @@ Rectangle {
     anchors.fill: parent
     color: "#050510"
 
+    // ── Open Files App ──
+    function openFilesApp() {
+        for (var i = 0; i < root.openWindows.length; i++) {
+            if (root.openWindows[i].appId === "files") return;
+        }
+        var wins = root.openWindows.slice();
+        wins.push({ appId: "files", title: "Works", icon: "files" });
+        root.openWindows = wins;
+    }
+
     // ── Wallpaper State ──
     property string currentWallpaper: "default"
     property var wallpaperList: [
@@ -192,6 +202,49 @@ Rectangle {
             anchors.margins: Math.round(8 * root.sf)
             spacing: 2
 
+            // ── Copy ──
+            Rectangle {
+                width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                color: copyMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+                    Text { text: "📋"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "Copy"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
+                    Item { width: Math.round(40 * root.sf); height: 1 }
+                    Text { text: "Ctrl+C"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
+                }
+                MouseArea { id: copyMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.showToast("Copied to clipboard", "success"); contextMenu.visible = false; } }
+            }
+
+            // ── Paste ──
+            Rectangle {
+                width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                color: pasteMa2.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+                    Text { text: "📋"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "Paste"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
+                    Item { width: Math.round(36 * root.sf); height: 1 }
+                    Text { text: "Ctrl+V"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
+                }
+                MouseArea { id: pasteMa2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { var clip = sysManager.pasteFromClipboard(); if (clip) root.showToast("Pasted: " + clip.substring(0, 30), "info"); contextMenu.visible = false; } }
+            }
+
+            // Separator
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+
+            // ── Open Works Folder ──
+            Rectangle {
+                width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                color: worksMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+                    Text { text: "📂"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "Open Works"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
+                }
+                MouseArea { id: worksMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { desktop.openFilesApp(); contextMenu.visible = false; } }
+            }
+
+            // Separator
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+
             // Header
             Text {
                 text: "🖼  Change Wallpaper"
@@ -339,6 +392,34 @@ Rectangle {
                     onClicked: contextMenu.visible = false
                 }
             }
+        }
+    }
+
+    // ── Works Folder Desktop Icon ──
+    Rectangle {
+        id: worksIcon
+        x: Math.round(24 * root.sf); y: Math.round(60 * root.sf)
+        width: Math.round(72 * root.sf); height: Math.round(78 * root.sf)
+        radius: root.radiusMd; z: 10
+        color: worksIconMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+        Behavior on color { ColorAnimation { duration: 150 } }
+
+        Column {
+            anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+            Text {
+                text: "📂"; font.pixelSize: Math.round(34 * root.sf)
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            Text {
+                text: "Works"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
+                color: "#fff"; anchors.horizontalCenter: parent.horizontalCenter
+                style: Text.Outline; styleColor: Qt.rgba(0, 0, 0, 0.6)
+            }
+        }
+
+        MouseArea {
+            id: worksIconMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onDoubleClicked: desktop.openFilesApp()
         }
     }
 

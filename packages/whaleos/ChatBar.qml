@@ -766,6 +766,10 @@ Rectangle {
         chatHistory = hist;
         historyIndex = -1;
 
+        // Create per-conversation workspace folder on first message
+        var workDir = "/home/" + root.currentUser + "/Works/" + root.sessionId;
+        sysManager.createDir(workDir);
+
         var msgs = messages.slice();
         msgs.push({ role: "user", content: msg, createdAt: new Date().toISOString() });
         messages = msgs;
