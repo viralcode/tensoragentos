@@ -15,7 +15,103 @@ Rectangle {
     property bool owRestarting: false
     property string owUptime: ""
 
+    // ── Time settings state ──
+    property bool timePanelVisible: false
+    property string currentTimezone: ""
+    property bool ntpSynced: false
+    property bool ntpActive: false
+    property string localTimeStr: ""
+    property string utcTimeStr: ""
+    property var timezoneList: []
+    property string tzSearchFilter: ""
+    property bool timeLoading: false
+
     Component.onCompleted: { checkOwHealth(); fetchTimeInfo(); }
+
+    function fetchTimeInfo() {
+        timeLoading = true;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:7778/time/info");
+        xhr.timeout = 5000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                timeLoading = false;
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
+                        if (d.ok) {
+                            currentTimezone = d.timezone || "Unknown";
+                            ntpSynced = d.ntpSync || false;
+                            ntpActive = d.ntpActive || false;
+                            localTimeStr = d.localTime || "";
+                            utcTimeStr = d.utcTime || "";
+                        }
+                    } catch(e) {}
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    function fetchTimezones() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:7778/time/timezones");
+        xhr.timeout = 10000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    if (d.ok) timezoneList = d.timezones || [];
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
+
+    function setTimezone(tz) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/timezone");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    currentTimezone = tz;
+                    fetchTimeInfo();
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ timezone: tz }));
+    }
+
+    function toggleNtp(enable) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/ntp");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    ntpActive = enable;
+                    fetchTimeInfo();
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ enable: enable }));
+    }
+
+    function setManualTime(timeStr) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/set");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    clockText.text = Qt.formatTime(new Date(), "h:mm AP");
+                    fetchTimeInfo();
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ time: timeStr }));
+    }
 
     Timer {
         interval: 10000; running: true; repeat: true
@@ -170,112 +266,6 @@ Rectangle {
         }
 
         Item { Layout.fillWidth: true }
-
-    // ── Time settings state ──
-    property bool timePanelVisible: false
-    property string currentTimezone: ""
-    property bool ntpSynced: false
-    property bool ntpActive: false
-    property string localTimeStr: ""
-    property string utcTimeStr: ""
-    property var timezoneList: []
-    property string tzSearchFilter: ""
-    property bool timeLoading: false
-
-    function fetchTimeInfo() {
-        timeLoading = true;
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://127.0.0.1:7778/time/info");
-        xhr.timeout = 5000;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                timeLoading = false;
-                if (xhr.status === 200) {
-                    try {
-                        var d = JSON.parse(xhr.responseText);
-                        if (d.ok) {
-                            currentTimezone = d.timezone || "Unknown";
-                            ntpSynced = d.ntpSync || false;
-                            ntpActive = d.ntpActive || false;
-                            localTimeStr = d.localTime || "";
-                            utcTimeStr = d.utcTime || "";
-                        }
-                    } catch(e) {}
-                }
-            }
-        };
-        xhr.send();
-    }
-
-    function fetchTimezones() {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://127.0.0.1:7778/time/timezones");
-        xhr.timeout = 10000;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    var d = JSON.parse(xhr.responseText);
-                    if (d.ok) timezoneList = d.timezones || [];
-                } catch(e) {}
-            }
-        };
-        xhr.send();
-    }
-
-    function setTimezone(tz) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/timezone");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    currentTimezone = tz;
-                    root.showToast("Timezone set to " + tz, "success");
-                    clockText.text = Qt.formatTime(new Date(), "h:mm AP");
-                    fetchTimeInfo();
-                } else {
-                    root.showToast("Failed to set timezone", "error");
-                }
-            }
-        };
-        xhr.send(JSON.stringify({ timezone: tz }));
-    }
-
-    function toggleNtp(enable) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/ntp");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    ntpActive = enable;
-                    root.showToast("NTP sync " + (enable ? "enabled" : "disabled"), "success");
-                    fetchTimeInfo();
-                } else {
-                    root.showToast("Failed to toggle NTP", "error");
-                }
-            }
-        };
-        xhr.send(JSON.stringify({ enable: enable }));
-    }
-
-    function setManualTime(timeStr) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/set");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    root.showToast("Time set to " + timeStr, "success");
-                    clockText.text = Qt.formatTime(new Date(), "h:mm AP");
-                    fetchTimeInfo();
-                } else {
-                    root.showToast("Failed to set time", "error");
-                }
-            }
-        };
-        xhr.send(JSON.stringify({ time: timeStr }));
-    }
 
         // ── Center: Clock (clickable) ──
         Rectangle {
@@ -684,12 +674,12 @@ Rectangle {
             spacing: Math.round(12 * root.sf)
 
             // ── Header: Date & Time ──
-            Row {
-                spacing: Math.round(10 * root.sf)
+            RowLayout {
+                width: parent.width; spacing: Math.round(10 * root.sf)
 
                 Canvas {
                     width: Math.round(20 * root.sf); height: Math.round(20 * root.sf)
-                    anchors.verticalCenter: parent.verticalCenter
+                    Layout.alignment: Qt.AlignVCenter
                     property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
@@ -703,7 +693,7 @@ Rectangle {
                 }
 
                 Column {
-                    spacing: Math.round(2 * root.sf)
+                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                     Text {
                         text: "Date & Time"
                         font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
@@ -711,6 +701,21 @@ Rectangle {
                     Text {
                         text: Qt.formatDate(new Date(), "dddd, MMMM d, yyyy")
                         font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                    }
+                }
+
+                Rectangle {
+                    width: Math.round(24 * root.sf); height: Math.round(24 * root.sf)
+                    radius: Math.round(6 * root.sf)
+                    color: closeTimeMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent; text: "✕"
+                        font.pixelSize: Math.round(12 * root.sf); color: root.textMuted
+                    }
+                    MouseArea {
+                        id: closeTimeMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: timePanelVisible = false
                     }
                 }
             }
