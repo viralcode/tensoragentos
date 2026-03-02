@@ -411,9 +411,32 @@ Rectangle {
 
         Column {
             anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
-            Text {
-                text: "📂"; font.pixelSize: Math.round(34 * root.sf)
+            Canvas {
+                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf)
                 anchors.horizontalCenter: parent.horizontalCenter
+                property real s: root.sf
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                    ctx.save(); ctx.scale(s, s);
+                    // Folder shape
+                    ctx.fillStyle = "#64b5f6";
+                    ctx.beginPath();
+                    ctx.moveTo(2, 10); ctx.lineTo(2, 30); ctx.lineTo(34, 30);
+                    ctx.lineTo(34, 12); ctx.lineTo(18, 12); ctx.lineTo(15, 8);
+                    ctx.lineTo(2, 8); ctx.closePath(); ctx.fill();
+                    // Folder tab
+                    ctx.fillStyle = "#90caf9";
+                    ctx.beginPath();
+                    ctx.moveTo(2, 8); ctx.lineTo(15, 8); ctx.lineTo(18, 12);
+                    ctx.lineTo(2, 12); ctx.closePath(); ctx.fill();
+                    // Folder front
+                    ctx.fillStyle = "#42a5f5";
+                    ctx.beginPath();
+                    ctx.moveTo(2, 14); ctx.lineTo(34, 14); ctx.lineTo(34, 30);
+                    ctx.lineTo(2, 30); ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                }
+                onSChanged: requestPaint()
             }
             Text {
                 text: "Works"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
@@ -568,7 +591,7 @@ Rectangle {
         id: chatBarItem
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Math.round(16 * root.sf)
-        width: Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
+        anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(16 * root.sf)
+        width: chatBarItem.chatFullScreen ? parent.width : Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
     }
 }

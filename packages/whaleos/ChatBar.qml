@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? (chatFullScreen ? parent.height - Math.round(20 * root.sf) : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(54 * root.sf)
+    height: chatExpanded ? (chatFullScreen ? parent.height : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(54 * root.sf)
     radius: root.radiusLg
     color: "transparent"
     clip: true
@@ -185,7 +185,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+                        ctx.strokeStyle = "#c0cfe0"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.moveTo(1, 3); ctx.lineTo(11, 3); ctx.stroke();
                         ctx.strokeRect(3, 3, 6, 8);
                         ctx.beginPath(); ctx.moveTo(5, 5); ctx.lineTo(5, 9); ctx.stroke();
@@ -222,7 +222,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = chatFullScreen ? "#60a5fa" : "#94a3b8"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
+                        ctx.strokeStyle = chatFullScreen ? "#60a5fa" : "#c0cfe0"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         if (chatFullScreen) {
                             ctx.strokeRect(2, 2, 8, 8);
                             ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(8, 4); ctx.lineTo(8, 8); ctx.stroke();
