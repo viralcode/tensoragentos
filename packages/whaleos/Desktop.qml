@@ -21,18 +21,18 @@ Rectangle {
     property bool wpExpanded: false
     property var wallpaperList: [
         { id: "default",        name: "Default Aurora",    file: "" },
-        { id: "nebula",         name: "🌌 Nebula",         file: "wallpapers/nebula.png" },
-        { id: "cyber-grid",     name: "🔮 Cyber Grid",     file: "wallpapers/cyber-grid.png" },
-        { id: "aurora",         name: "🌈 Aurora",          file: "wallpapers/aurora.png" },
-        { id: "ocean-depth",    name: "🌊 Ocean Depth",    file: "wallpapers/ocean-depth.png" },
-        { id: "abstract-waves", name: "🔥 Abstract Waves", file: "wallpapers/abstract-waves.png" },
-        { id: "crystal",        name: "💎 Crystal",         file: "wallpapers/crystal.png" },
-        { id: "ocean",          name: "🐋 Ocean",           file: "wallpapers/ocean.png" },
-        { id: "topology",       name: "🧬 Topology",       file: "wallpapers/topology.png" },
-        { id: "abstract",       name: "🎨 Abstract",       file: "wallpapers/abstract.png" },
-        { id: "alien",          name: "👽 Alien",           file: "wallpapers/alien.png" },
-        { id: "cosmic",         name: "🪐 Cosmic",         file: "wallpapers/cosmic.png" },
-        { id: "cyberpunk",      name: "⚡ Cyberpunk",      file: "wallpapers/cyberpunk.png" }
+        { id: "nebula",         name: "🌌 Nebula",         file: "assets/wallpapers/nebula.png" },
+        { id: "cyber-grid",     name: "🔮 Cyber Grid",     file: "assets/wallpapers/cyber-grid.png" },
+        { id: "aurora",         name: "🌈 Aurora",          file: "assets/wallpapers/aurora.png" },
+        { id: "ocean-depth",    name: "🌊 Ocean Depth",    file: "assets/wallpapers/ocean-depth.png" },
+        { id: "abstract-waves", name: "🔥 Abstract Waves", file: "assets/wallpapers/abstract-waves.png" },
+        { id: "crystal",        name: "💎 Crystal",         file: "assets/wallpapers/crystal.png" },
+        { id: "ocean",          name: "🐋 Ocean",           file: "assets/wallpapers/ocean.png" },
+        { id: "topology",       name: "🧬 Topology",       file: "assets/wallpapers/topology.png" },
+        { id: "abstract",       name: "🎨 Abstract",       file: "assets/wallpapers/abstract.png" },
+        { id: "alien",          name: "👽 Alien",           file: "assets/wallpapers/alien.png" },
+        { id: "cosmic",         name: "🪐 Cosmic",         file: "assets/wallpapers/cosmic.png" },
+        { id: "cyberpunk",      name: "⚡ Cyberpunk",      file: "assets/wallpapers/cyberpunk.png" }
     ]
 
     // ── Wallpaper Image (shown when not "default") ──
@@ -442,37 +442,12 @@ Rectangle {
             border.width: 1.5
             anchors.horizontalCenter: parent.horizontalCenter
 
-            Canvas {
+            Image {
                 anchors.centerIn: parent
                 width: Math.round(56 * root.sf); height: Math.round(56 * root.sf)
-                property real s: root.sf
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.save(); ctx.scale(s, s);
-                    ctx.beginPath();
-                    ctx.fillStyle = "#93c5fd";
-                    ctx.moveTo(8, 36);
-                    ctx.quadraticCurveTo(4, 22, 14, 16);
-                    ctx.quadraticCurveTo(24, 8, 38, 12);
-                    ctx.quadraticCurveTo(50, 14, 52, 26);
-                    ctx.quadraticCurveTo(56, 34, 50, 40);
-                    ctx.quadraticCurveTo(52, 46, 56, 42);
-                    ctx.quadraticCurveTo(60, 38, 58, 50);
-                    ctx.quadraticCurveTo(54, 54, 48, 46);
-                    ctx.quadraticCurveTo(38, 50, 28, 48);
-                    ctx.quadraticCurveTo(16, 46, 8, 36);
-                    ctx.fill();
-                    ctx.beginPath(); ctx.fillStyle = "#0f172a";
-                    ctx.arc(22, 24, 2.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.fillStyle = "#ffffff";
-                    ctx.arc(23, 23, 1, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#93c5fd"; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.moveTo(32, 12); ctx.lineTo(32, 4); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(28, 4); ctx.quadraticCurveTo(32, -1, 36, 4); ctx.stroke();
-                    ctx.restore();
-                }
-                onSChanged: requestPaint()
+                source: "assets/whale_logo.png"
+                fillMode: Image.PreserveAspectFit
+                smooth: true; mipmap: true
             }
         }
 

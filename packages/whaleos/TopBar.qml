@@ -124,40 +124,13 @@ Rectangle {
                 anchors.centerIn: parent
                 spacing: Math.round(6 * root.sf)
 
-                // Whale drawn as canvas (no emoji)
-                Canvas {
+                // Whale logo
+                Image {
                     width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.fillStyle = "#60a5fa";
-                        ctx.beginPath();
-                        ctx.moveTo(2, 10);
-                        ctx.quadraticCurveTo(1, 6, 4, 4);
-                        ctx.quadraticCurveTo(7, 2, 11, 3);
-                        ctx.quadraticCurveTo(14, 4, 14, 7);
-                        ctx.quadraticCurveTo(16, 9, 14, 11);
-                        ctx.quadraticCurveTo(15, 13, 16, 12);
-                        ctx.quadraticCurveTo(16, 14, 14, 13);
-                        ctx.quadraticCurveTo(10, 14, 7, 13);
-                        ctx.quadraticCurveTo(4, 12, 2, 10);
-                        ctx.fill();
-                        ctx.fillStyle = "#0f172a";
-                        ctx.beginPath();
-                        ctx.arc(6, 6, 1, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.strokeStyle = "#60a5fa";
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(9, 3);
-                        ctx.lineTo(9, 0);
-                        ctx.stroke();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
+                    source: "assets/whale_logo.png"
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true; mipmap: true
                 }
 
                 // Status dot
@@ -329,38 +302,11 @@ Rectangle {
                 width: parent.width
                 spacing: Math.round(8 * root.sf)
 
-                Canvas {
+                Image {
                     width: Math.round(22 * root.sf); height: Math.round(22 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.fillStyle = "#60a5fa";
-                        ctx.beginPath();
-                        ctx.moveTo(3, 14);
-                        ctx.quadraticCurveTo(1, 8, 5, 5);
-                        ctx.quadraticCurveTo(9, 2, 15, 4);
-                        ctx.quadraticCurveTo(19, 5, 19, 10);
-                        ctx.quadraticCurveTo(22, 13, 19, 15);
-                        ctx.quadraticCurveTo(20, 18, 22, 16);
-                        ctx.quadraticCurveTo(22, 19, 19, 17);
-                        ctx.quadraticCurveTo(14, 19, 10, 18);
-                        ctx.quadraticCurveTo(5, 17, 3, 14);
-                        ctx.fill();
-                        ctx.fillStyle = "#0f172a";
-                        ctx.beginPath();
-                        ctx.arc(8, 8, 1.5, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.strokeStyle = "#60a5fa";
-                        ctx.lineWidth = 1.2;
-                        ctx.beginPath();
-                        ctx.moveTo(12, 4);
-                        ctx.lineTo(12, 0);
-                        ctx.stroke();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
+                    source: "assets/whale_logo.png"
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true; mipmap: true
                 }
 
                 Column {

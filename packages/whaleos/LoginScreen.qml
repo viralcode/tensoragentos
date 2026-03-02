@@ -158,36 +158,13 @@ Rectangle {
                     border.color: Qt.rgba(0.4, 0.6, 1.0, 0.2); border.width: 1
                 }
 
-                // Whale canvas
-                Canvas {
+                // Whale logo
+                Image {
                     anchors.centerIn: parent
-                    width: Math.round(44 * root.sf); height: Math.round(44 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.beginPath(); ctx.fillStyle = "#93c5fd";
-                        ctx.moveTo(7, 29);
-                        ctx.quadraticCurveTo(3, 17, 11, 12);
-                        ctx.quadraticCurveTo(19, 6, 29, 9);
-                        ctx.quadraticCurveTo(38, 11, 39, 20);
-                        ctx.quadraticCurveTo(42, 27, 38, 31);
-                        ctx.quadraticCurveTo(39, 34, 42, 32);
-                        ctx.quadraticCurveTo(44, 30, 43, 38);
-                        ctx.quadraticCurveTo(40, 41, 36, 34);
-                        ctx.quadraticCurveTo(28, 37, 21, 36);
-                        ctx.quadraticCurveTo(12, 35, 7, 29);
-                        ctx.fill();
-                        ctx.beginPath(); ctx.fillStyle = "#0f172a";
-                        ctx.arc(16, 18, 2, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.fillStyle = "#fff";
-                        ctx.arc(17, 17, 0.8, 0, Math.PI * 2); ctx.fill();
-                        ctx.strokeStyle = "#93c5fd"; ctx.lineWidth = 1.5;
-                        ctx.beginPath(); ctx.moveTo(24, 9); ctx.lineTo(24, 3); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(21, 3); ctx.quadraticCurveTo(24, -1, 27, 3); ctx.stroke();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
+                    width: Math.round(50 * root.sf); height: Math.round(50 * root.sf)
+                    source: "assets/whale_logo.png"
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true; mipmap: true
                 }
             }
 
