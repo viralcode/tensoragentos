@@ -15,12 +15,107 @@ Rectangle {
     property bool owRestarting: false
     property string owUptime: ""
 
-    Component.onCompleted: { checkOwHealth(); }
+    // ── Time state ──
+    property bool timePanelVisible: false
+    property string currentTimezone: "UTC"
+    property bool ntpEnabled: true
+    property bool ntpSynced: false
+    property var timezoneList: []
+    property string tzSearchText: ""
+    property bool tzLoading: false
+
+    function loadTimeInfo() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:7778/time/info");
+        xhr.timeout = 5000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    if (d.ok) {
+                        currentTimezone = d.timezone || "UTC";
+                        ntpEnabled = d.ntpEnabled;
+                        ntpSynced = d.ntpSynced;
+                    }
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
+
+    function loadTimezones() {
+        if (timezoneList.length > 0) return;
+        tzLoading = true;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:7778/time/zones");
+        xhr.timeout = 8000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                tzLoading = false;
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
+                        timezoneList = d.zones || [];
+                    } catch(e) {}
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    function setTimezone(tz) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/timezone");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    if (d.ok) { currentTimezone = tz; root.showToast("Timezone set to " + tz, "success"); }
+                    else root.showToast("Failed: " + (d.error || ""), "error");
+                } catch(e) {}
+            }
+        };
+        xhr.send(JSON.stringify({ timezone: tz }));
+    }
+
+    function toggleNtp(enable) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/ntp");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    if (d.ok) { ntpEnabled = enable; root.showToast("NTP " + (enable ? "enabled" : "disabled"), "success"); }
+                } catch(e) {}
+            }
+        };
+        xhr.send(JSON.stringify({ enable: enable }));
+    }
+
+    function syncTimeNow() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/time/sync");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                root.showToast("NTP time sync initiated", "success");
+                loadTimeInfo();
+            }
+        };
+        xhr.send();
+    }
+
+    Component.onCompleted: { checkOwHealth(); loadTimeInfo(); }
 
     Timer {
         interval: 10000; running: true; repeat: true
         onTriggered: checkOwHealth()
     }
+
+    // Load time info every 60 seconds
+    Timer { interval: 60000; running: true; repeat: true; onTriggered: loadTimeInfo() }
 
     function checkOwHealth() {
         var xhr = new XMLHttpRequest();
@@ -171,20 +266,49 @@ Rectangle {
 
         Item { Layout.fillWidth: true }
 
-        // ── Center: Clock ──
-        Text {
-            id: clockText
-            text: Qt.formatTime(new Date(), "h:mm AP")
-            font.pixelSize: Math.round(13 * root.sf)
-            font.weight: Font.Medium
-            color: root.textPrimary
+        // ── Center: Clock (clickable) ──
+        Rectangle {
             Layout.alignment: Qt.AlignVCenter
+            width: clockRow.width + Math.round(16 * root.sf)
+            height: Math.round(28 * root.sf)
+            radius: Math.round(6 * root.sf)
+            color: clockMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+            Behavior on color { ColorAnimation { duration: 150 } }
+
+            Row {
+                id: clockRow; anchors.centerIn: parent; spacing: Math.round(8 * root.sf)
+
+                Text {
+                    id: clockDateText
+                    text: Qt.formatDate(new Date(), "ddd, MMM d")
+                    font.pixelSize: Math.round(12 * root.sf)
+                    color: root.textMuted; anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    id: clockText
+                    text: Qt.formatTime(new Date(), "h:mm AP")
+                    font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold
+                    color: root.textPrimary; anchors.verticalCenter: parent.verticalCenter
+                }
+            }
 
             Timer {
-                interval: 30000
-                running: true
-                repeat: true
-                onTriggered: clockText.text = Qt.formatTime(new Date(), "h:mm AP")
+                interval: 1000; running: true; repeat: true
+                onTriggered: {
+                    var now = new Date();
+                    clockText.text = Qt.formatTime(now, "h:mm:ss AP");
+                    clockDateText.text = Qt.formatDate(now, "ddd, MMM d");
+                }
+            }
+
+            MouseArea {
+                id: clockMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    timePanelVisible = !timePanelVisible;
+                    owPanelVisible = false; userMenu.visible = false;
+                    if (timePanelVisible) { loadTimeInfo(); loadTimezones(); }
+                }
             }
         }
 
@@ -521,12 +645,239 @@ Rectangle {
 
     // ── Click-outside to close panels ──
     MouseArea {
-        visible: owPanelVisible
+        visible: owPanelVisible || timePanelVisible
         parent: topBar.parent
         anchors.fill: parent
         anchors.topMargin: topBar.height
         z: 999
-        onClicked: { owPanelVisible = false; }
+        onClicked: { owPanelVisible = false; timePanelVisible = false; }
+    }
+
+    // ════════════════════════════════════════════
+    // ── Time Settings Panel ──
+    // ════════════════════════════════════════════
+    Rectangle {
+        id: timePanel
+        visible: timePanelVisible
+        parent: topBar.parent
+        x: Math.round(topBar.parent.width / 2 - width / 2)
+        y: topBar.height + Math.round(6 * root.sf)
+        width: Math.round(340 * root.sf)
+        height: timePanelCol.height + Math.round(24 * root.sf)
+        radius: Math.round(14 * root.sf)
+        color: root.bgElevated
+        border.color: root.borderColor; border.width: 1
+        z: 1001
+
+        Column {
+            id: timePanelCol
+            anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+            anchors.margins: Math.round(14 * root.sf)
+            spacing: Math.round(14 * root.sf)
+
+            // ── Header ──
+            Text {
+                text: "Date \u0026 Time"
+                font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: root.textPrimary
+            }
+
+            // ── Large Clock Display ──
+            Rectangle {
+                width: parent.width; height: Math.round(80 * root.sf)
+                radius: Math.round(10 * root.sf)
+                color: Qt.rgba(0, 0, 0, 0.25)
+                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+
+                Column {
+                    anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
+
+                    Text {
+                        id: bigClockText; anchors.horizontalCenter: parent.horizontalCenter
+                        text: Qt.formatTime(new Date(), "h:mm:ss AP")
+                        font.pixelSize: Math.round(26 * root.sf); font.weight: Font.Bold
+                        color: "#ffffff"
+
+                        Timer {
+                            interval: 1000; running: timePanelVisible; repeat: true
+                            onTriggered: {
+                                var now = new Date();
+                                bigClockText.text = Qt.formatTime(now, "h:mm:ss AP");
+                                bigDateText.text = Qt.formatDate(now, "dddd, MMMM d, yyyy");
+                            }
+                        }
+                    }
+
+                    Text {
+                        id: bigDateText; anchors.horizontalCenter: parent.horizontalCenter
+                        text: Qt.formatDate(new Date(), "dddd, MMMM d, yyyy")
+                        font.pixelSize: Math.round(12 * root.sf); color: root.textMuted
+                    }
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
+
+            // ── Current Timezone ──
+            RowLayout {
+                width: parent.width; spacing: Math.round(10 * root.sf)
+
+                Column {
+                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
+                    Text { text: "Timezone"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary }
+                    Text { text: currentTimezone; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Medium; color: root.textPrimary; font.family: "monospace" }
+                }
+            }
+
+            // ── Timezone Search ──
+            Rectangle {
+                width: parent.width; height: Math.round(36 * root.sf)
+                radius: Math.round(8 * root.sf)
+                color: Qt.rgba(0, 0, 0, 0.25)
+                border.color: tzInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1,1,1,0.08); border.width: 1
+
+                TextInput {
+                    id: tzInput; anchors.fill: parent
+                    anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
+                    onTextChanged: tzSearchText = text
+
+                    Text {
+                        anchors.fill: parent; verticalAlignment: Text.AlignVCenter
+                        text: "Search timezone (e.g. America/New_York)"
+                        color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(11 * root.sf)
+                        visible: !parent.text && !parent.activeFocus
+                    }
+                }
+            }
+
+            // ── Timezone Results ──
+            Rectangle {
+                visible: tzSearchText.length > 1
+                width: parent.width
+                height: Math.min(Math.round(180 * root.sf), tzResultList.contentHeight + Math.round(8 * root.sf))
+                radius: Math.round(8 * root.sf)
+                color: Qt.rgba(0, 0, 0, 0.3)
+                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                clip: true
+
+                ListView {
+                    id: tzResultList
+                    anchors.fill: parent; anchors.margins: Math.round(4 * root.sf)
+                    clip: true; spacing: 1
+
+                    model: {
+                        if (tzSearchText.length < 2) return [];
+                        var s = tzSearchText.toLowerCase();
+                        var results = [];
+                        for (var i = 0; i < timezoneList.length && results.length < 20; i++) {
+                            if (timezoneList[i].toLowerCase().indexOf(s) >= 0) results.push(timezoneList[i]);
+                        }
+                        return results;
+                    }
+
+                    delegate: Rectangle {
+                        width: tzResultList.width; height: Math.round(30 * root.sf)
+                        radius: Math.round(6 * root.sf)
+                        color: tzItemMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.15) :
+                               modelData === currentTimezone ? Qt.rgba(0.13, 0.77, 0.37, 0.1) : "transparent"
+
+                        RowLayout {
+                            anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf)
+
+                            Text {
+                                text: modelData
+                                font.pixelSize: Math.round(11 * root.sf); font.family: "monospace"
+                                color: modelData === currentTimezone ? "#22c55e" : "#e2e8f0"
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                visible: modelData === currentTimezone
+                                text: "✓"; font.pixelSize: Math.round(11 * root.sf); color: "#22c55e"
+                            }
+                        }
+
+                        MouseArea {
+                            id: tzItemMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: { setTimezone(modelData); tzInput.text = ""; tzSearchText = ""; }
+                        }
+                    }
+                }
+
+                Text {
+                    visible: tzResultList.count === 0 && tzSearchText.length > 1
+                    anchors.centerIn: parent
+                    text: tzLoading ? "Loading timezones..." : "No matching timezone found"
+                    font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
+
+            // ── NTP Auto-sync ──
+            RowLayout {
+                width: parent.width; spacing: Math.round(10 * root.sf)
+
+                Column {
+                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
+                    Text { text: "Auto-sync time (NTP)"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary }
+                    Text {
+                        text: ntpEnabled ? (ntpSynced ? "Synchronized via time server" : "Enabled, waiting for sync") : "Manual time mode"
+                        font.pixelSize: Math.round(10 * root.sf); color: root.textMuted
+                    }
+                }
+
+                // NTP Toggle Switch
+                Rectangle {
+                    width: Math.round(44 * root.sf); height: Math.round(24 * root.sf)
+                    radius: Math.round(12 * root.sf)
+                    color: ntpEnabled ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : Qt.rgba(1,1,1,0.1)
+                    border.color: ntpEnabled ? Qt.rgba(0.13, 0.77, 0.37, 0.4) : Qt.rgba(1,1,1,0.15); border.width: 1
+
+                    Behavior on color { ColorAnimation { duration: 200 } }
+
+                    Rectangle {
+                        width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                        radius: Math.round(9 * root.sf)
+                        x: ntpEnabled ? parent.width - width - Math.round(3 * root.sf) : Math.round(3 * root.sf)
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: ntpEnabled ? "#22c55e" : "#94a3b8"
+
+                        Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: toggleNtp(!ntpEnabled)
+                    }
+                }
+            }
+
+            // ── Sync Now Button ──
+            Rectangle {
+                width: parent.width; height: Math.round(36 * root.sf)
+                radius: Math.round(8 * root.sf)
+                color: syncMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.15) : Qt.rgba(1,1,1,0.04)
+                border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+
+                Row {
+                    anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+                    Text { text: "↻"; font.pixelSize: Math.round(14 * root.sf); color: root.accentBlue; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Sync Time Now"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+                }
+
+                MouseArea { id: syncMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: syncTimeNow() }
+            }
+
+            // ── NTP Server Info ──
+            Text {
+                text: "Using systemd-timesyncd (NTP pool servers)"
+                font.pixelSize: Math.round(10 * root.sf); color: Qt.rgba(1,1,1,0.15)
+                width: parent.width; horizontalAlignment: Text.AlignHCenter
+            }
+        }
     }
 
     // ── User Dropdown Menu ──

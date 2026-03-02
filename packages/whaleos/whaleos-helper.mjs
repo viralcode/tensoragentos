@@ -105,6 +105,63 @@ const server = createServer(async (req, res) => {
             clipboardBuffer = body.text || body.raw || '';
             res.end(JSON.stringify({ ok: true, length: clipboardBuffer.length }));
 
+            // ── Time Management ──
+        } else if (url === '/time/info') {
+            try {
+                const tz = await safeExec('timedatectl show --property=Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || echo UTC', '/');
+                const ntp = await safeExec('timedatectl show --property=NTP --value 2>/dev/null || echo unknown', '/');
+                const ntpSync = await safeExec('timedatectl show --property=NTPSynchronized --value 2>/dev/null || echo unknown', '/');
+                const dt = new Date();
+                res.end(JSON.stringify({
+                    ok: true,
+                    timezone: tz.stdout.trim(),
+                    ntpEnabled: ntp.stdout.trim() === 'yes',
+                    ntpSynced: ntpSync.stdout.trim() === 'yes',
+                    iso: dt.toISOString(),
+                    unix: Math.floor(dt.getTime() / 1000)
+                }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.message }));
+            }
+
+        } else if (url === '/time/zones') {
+            try {
+                const r = await safeExec('timedatectl list-timezones 2>/dev/null || ls /usr/share/zoneinfo/posix/ -R 2>/dev/null', '/');
+                const zones = r.stdout.trim().split('\n').filter(z => z && !z.endsWith('/') && !z.startsWith('/'));
+                res.end(JSON.stringify({ ok: true, zones }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, zones: [], error: e.message }));
+            }
+
+        } else if (url === '/time/timezone' && req.method === 'POST') {
+            const body = await parseBody(req);
+            const tz = (body.timezone || '').trim();
+            if (!tz) { res.end(JSON.stringify({ ok: false, error: 'No timezone specified' })); return; }
+            try {
+                await safeExec(`sudo timedatectl set-timezone "${tz}" 2>&1`, '/');
+                res.end(JSON.stringify({ ok: true, timezone: tz }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
+            }
+
+        } else if (url === '/time/ntp' && req.method === 'POST') {
+            const body = await parseBody(req);
+            const enable = body.enable !== false;
+            try {
+                await safeExec(`sudo timedatectl set-ntp ${enable ? 'true' : 'false'} 2>&1`, '/');
+                res.end(JSON.stringify({ ok: true, ntpEnabled: enable }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
+            }
+
+        } else if (url === '/time/sync' && req.method === 'POST') {
+            try {
+                await safeExec('sudo systemctl restart systemd-timesyncd 2>&1 && sleep 1 && timedatectl show --property=NTPSynchronized --value', '/');
+                res.end(JSON.stringify({ ok: true, message: 'NTP sync initiated' }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
+            }
+
         } else {
             res.end(JSON.stringify({ ok: true, service: 'tensoragent-helper', port: PORT }));
         }
