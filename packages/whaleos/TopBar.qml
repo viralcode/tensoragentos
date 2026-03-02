@@ -5,7 +5,7 @@ import "api.js" as API
 Rectangle {
     id: topBar
     height: Math.round(36 * root.sf)
-    color: Qt.rgba(0.08, 0.08, 0.08, 0.85)
+    color: Qt.rgba(0.10, 0.10, 0.14, 1.0)
 
     // ── OpenWhale state ──
     property bool owOnline: false

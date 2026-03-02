@@ -206,12 +206,13 @@ Rectangle {
                 Repeater {
                     model: filteredTools
                     Rectangle {
-                        width: (toolsGrid.width - 8) / 2; height: toolItemCol.height + 16
+                        width: (toolsGrid.width - 8) / 2; height: Math.round(140 * root.sf)
                         radius: root.radiusMd; color: root.bgCard
                         border.color: root.borderColor; border.width: 1
+                        clip: true
 
                         Column {
-                            id: toolItemCol; anchors.left: parent.left; anchors.right: parent.right
+                            anchors.left: parent.left; anchors.right: parent.right
                             anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
 
                             RowLayout {
@@ -234,7 +235,11 @@ Rectangle {
                                 }
                             }
 
-                            Text { text: modelData.description || ""; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary; wrapMode: Text.WordWrap; width: parent.width; lineHeight: 1.3 }
+                            Text {
+                                text: modelData.description || ""; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
+                                wrapMode: Text.WordWrap; width: parent.width; lineHeight: 1.3
+                                maximumLineCount: 3; elide: Text.ElideRight
+                            }
 
                             RowLayout {
                                 width: parent.width; spacing: Math.round(4 * root.sf)
