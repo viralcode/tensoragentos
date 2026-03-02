@@ -57,7 +57,18 @@ Rectangle {
                         { name: "clipboard", description: "Read and write system clipboard", category: "utility", disabled: false, requiresApproval: false },
                         { name: "shortcuts", description: "macOS Shortcuts automation", category: "system", disabled: true, requiresApproval: false },
                         { name: "calendar_event", description: "Create calendar events", category: "utility", disabled: true, requiresApproval: false },
-                        { name: "slides", description: "Create presentation slides", category: "media", disabled: true, requiresApproval: false }
+                        { name: "slides", description: "Create presentation slides", category: "media", disabled: true, requiresApproval: false },
+                        { name: "ollama", description: "Local LLM inference — run Llama, Mistral, Phi locally", category: "ai", disabled: false, requiresApproval: false },
+                        { name: "jupyter", description: "JupyterLab notebooks for data science and ML", category: "ai", disabled: false, requiresApproval: false },
+                        { name: "vscode", description: "VS Code Server — browser-based IDE on port 8443", category: "dev", disabled: false, requiresApproval: false },
+                        { name: "huggingface", description: "Download and manage models from Hugging Face Hub", category: "ai", disabled: false, requiresApproval: false },
+                        { name: "ffmpeg", description: "Audio/video processing, conversion, and streaming", category: "media", disabled: false, requiresApproval: false },
+                        { name: "tmux", description: "Terminal multiplexer — persistent shell sessions", category: "dev", disabled: false, requiresApproval: false },
+                        { name: "htop_monitor", description: "Interactive system monitor — CPU, memory, processes", category: "system", disabled: false, requiresApproval: false },
+                        { name: "ripgrep", description: "Ultra-fast text search across files and codebases", category: "dev", disabled: false, requiresApproval: false },
+                        { name: "langchain", description: "LangChain agent orchestration framework", category: "ai", disabled: false, requiresApproval: false },
+                        { name: "chromadb", description: "Vector database for RAG and semantic search", category: "ai", disabled: false, requiresApproval: false },
+                        { name: "imagemagick", description: "Image processing, conversion, and manipulation", category: "media", disabled: false, requiresApproval: false }
                     ];
                 }
                 // Extract categories
