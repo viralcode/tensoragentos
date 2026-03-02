@@ -13,14 +13,14 @@ Rectangle {
 
     Flickable {
         anchors.fill: parent
-        anchors.margins: Math.round(20 * root.sf)
+        anchors.margins: Math.round(24 * root.sf)
         contentHeight: appsCol.height
         clip: true
 
         ColumnLayout {
             id: appsCol
             width: parent.width
-            spacing: Math.round(16 * root.sf)
+            spacing: Math.round(18 * root.sf)
 
             RowLayout {
                 Layout.fillWidth: true
@@ -54,8 +54,8 @@ Rectangle {
             GridLayout {
                 Layout.fillWidth: true
                 columns: 2
-                columnSpacing: 12
-                rowSpacing: 12
+                columnSpacing: 16
+                rowSpacing: 16
 
                 Repeater {
                     model: extensions

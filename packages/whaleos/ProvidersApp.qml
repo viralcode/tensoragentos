@@ -79,14 +79,14 @@ Rectangle {
     }
 
     Flickable {
-        anchors.fill: parent; anchors.margins: Math.round(16 * root.sf)
+        anchors.fill: parent; anchors.margins: Math.round(24 * root.sf)
         contentHeight: mainCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Column {
-            id: mainCol; width: parent.width; spacing: Math.round(12 * root.sf)
+            id: mainCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
-            Text { text: "AI Providers"; font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+            Text { text: "AI Providers"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
             Text { text: "Configure API keys for AI model providers"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
             Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
 
@@ -94,7 +94,7 @@ Rectangle {
                 model: providerData
 
                 Rectangle {
-                    id: provCard; width: mainCol.width; height: provCol.height + 20
+                    id: provCard; width: mainCol.width; height: provCol.height + 28
                     radius: root.radiusMd; color: root.bgCard
                     border.color: modelData.hasKey ? Qt.rgba(0.13,0.77,0.37,0.3) : root.borderColor; border.width: 1
                     clip: false
@@ -104,7 +104,7 @@ Rectangle {
 
                     Column {
                         id: provCol; anchors.left: parent.left; anchors.right: parent.right
-                        anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
+                        anchors.top: parent.top; anchors.margins: Math.round(16 * root.sf); spacing: Math.round(10 * root.sf)
 
                         RowLayout {
                             width: parent.width; spacing: Math.round(10 * root.sf)

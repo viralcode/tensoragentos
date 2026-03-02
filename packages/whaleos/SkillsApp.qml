@@ -123,15 +123,15 @@ Rectangle {
     }
 
     Flickable {
-        anchors.fill: parent; anchors.margins: Math.round(16 * root.sf)
+        anchors.fill: parent; anchors.margins: Math.round(24 * root.sf)
         contentHeight: skillsCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
         visible: !editorOpen
 
         Column {
-            id: skillsCol; width: parent.width; spacing: Math.round(12 * root.sf)
+            id: skillsCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
-            Text { text: "Skills"; font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+            Text { text: "Skills"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
             Text { text: "API integrations and markdown-based skills"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
 
             // Tab bar
@@ -152,17 +152,17 @@ Rectangle {
 
             // API Skills tab
             Column {
-                width: parent.width; spacing: Math.round(10 * root.sf); visible: activeTab === "api"
+                width: parent.width; spacing: Math.round(14 * root.sf); visible: activeTab === "api"
                 Repeater {
                     model: apiSkills
                     Rectangle {
-                        width: skillsCol.width; height: sCol.height + 20
+                        width: skillsCol.width; height: sCol.height + 28
                         radius: root.radiusMd; color: root.bgCard
                         border.color: modelData.configured ? Qt.rgba(0.13,0.77,0.37,0.3) : root.borderColor; border.width: 1
 
                         Column {
                             id: sCol; anchors.left: parent.left; anchors.right: parent.right
-                            anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
+                            anchors.top: parent.top; anchors.margins: Math.round(16 * root.sf); spacing: Math.round(10 * root.sf)
 
                             RowLayout {
                                 width: parent.width; spacing: Math.round(10 * root.sf)

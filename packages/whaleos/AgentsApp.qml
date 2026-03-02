@@ -103,12 +103,12 @@ Rectangle {
     }
 
     Flickable {
-        anchors.fill: parent; anchors.margins: Math.round(16 * root.sf)
+        anchors.fill: parent; anchors.margins: Math.round(24 * root.sf)
         contentHeight: agentCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Column {
-            id: agentCol; width: parent.width; spacing: Math.round(14 * root.sf)
+            id: agentCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
             // ════════════════════════════════════
             // ── Header Row ──

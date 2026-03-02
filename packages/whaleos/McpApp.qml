@@ -124,12 +124,12 @@ Rectangle {
     }
 
     Flickable {
-        anchors.fill: parent; anchors.margins: Math.round(16 * root.sf)
+        anchors.fill: parent; anchors.margins: Math.round(24 * root.sf)
         contentHeight: toolsCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Column {
-            id: toolsCol; width: parent.width; spacing: Math.round(12 * root.sf)
+            id: toolsCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
             // Header
             RowLayout {
