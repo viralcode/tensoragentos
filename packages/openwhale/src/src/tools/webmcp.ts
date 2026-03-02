@@ -196,17 +196,18 @@ export async function isWebMCPAvailable(): Promise<{
             if (existsSync(p)) {
                 const version = execSync(`${p} --version 2>/dev/null`, { timeout: 5000 })
                     .toString().trim();
-                // WebMCP requires Chrome 146+
+                // WebMCP feature flag works on Chrome 133+ when passed via --enable-features=WebMCP
+                // Chrome 146+ has it enabled by default
                 const match = version.match(/(\d+)\./);
                 const major = match ? parseInt(match[1]) : 0;
-                if (major >= 146) {
+                if (major >= 133) {
                     return { available: true, chromePath: p, chromeVersion: version };
                 }
                 return {
                     available: false,
                     chromePath: p,
                     chromeVersion: version,
-                    error: `Chrome ${major} found, but WebMCP requires Chrome 146+`
+                    error: `Chrome ${major} found, but WebMCP requires Chrome 133+ with --enable-features=WebMCP`
                 };
             }
         } catch { /* skip */ }

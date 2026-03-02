@@ -192,7 +192,7 @@ const server = createServer(async (req, res) => {
                 const version = r.stdout.trim();
                 const match = version.match(/(\d+)\./);
                 const major = match ? parseInt(match[1]) : 0;
-                const webmcpEnabled = major >= 146;
+                const webmcpEnabled = major >= 133;
                 // Check if WebMCP flag is in the launcher
                 let launcherHasFlag = false;
                 try {
@@ -205,7 +205,7 @@ const server = createServer(async (req, res) => {
                     chromeMajor: major,
                     webmcpSupported: webmcpEnabled,
                     launcherWebMCPFlag: launcherHasFlag,
-                    status: webmcpEnabled ? 'WebMCP available' : `Chrome ${major} — WebMCP requires 146+`
+                    status: webmcpEnabled ? 'WebMCP available (use --enable-features=WebMCP flag)' : `Chrome ${major} — WebMCP requires 133+`
                 }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.message }));
