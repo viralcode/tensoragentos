@@ -1217,7 +1217,27 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
             const { initWhatsApp } = await import("../channels/whatsapp-baileys.js");
 
             // Start initialization
-            await initWhatsApp();
+            await initWhatsApp({
+                onMessage: async (msg) => {
+                    try {
+                        const { sendWhatsAppMessage } = await import("../channels/whatsapp-baileys.js");
+                        const sessionId = `whatsapp-${msg.from}`;
+                        logger.info("channel", "Processing WhatsApp message via AI", { from: msg.from, preview: msg.content.slice(0, 60) });
+                        const response = await processSessionMessage(sessionId, msg.content, { model: configStore.get("defaultModel") as string });
+                        if (response && response.content) {
+                            await sendWhatsAppMessage(msg.from, response.content);
+                            logger.info("channel", "WhatsApp AI reply sent", { to: msg.from, preview: response.content.slice(0, 60) });
+                        }
+                    } catch (err: any) {
+                        logger.error("channel", "WhatsApp message processing error", { error: err.message });
+                    }
+                },
+                onConnected: () => {
+                    const cfg = channelConfigs.get("whatsapp") || { enabled: true, connected: false };
+                    channelConfigs.set("whatsapp", { ...cfg, connected: true });
+                    logger.info("channel", "WhatsApp connected via dashboard");
+                },
+            });
 
             // For now, return success - QR would be handled via polling
             return c.json({ ok: true, message: "WhatsApp initialization started" });

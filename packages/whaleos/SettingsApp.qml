@@ -14,7 +14,18 @@ Rectangle {
     property bool waConnected: false
     property string tgToken: ""
     property string dcToken: ""
-    Component.onCompleted: loadUsers()
+    Component.onCompleted: { loadUsers(); checkChannelStatus(); }
+    function checkChannelStatus() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.apiBase + "/channels/whatsapp/status");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try { var d = JSON.parse(xhr.responseText); waConnected = d.connected || false; } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
     function loadUsers() {
         try {
             var result = sysManager.listUsers();
@@ -241,18 +252,39 @@ Rectangle {
                 Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "channels"
                     Text { text: "Channels"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                     Text { text: "Connect messaging platforms"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-                    Rectangle { width: parent.width; height: wI.height + 24; radius: root.radiusMd; color: root.bgCard; border.color: waConnected ? Qt.rgba(0.13,0.77,0.37,0.3) : root.borderColor; border.width: 1
+                    Rectangle { width: parent.width; height: wI.height + 24; radius: root.radiusMd; color: root.bgCard; border.color: waConnected ? Qt.rgba(0.13,0.77,0.37,0.35) : root.borderColor; border.width: waConnected ? 2 : 1
+                        // Connected glow effect
+                        Rectangle { visible: waConnected; anchors.fill: parent; radius: parent.radius; color: Qt.rgba(0.13,0.77,0.37,0.04) }
                         Column { id: wI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
                             RowLayout { width: parent.width; spacing: Math.round(10 * root.sf)
-                                Rectangle { width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: Qt.rgba(0.15,0.68,0.38,0.15)
+                                Rectangle { width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: waConnected ? Qt.rgba(0.15,0.68,0.38,0.25) : Qt.rgba(0.15,0.68,0.38,0.15)
                                 Text { anchors.centerIn: parent; text: "\uf232"; font.family: root.iconFont; font.pixelSize: Math.round(16 * root.sf); color: "#25D366" }
                             }
                                 Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                                 Text { text: "WhatsApp"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                                Text { text: waConnected ? "Connected" : "Connect via QR code"; font.pixelSize: Math.round(11 * root.sf); color: waConnected ? root.accentGreen : root.textMuted }
+                                Row { spacing: Math.round(6 * root.sf)
+                                    Rectangle { visible: waConnected; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#22c55e"; anchors.verticalCenter: parent.verticalCenter
+                                        SequentialAnimation on opacity { running: waConnected; loops: Animation.Infinite; NumberAnimation { to: 0.4; duration: 1500 } NumberAnimation { to: 1.0; duration: 1500 } }
+                                    }
+                                    Text { text: waConnected ? "Connected & active" : "Connect via QR code"; font.pixelSize: Math.round(11 * root.sf); color: waConnected ? "#22c55e" : root.textMuted }
+                                }
                             }
-                                Rectangle { width: Math.round(70 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: waConnected ? Qt.rgba(0.13,0.77,0.37,0.15) : root.accentBlue
-                                Text { anchors.centerIn: parent; text: waConnecting ? "Waiting..." : waConnected ? "\u2713 Connected" : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: waConnected ? root.accentGreen : "#fff" }
+                                // Connected: green pill badge + disconnect option
+                                Row { visible: waConnected; spacing: Math.round(6 * root.sf)
+                                    Rectangle { width: connBadge.width + Math.round(16 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(14 * root.sf); color: Qt.rgba(0.13,0.85,0.42,0.15); border.color: Qt.rgba(0.13,0.85,0.42,0.3); border.width: 1
+                                        Row { id: connBadge; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
+                                            Text { text: "✓"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Bold; color: "#22c55e" }
+                                            Text { text: "Connected"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#22c55e" }
+                                        }
+                                    }
+                                    Rectangle { width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(14 * root.sf); color: waDisMa.containsMouse ? Qt.rgba(0.94,0.27,0.27,0.2) : Qt.rgba(1,1,1,0.06)
+                                        Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(10 * root.sf); color: waDisMa.containsMouse ? "#ef4444" : root.textMuted }
+                                        MouseArea { id: waDisMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { waConnected = false; root.showToast("WhatsApp disconnected", "success"); } }
+                                    }
+                                }
+                                // Not connected: connect / waiting button
+                                Rectangle { visible: !waConnected; width: Math.round(70 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: waConnecting ? Qt.rgba(1,1,1,0.08) : root.accentBlue
+                                Text { anchors.centerIn: parent; text: waConnecting ? "Waiting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: waConnecting ? root.textMuted : "#fff" }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (!waConnected && !waConnecting) connectWhatsApp() }
                             }
                             }
