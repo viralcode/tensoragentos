@@ -8,6 +8,7 @@ Rectangle {
     radius: root.radiusLg
     color: "transparent"
     clip: true
+    z: 10
 
     Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
@@ -94,35 +95,23 @@ Rectangle {
         return "AI";
     }
 
-    // ── Glass background ──
+    // ── Glass background (only when expanded) ──
     Rectangle {
         anchors.fill: parent; radius: parent.radius
-        color: Qt.rgba(0.06, 0.06, 0.10, 0.88)
-        border.color: Qt.rgba(0.35, 0.45, 0.85, 0.15); border.width: 1
-
-        Rectangle {
-            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-            anchors.leftMargin: Math.round(20 * root.sf); anchors.rightMargin: Math.round(20 * root.sf)
-            height: 1; radius: 1
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.3; color: Qt.rgba(0.35, 0.55, 1.0, 0.25) }
-                GradientStop { position: 0.7; color: Qt.rgba(0.55, 0.35, 1.0, 0.25) }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
+        visible: chatExpanded
+        color: Qt.rgba(0.07, 0.07, 0.11, 0.92)
+        border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
     }
 
     // ── Chat Header (expanded) ──
     Rectangle {
         id: chatHeader
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: Math.round(42 * root.sf); visible: chatExpanded
-        color: Qt.rgba(0.05, 0.05, 0.08, 0.95); radius: root.radiusLg
+        height: Math.round(44 * root.sf); visible: chatExpanded
+        color: Qt.rgba(0.06, 0.06, 0.10, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.04) }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
 
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
@@ -318,127 +307,154 @@ Rectangle {
         anchors.right: parent.right; anchors.bottom: inputArea.top
         anchors.margins: 1; visible: chatExpanded; clip: true
 
+        // Empty state
+        Column {
+            anchors.centerIn: parent; spacing: Math.round(12 * root.sf)
+            visible: messages.length === 0 && !isSending
+
+            Image {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.round(48 * root.sf); height: Math.round(48 * root.sf)
+                source: "assets/whale_logo.png"
+                fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
+                opacity: 0.5
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "How can I help you today?"
+                font.pixelSize: Math.round(15 * root.sf); font.weight: Font.DemiBold
+                color: Qt.rgba(1, 1, 1, 0.4)
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Ask me anything - code, files, system tasks"
+                font.pixelSize: Math.round(11 * root.sf); color: Qt.rgba(1, 1, 1, 0.2)
+            }
+        }
+
         ListView {
             id: messageList
-            anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
-            model: messages; spacing: Math.round(10 * root.sf); clip: true
+            anchors.fill: parent; anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
+            anchors.topMargin: Math.round(8 * root.sf); anchors.bottomMargin: Math.round(4 * root.sf)
+            model: messages; spacing: Math.round(16 * root.sf); clip: true
 
             delegate: Item {
                 width: messageList.width
-                height: (modelData.role === "user" ? userMsgBox.height : asstItem.height) + Math.round(16 * root.sf)
+                height: msgRow.height + (modelData.toolCalls ? toolCol.height + Math.round(8 * root.sf) : 0)
 
-                // ── USER MESSAGE ──
-                Item {
-                    id: userMsgBox
-                    visible: modelData.role === "user"
-                    width: Math.min(parent.width * 0.85, (userTextMetrics.width > 0 ? userTextMetrics.width : 0) + Math.round(32 * root.sf))
-                    height: userTextCol.height + Math.round(20 * root.sf)
-                    anchors.right: parent.right; anchors.rightMargin: Math.round(8 * root.sf)
+                // Tool calls display (above the message if present)
+                Column {
+                    id: toolCol
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.leftMargin: modelData.role !== "user" ? Math.round(36 * root.sf) : 0
+                    anchors.rightMargin: modelData.role === "user" ? parent.width * 0.15 : parent.width * 0.05
+                    visible: modelData.toolCalls && modelData.toolCalls.length > 0
+                    spacing: Math.round(3 * root.sf)
+                    bottomPadding: visible ? Math.round(8 * root.sf) : 0
 
-                    TextMetrics {
-                        id: userTextMetrics
-                        text: modelData.content || ""
-                        font.pixelSize: Math.round(14 * root.sf)
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Math.round(20 * root.sf)
-                        color: Qt.rgba(0.12, 0.16, 0.22, 1.0) // Like --bg-elevated
-                        
-                        // Fake square corner bottom-right
+                    Repeater {
+                        model: (modelData.toolCalls || [])
                         Rectangle {
-                            anchors.bottom: parent.bottom; anchors.right: parent.right
-                            width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
-                            color: parent.color; radius: Math.round(4 * root.sf)
-                            z: -1
-                        }
-                    }
+                            width: toolCol.width; height: toolRow.height + Math.round(8 * root.sf)
+                            radius: Math.round(6 * root.sf)
+                            color: Qt.rgba(0.1, 0.14, 0.1, 0.6)
+                            border.color: Qt.rgba(0.2, 0.7, 0.4, 0.15); border.width: 1
 
-                    Column {
-                        id: userTextCol
-                        anchors.centerIn: parent
-                        width: parent.width - Math.round(32 * root.sf)
-                        Text {
-                            width: parent.width
-                            text: modelData.content || ""
-                            font.pixelSize: Math.round(14 * root.sf)
-                            color: "#F0F0F3"
-                            wrapMode: Text.Wrap
-                            textFormat: Text.PlainText
-                            lineHeight: 1.45
+                            Row {
+                                id: toolRow; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+
+                                Text { text: "⚡"; font.pixelSize: Math.round(9 * root.sf) }
+                                Text {
+                                    text: modelData.name || "tool"
+                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium; color: "#34d399"
+                                }
+                                Text {
+                                    text: modelData.status === "success" ? "✓" : (modelData.status === "error" ? "✗" : "⋯")
+                                    font.pixelSize: Math.round(10 * root.sf)
+                                    color: modelData.status === "success" ? "#34d399" : (modelData.status === "error" ? root.accentRed : root.textMuted)
+                                }
+                            }
                         }
                     }
                 }
 
-                // ── ASSISTANT MESSAGE ──
-                Item {
-                    id: asstItem
-                    visible: modelData.role !== "user"
-                    width: parent.width * 0.95
-                    height: asstRow.height
-                    anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
+                // Message row: avatar + bubble for assistant, right-aligned bubble for user
+                Row {
+                    id: msgRow
+                    anchors.top: toolCol.visible ? toolCol.bottom : parent.top
+                    anchors.right: modelData.role === "user" ? parent.right : undefined
+                    anchors.left: modelData.role !== "user" ? parent.left : undefined
+                    spacing: Math.round(8 * root.sf)
+                    layoutDirection: modelData.role === "user" ? Qt.RightToLeft : Qt.LeftToRight
 
-                    Row {
-                        id: asstRow
-                        anchors.left: parent.left; anchors.right: parent.right
-                        spacing: Math.round(16 * root.sf)
+                    // Avatar for assistant
+                    Rectangle {
+                        visible: modelData.role !== "user"
+                        width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
+                        radius: Math.round(8 * root.sf)
+                        color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
 
-                        // Avatar
-                        Item {
-                            width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
-                            Text {
-                                anchors.centerIn: parent
-                                text: "🐋"
-                                font.pixelSize: Math.round(18 * root.sf)
-                            }
+                        Image {
+                            anchors.centerIn: parent
+                            width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                            source: "assets/whale_logo.png"
+                            fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
+                        }
+                    }
+
+                    Rectangle {
+                        id: msgBubble
+                        width: modelData.role === "user"
+                            ? Math.min(messageList.width * 0.72, userMsgMetrics.width + Math.round(36 * root.sf))
+                            : messageList.width - Math.round(44 * root.sf)
+                        height: msgContentCol.height + Math.round(18 * root.sf)
+                        radius: Math.round(12 * root.sf)
+
+                        color: modelData.role === "user"
+                            ? Qt.rgba(0.24, 0.45, 0.95, 0.18)
+                            : "transparent"
+                        border.color: modelData.role === "user"
+                            ? Qt.rgba(0.35, 0.55, 1.0, 0.15)
+                            : "transparent"
+                        border.width: modelData.role === "user" ? 1 : 0
+
+                        TextMetrics {
+                            id: userMsgMetrics
+                            text: modelData.content || ""
+                            font.pixelSize: Math.round(13 * root.sf)
                         }
 
                         Column {
-                            width: parent.width - Math.round(44 * root.sf)
-                            spacing: Math.round(6 * root.sf)
+                            id: msgContentCol
+                            anchors.left: parent.left; anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: modelData.role === "user" ? Math.round(10 * root.sf) : Math.round(4 * root.sf)
+                            spacing: Math.round(4 * root.sf)
 
-                            // Header Text
-                            Text {
-                                text: modelData.agent || getAgentName()
-                                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Bold
-                                color: "#e4e4e7"
-                            }
-
-                            // Tool Calls Column
-                            Column {
-                                id: asstToolCol
-                                width: parent.width
-                                visible: modelData.toolCalls && modelData.toolCalls.length > 0
-                                spacing: Math.round(4 * root.sf)
-                                Repeater {
-                                    model: (modelData.toolCalls || [])
-                                    Rectangle {
-                                        width: Math.min(asstToolCol.width, asstToolRow.implicitWidth + Math.round(32 * root.sf))
-                                        height: asstToolRow.implicitHeight + Math.round(16 * root.sf)
-                                        radius: Math.round(8 * root.sf)
-                                        color: Qt.rgba(0.12, 0.14, 0.12, 0.8)
-                                        border.color: Qt.rgba(0.2, 0.8, 0.4, 0.2); border.width: 1
-                                        Row {
-                                            id: asstToolRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
-                                            Text { text: "⚡"; font.pixelSize: Math.round(10 * root.sf) }
-                                            Text { text: modelData.name || "tool"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.SemiBold; color: "#34d399" }
-                                            Text { text: modelData.status === "success" ? "✓" : (modelData.status === "error" ? "✗" : "⋯"); font.pixelSize: Math.round(11 * root.sf); color: modelData.status === "success" ? "#34d399" : (modelData.status === "error" ? root.accentRed : root.textMuted) }
-                                        }
-                                    }
+                            Row {
+                                spacing: Math.round(6 * root.sf)
+                                Text {
+                                    text: modelData.role === "user" ? "" : (modelData.agent || getAgentName())
+                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
+                                    color: "#a3e635"
+                                    visible: modelData.role !== "user"
+                                }
+                                Text {
+                                    visible: modelData.model && modelData.role !== "user"
+                                    text: modelData.model || ""
+                                    font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
                                 }
                             }
 
-                            // Message Content
                             Text {
                                 width: parent.width
-                                text: mdToStyled(modelData.content || "")
-                                font.pixelSize: Math.round(14 * root.sf)
-                                color: "#D4D4D8"
-                                wrapMode: Text.Wrap
-                                lineHeight: 1.55
-                                textFormat: Text.StyledText
-                                onLinkActivated: Qt.openUrlExternally(link)
+                                text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
+                                font.pixelSize: Math.round(13 * root.sf)
+                                color: modelData.role === "user" ? "#e0e7ff" : "#e4e4e7"
+                                wrapMode: Text.Wrap; lineHeight: 1.5
+                                textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
                             }
                         }
                     }
@@ -448,144 +464,178 @@ Rectangle {
             // ── Live streaming footer ──
             footer: Item {
                 width: messageList.width
-                height: streamRow.height + Math.round(20 * root.sf)
+                height: streamCol.height + Math.round(10 * root.sf)
                 visible: isSending
 
-                Row {
-                    id: streamRow
+                Column {
+                    id: streamCol
                     anchors.left: parent.left; anchors.right: parent.right
-                    anchors.leftMargin: Math.round(8 * root.sf)
-                    spacing: Math.round(16 * root.sf)
+                    spacing: Math.round(6 * root.sf)
 
-                    // Avatar
-                    Item {
-                        width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
-                        Text { anchors.centerIn: parent; text: "🐋"; font.pixelSize: Math.round(18 * root.sf) }
+                    // Plan display
+                    Rectangle {
+                        visible: activePlan !== null
+                        width: parent.width * 0.88; height: planCol.height + Math.round(16 * root.sf)
+                        radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(0.1, 0.1, 0.2, 0.7)
+                        border.color: Qt.rgba(0.35, 0.55, 1.0, 0.25); border.width: 1
+
+                        Column {
+                            id: planCol; anchors.left: parent.left; anchors.right: parent.right
+                            anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
+
+                            Text {
+                                text: "📋 " + (activePlan ? activePlan.title || "Plan" : "")
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#60a5fa"
+                            }
+
+                            Repeater {
+                                model: activePlan ? activePlan.steps || [] : []
+                                Row {
+                                    spacing: Math.round(6 * root.sf)
+                                    Text {
+                                        text: modelData.status === "completed" ? "✓" : (modelData.status === "in_progress" ? "⋯" : (modelData.status === "skipped" ? "—" : "○"))
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#60a5fa" : root.textMuted)
+                                    }
+                                    Text {
+                                        text: modelData.description || modelData.title || ""
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#e4e4e7" : root.textMuted)
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    Column {
-                        id: streamRightCol
-                        width: parent.width - Math.round(44 * root.sf)
-                        spacing: Math.round(8 * root.sf)
+                    // Live tool steps
+                    Repeater {
+                        model: streamingSteps
 
-                        Text {
-                            text: getAgentName()
-                            font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Bold
-                            color: "#e4e4e7"
-                        }
-
-                        // Plan display
                         Rectangle {
-                            visible: activePlan !== null
-                            width: parent.width * 0.95; height: planCol.height + Math.round(16 * root.sf)
-                            radius: Math.round(10 * root.sf)
-                            color: Qt.rgba(0.08, 0.08, 0.12, 0.6)
-                            border.color: Qt.rgba(0.2, 0.4, 0.8, 0.2); border.width: 1
+                            width: parent.width * 0.88; height: stepRow.height + Math.round(12 * root.sf)
+                            radius: Math.round(8 * root.sf)
+                            color: modelData.type === "error" ? Qt.rgba(0.3, 0.1, 0.1, 0.6) :
+                                   modelData.type === "tool" ? Qt.rgba(0.1, 0.15, 0.1, 0.6) :
+                                   Qt.rgba(0.1, 0.1, 0.15, 0.6)
+                            border.color: modelData.type === "error" ? Qt.rgba(0.9, 0.2, 0.2, 0.2) :
+                                          modelData.type === "tool" ? Qt.rgba(0.2, 0.8, 0.4, 0.2) :
+                                          Qt.rgba(0.4, 0.5, 1.0, 0.15)
+                            border.width: 1
 
-                            Column {
-                                id: planCol; anchors.left: parent.left; anchors.right: parent.right
-                                anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
+                            Row {
+                                id: stepRow; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
 
                                 Text {
-                                    text: "📋 " + (activePlan ? activePlan.title || "Plan" : "")
-                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#60a5fa"
+                                    text: modelData.type === "thinking" ? "💭" :
+                                          modelData.type === "tool" ? "⚡" :
+                                          modelData.type === "error" ? "✗" : "•"
+                                    font.pixelSize: Math.round(11 * root.sf)
                                 }
 
-                                Repeater {
-                                    model: activePlan ? activePlan.steps || [] : []
-                                    Row {
-                                        spacing: Math.round(6 * root.sf)
-                                        Text {
-                                            text: modelData.status === "completed" ? "✓" : (modelData.status === "in_progress" ? "⋯" : (modelData.status === "skipped" ? "—" : "○"))
-                                            font.pixelSize: Math.round(11 * root.sf)
-                                            color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#60a5fa" : root.textMuted)
+                                Text {
+                                    text: {
+                                        if (modelData.type === "thinking") {
+                                            var iter = modelData.iteration || 1;
+                                            return modelData.done ? "Thought complete" : "Thinking" + (iter > 1 ? " (round " + iter + ")" : "") + "...";
+                                        } else if (modelData.type === "tool") {
+                                            return (modelData.name || "tool") + (modelData.status === "running" ? " ⋯" : (modelData.status === "success" ? " ✓" : " ✗"));
+                                        } else if (modelData.type === "error") {
+                                            return modelData.message || "Error";
                                         }
-                                        Text {
-                                            text: modelData.description || modelData.title || ""
-                                            font.pixelSize: Math.round(11 * root.sf)
-                                            color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#e4e4e7" : root.textMuted)
-                                        }
+                                        return "";
                                     }
-                                }
-                            }
-                        }
-
-                        // Live tool steps
-                        Repeater {
-                            model: streamingSteps
-
-                            Rectangle {
-                                width: Math.min(streamRightCol.width * 0.95, stepRowLabel.implicitWidth + Math.round(40 * root.sf))
-                                height: stepRow.implicitHeight + Math.round(16 * root.sf)
-                                radius: Math.round(8 * root.sf)
-                                color: modelData.type === "error" ? Qt.rgba(0.3, 0.1, 0.1, 0.6) :
-                                       modelData.type === "tool" ? Qt.rgba(0.12, 0.14, 0.12, 0.8) :
-                                       Qt.rgba(0.1, 0.1, 0.15, 0.8)
-                                border.color: modelData.type === "error" ? Qt.rgba(0.9, 0.2, 0.2, 0.2) :
-                                              modelData.type === "tool" ? Qt.rgba(0.2, 0.8, 0.4, 0.2) :
-                                              Qt.rgba(0.4, 0.5, 1.0, 0.15)
-                                border.width: 1
-
-                                Row {
-                                    id: stepRow; anchors.centerIn: parent
-                                    spacing: Math.round(6 * root.sf)
-
-                                    Text {
-                                        text: modelData.type === "thinking" ? "💭" :
-                                              modelData.type === "tool" ? "⚡" :
-                                              modelData.type === "error" ? "✗" : "•"
-                                        font.pixelSize: Math.round(11 * root.sf)
-                                    }
-
-                                    Text {
-                                        id: stepRowLabel
-                                        text: {
-                                            if (modelData.type === "thinking") {
-                                                var iter = modelData.iteration || 1;
-                                                return modelData.done ? "Thought complete" : "Thinking" + (iter > 1 ? " (round " + iter + ")" : "") + "...";
-                                            } else if (modelData.type === "tool") {
-                                                return (modelData.name || "tool") + (modelData.status === "running" ? " ⋯" : (modelData.status === "success" ? " ✓" : " ✗"));
-                                            } else if (modelData.type === "error") {
-                                                return modelData.message || "Error";
-                                            }
-                                            return "";
-                                        }
-                                        font.pixelSize: Math.round(11 * root.sf); font.weight: Font.SemiBold
-                                        color: modelData.type === "error" ? root.accentRed :
-                                               modelData.type === "tool" ? "#34d399" : "#93c5fd"
-                                    }
+                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium
+                                    color: modelData.type === "error" ? root.accentRed :
+                                           modelData.type === "tool" ? "#34d399" : "#93c5fd"
+                                    width: parent.width - Math.round(40 * root.sf)
+                                    elide: Text.ElideRight
                                 }
                             }
                         }
+                    }
 
-                        // Streaming content preview
-                        Text {
-                            visible: streamingContent.length > 0
-                            width: parent.width
-                            text: mdToStyled(streamingContent) + " <font color='#60a5fa'>▍</font>"
-                            font.pixelSize: Math.round(14 * root.sf); color: "#D4D4D8"
-                            wrapMode: Text.Wrap; lineHeight: 1.55
-                            textFormat: Text.StyledText
-                            onLinkActivated: Qt.openUrlExternally(link)
+                    // Streaming content preview
+                    Row {
+                        visible: streamingContent.length > 0
+                        spacing: Math.round(8 * root.sf)
+
+                        Rectangle {
+                            width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
+                            radius: Math.round(8 * root.sf)
+                            color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
+                            Image {
+                                anchors.centerIn: parent
+                                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                                source: "assets/whale_logo.png"
+                                fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
+                            }
                         }
 
-                        // Thinking dots (when no content yet)
+                        Rectangle {
+                            width: streamCol.width - Math.round(44 * root.sf); height: streamTextCol.height + Math.round(14 * root.sf)
+                            radius: Math.round(12 * root.sf)
+                            color: "transparent"
+
+                            Column {
+                                id: streamTextCol; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.top: parent.top; anchors.margins: Math.round(4 * root.sf); spacing: Math.round(4 * root.sf)
+
+                                Text {
+                                    text: getAgentName()
+                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#a3e635"
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: mdToStyled(streamingContent)
+                                    font.pixelSize: Math.round(13 * root.sf); color: "#e4e4e7"
+                                    wrapMode: Text.Wrap; lineHeight: 1.5
+                                    textFormat: Text.StyledText
+                                }
+                            }
+
+                        // Typing cursor
+                        Rectangle {
+                            anchors.bottom: parent.bottom; anchors.bottomMargin: Math.round(12 * root.sf)
+                            anchors.right: streamTextCol.right; anchors.rightMargin: Math.round(10 * root.sf)
+                            width: Math.round(2 * root.sf); height: Math.round(14 * root.sf)
+                            color: "#60a5fa"
+                            SequentialAnimation on opacity {
+                                running: isSending; loops: Animation.Infinite
+                                NumberAnimation { to: 0; duration: 500 }
+                                NumberAnimation { to: 1; duration: 500 }
+                            }
+                        }
+                    }
+                    } // close streaming Row
+
+                    // Thinking dots (when no content yet)
+                    Rectangle {
+                        visible: isSending && streamingContent.length === 0 && streamingSteps.length === 0
+                        width: streamRow2.width + Math.round(20 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(1, 1, 1, 0.03)
+                        border.color: Qt.rgba(0.2, 0.83, 0.6, 0.15); border.width: 1
+
                         Row {
-                            visible: isSending && streamingContent.length === 0 && streamingSteps.length === 0
-                            spacing: Math.round(6 * root.sf)
-                            anchors.topMargin: Math.round(8 * root.sf)
+                            id: streamRow2; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
                             Repeater {
                                 model: 3
                                 Rectangle {
-                                    width: Math.round(6 * root.sf); height: Math.round(6 * root.sf); radius: width / 2; color: "#60a5fa"
+                                    width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#34d399"
                                     SequentialAnimation on opacity {
-                                        running: isSending && streamingContent.length === 0 && streamingSteps.length === 0; loops: Animation.Infinite
+                                        running: isSending; loops: Animation.Infinite
                                         PauseAnimation { duration: index * 200 }
                                         NumberAnimation { to: 0.2; duration: 400 }
                                         NumberAnimation { to: 1.0; duration: 400 }
                                         PauseAnimation { duration: (2 - index) * 200 }
                                     }
                                 }
+                            }
+                            Text {
+                                text: getAgentName() + " is thinking..."
+                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
                             }
                         }
                     }
@@ -644,15 +694,17 @@ Rectangle {
     Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.margins: Math.round(8 * root.sf); height: Math.round(48 * root.sf); radius: Math.round(24 * root.sf)
-        color: Qt.rgba(0.12, 0.16, 0.22, 0.95)
-        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.4) : Qt.rgba(1, 1, 1, 0.08)
+        anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
+        anchors.bottomMargin: Math.round(8 * root.sf)
+        height: Math.round(44 * root.sf); radius: Math.round(12 * root.sf)
+        color: Qt.rgba(0.06, 0.06, 0.10, 0.95)
+        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
 
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(18 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(6 * root.sf); spacing: Math.round(8 * root.sf)
 
             Canvas {
                 width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); visible: !chatExpanded
@@ -677,13 +729,12 @@ Rectangle {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: "#F0F0F3"; font.pixelSize: Math.round(14 * root.sf); clip: true
+                color: "#e4e4e7"; font.pixelSize: Math.round(13 * root.sf); clip: true
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Ask TensorAgent AI anything..."
-                    color: Qt.rgba(1, 1, 1, 0.3)
-                    font.pixelSize: Math.round(14 * root.sf)
+                    color: Qt.rgba(1, 1, 1, 0.25); font.pixelSize: Math.round(13 * root.sf)
                     visible: !parent.text && !parent.activeFocus
                 }
 
@@ -730,20 +781,20 @@ Rectangle {
             }
 
             Rectangle {
-                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(18 * root.sf)
+                width: Math.round(34 * root.sf); height: Math.round(34 * root.sf); radius: Math.round(10 * root.sf)
 
-                color: chatInput.text.trim() ? "#4f46e5" : Qt.rgba(1, 1, 1, 0.05)
+                color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.06)
                 Behavior on color { ColorAnimation { duration: 150 } }
 
                 Canvas {
-                    anchors.centerIn: parent; width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
+                    anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
                     property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.fillStyle = chatInput.text.trim() ? "#fff" : "#888";
-                        ctx.beginPath(); ctx.moveTo(8, 2); ctx.lineTo(14, 8); ctx.lineTo(9, 8);
-                        ctx.lineTo(9, 14); ctx.lineTo(7, 14); ctx.lineTo(7, 8); ctx.lineTo(2, 8);
+                        ctx.fillStyle = chatInput.text.trim() ? "#fff" : "#666";
+                        ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(12, 7); ctx.lineTo(8, 7);
+                        ctx.lineTo(8, 13); ctx.lineTo(6, 13); ctx.lineTo(6, 7); ctx.lineTo(2, 7);
                         ctx.closePath(); ctx.fill();
                         ctx.restore();
                     }
