@@ -5,8 +5,8 @@ Rectangle {
     id: appWindow
     x: initialX
     y: initialY
-    width: Math.min(700, windowArea ? windowArea.width - 20 : 700)
-    height: Math.min(450, windowArea ? windowArea.height - 20 : 450)
+    width: Math.min(Math.round(700 * root.sf), windowArea ? windowArea.width - Math.round(20 * root.sf) : Math.round(700 * root.sf))
+    height: Math.min(Math.round(450 * root.sf), windowArea ? windowArea.height - Math.round(20 * root.sf) : Math.round(450 * root.sf))
     radius: root.radiusLg
     color: root.bgSurface
     border.color: root.borderColor
@@ -19,7 +19,7 @@ Rectangle {
     property string appId: ""
     property Item windowArea: parent
     property int initialX: 100
-    property int initialY: 80
+    property int initialY: Math.round(80 * root.sf)
 
     Rectangle {
         anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
@@ -30,16 +30,16 @@ Rectangle {
     Rectangle {
         id: titleBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: 40; color: root.bgElevated; radius: root.radiusLg
+        height: Math.round(40 * root.sf); color: root.bgElevated; radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: parent.radius; color: parent.color }
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: root.borderColor }
 
         MouseArea {
             id: dragArea; anchors.fill: parent; drag.target: appWindow
-            drag.minimumX: -appWindow.width + 100; drag.minimumY: 0
-            drag.maximumX: windowArea ? windowArea.width - 100 : 800
-            drag.maximumY: windowArea ? windowArea.height - 40 : 600
+            drag.minimumX: -appWindow.width + Math.round(100 * root.sf); drag.minimumY: 0
+            drag.maximumX: windowArea ? windowArea.width - Math.round(100 * root.sf) : 800
+            drag.maximumY: windowArea ? windowArea.height - Math.round(40 * root.sf) : 600
             cursorShape: Qt.SizeAllCursor
             onPressed: function(mouse) {
                 root.bringToFront(appWindow);
@@ -47,26 +47,31 @@ Rectangle {
         }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 8; spacing: 8
+            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
 
             Text {
                 text: appWindow.windowIcon
-                font.family: root.iconFont; font.pixelSize: 14
+                font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf)
                 color: root.accentBlue
             }
 
             Text {
                 text: appWindow.windowTitle
-                font.pixelSize: 13; font.weight: Font.DemiBold
+                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold
                 color: root.textPrimary; Layout.fillWidth: true
             }
 
             // ── Close Button ──
-            Rectangle {
-                width: 13; height: 13; radius: 6.5
+            Item {
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
                 Layout.alignment: Qt.AlignVCenter
-                color: closeHover.containsMouse ? "#ef4444" : Qt.darker("#ef4444", 1.5)
-                border.color: Qt.darker("#ef4444", 1.3); border.width: 0.5
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
+                    color: closeHover.containsMouse ? "#ef4444" : Qt.darker("#ef4444", 1.5)
+                    border.color: Qt.darker("#ef4444", 1.3); border.width: 0.5
+                }
                 MouseArea { id: closeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: closeWindow() }
             }
         }
@@ -114,7 +119,7 @@ Rectangle {
 
     // ── Resize Handle ──
     MouseArea {
-        width: 16; height: 16
+        width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
         anchors.right: parent.right; anchors.bottom: parent.bottom
         cursorShape: Qt.SizeFDiagCursor
         property point pressPos
@@ -122,8 +127,8 @@ Rectangle {
         onPositionChanged: function(mouse) {
             var dx = mouse.x - pressPos.x;
             var dy = mouse.y - pressPos.y;
-            appWindow.width = Math.max(350, appWindow.width + dx);
-            appWindow.height = Math.max(250, appWindow.height + dy);
+            appWindow.width = Math.max(Math.round(350 * root.sf), appWindow.width + dx);
+            appWindow.height = Math.max(Math.round(250 * root.sf), appWindow.height + dy);
         }
     }
 }

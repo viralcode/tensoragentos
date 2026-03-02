@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: topBar
-    height: 36
+    height: Math.round(36 * root.sf)
     color: Qt.rgba(0.08, 0.08, 0.08, 0.85)
 
     // ── OpenWhale state ──
@@ -17,14 +17,12 @@ Rectangle {
 
     Component.onCompleted: { checkOwHealth(); }
 
-    // Poll health every 10s
     Timer {
         interval: 10000; running: true; repeat: true
         onTriggered: checkOwHealth()
     }
 
     function checkOwHealth() {
-        // Try helper endpoint first (port 7778), fallback to OW health
         var xhr = new XMLHttpRequest();
         xhr.open("GET", "http://127.0.0.1:7778/status");
         xhr.timeout = 3000;
@@ -37,7 +35,6 @@ Rectangle {
                         if (d.uptime) owUptime = d.uptime;
                     } catch(e) { owOnline = false; }
                 } else {
-                    // Fallback: check port 7777 directly
                     API.getHealth(function(online) { owOnline = online; });
                 }
             }
@@ -108,15 +105,15 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 14
-        spacing: 8
+        anchors.leftMargin: Math.round(14 * root.sf)
+        anchors.rightMargin: Math.round(14 * root.sf)
+        spacing: Math.round(8 * root.sf)
 
         // ── Left: Whale + OpenWhale (Clickable) ──
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            width: owLeftRow.width + 16
-            height: 28
+            width: owLeftRow.width + Math.round(16 * root.sf)
+            height: Math.round(28 * root.sf)
             radius: root.radiusSm
             color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
 
@@ -125,15 +122,17 @@ Rectangle {
             Row {
                 id: owLeftRow
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: Math.round(6 * root.sf)
 
                 // Whale drawn as canvas (no emoji)
                 Canvas {
-                    width: 16; height: 16
+                    width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
+                    property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.fillStyle = "#60a5fa";
                         ctx.beginPath();
                         ctx.moveTo(2, 10);
@@ -146,24 +145,24 @@ Rectangle {
                         ctx.quadraticCurveTo(10, 14, 7, 13);
                         ctx.quadraticCurveTo(4, 12, 2, 10);
                         ctx.fill();
-                        // eye
                         ctx.fillStyle = "#0f172a";
                         ctx.beginPath();
                         ctx.arc(6, 6, 1, 0, Math.PI * 2);
                         ctx.fill();
-                        // spout
                         ctx.strokeStyle = "#60a5fa";
                         ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.moveTo(9, 3);
                         ctx.lineTo(9, 0);
                         ctx.stroke();
+                        ctx.restore();
                     }
+                    onSChanged: requestPaint()
                 }
 
                 // Status dot
                 Rectangle {
-                    width: 7; height: 7; radius: 4
+                    width: Math.round(7 * root.sf); height: Math.round(7 * root.sf); radius: width / 2
                     anchors.verticalCenter: parent.verticalCenter
                     color: owOnline ? root.accentGreen : root.accentRed
 
@@ -177,7 +176,7 @@ Rectangle {
 
                 Text {
                     text: "TensorAgent OS"
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.weight: Font.Medium
                     color: root.textPrimary
                     anchors.verticalCenter: parent.verticalCenter
@@ -203,7 +202,7 @@ Rectangle {
         Text {
             id: clockText
             text: Qt.formatTime(new Date(), "h:mm AP")
-            font.pixelSize: 13
+            font.pixelSize: Math.round(13 * root.sf)
             font.weight: Font.Medium
             color: root.textPrimary
             Layout.alignment: Qt.AlignVCenter
@@ -220,23 +219,25 @@ Rectangle {
 
         // ── Right: Settings + User ──
         Row {
-            spacing: 10
+            spacing: Math.round(10 * root.sf)
             Layout.alignment: Qt.AlignVCenter
 
             // Settings gear (canvas drawn)
             Rectangle {
-                width: 26
-                height: 26
-                radius: 6
+                width: Math.round(26 * root.sf)
+                height: Math.round(26 * root.sf)
+                radius: Math.round(6 * root.sf)
                 color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 anchors.verticalCenter: parent.verticalCenter
 
                 Canvas {
                     anchors.centerIn: parent
-                    width: 14; height: 14
+                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                    property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.strokeStyle = "#999";
                         ctx.lineWidth = 1.2;
                         ctx.beginPath();
@@ -256,7 +257,9 @@ Rectangle {
                         ctx.beginPath();
                         ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
                         ctx.stroke();
+                        ctx.restore();
                     }
+                    onSChanged: requestPaint()
                 }
 
                 MouseArea {
@@ -270,9 +273,9 @@ Rectangle {
 
             // User avatar
             Rectangle {
-                width: 24
-                height: 24
-                radius: 12
+                width: Math.round(24 * root.sf)
+                height: Math.round(24 * root.sf)
+                radius: width / 2
                 color: root.bgElevated
                 border.color: root.borderColor
                 border.width: 1
@@ -281,7 +284,7 @@ Rectangle {
                 Text {
                     anchors.centerIn: parent
                     text: root.currentUser.charAt(0).toUpperCase()
-                    font.pixelSize: 11
+                    font.pixelSize: Math.round(11 * root.sf)
                     font.weight: Font.Medium
                     color: root.textPrimary
                 }
@@ -303,10 +306,10 @@ Rectangle {
         id: owPanel
         visible: owPanelVisible
         parent: topBar.parent
-        x: 10
-        y: topBar.height + 6
-        width: 360
-        height: owPanelCol.height + 20
+        x: Math.round(10 * root.sf)
+        y: topBar.height + Math.round(6 * root.sf)
+        width: Math.round(360 * root.sf)
+        height: owPanelCol.height + Math.round(20 * root.sf)
         radius: root.radiusMd
         color: root.bgElevated
         border.color: root.borderColor
@@ -318,20 +321,21 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 10
-            spacing: 10
+            anchors.margins: Math.round(10 * root.sf)
+            spacing: Math.round(10 * root.sf)
 
             // ── Header ──
             RowLayout {
                 width: parent.width
-                spacing: 8
+                spacing: Math.round(8 * root.sf)
 
-                // Whale canvas (matches the topbar icon)
                 Canvas {
-                    width: 22; height: 22
+                    width: Math.round(22 * root.sf); height: Math.round(22 * root.sf)
+                    property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.fillStyle = "#60a5fa";
                         ctx.beginPath();
                         ctx.moveTo(3, 14);
@@ -354,7 +358,9 @@ Rectangle {
                         ctx.moveTo(12, 4);
                         ctx.lineTo(12, 0);
                         ctx.stroke();
+                        ctx.restore();
                     }
+                    onSChanged: requestPaint()
                 }
 
                 Column {
@@ -362,25 +368,24 @@ Rectangle {
                     spacing: 1
                     Text {
                         text: "TensorAgent OS"
-                        font.pixelSize: 14
+                        font.pixelSize: Math.round(14 * root.sf)
                         font.weight: Font.DemiBold
                         color: "#ffffff"
                     }
                     Text {
                         text: owUptime || "Powered by OpenWhale Engine"
-                        font.pixelSize: 10
+                        font.pixelSize: Math.round(10 * root.sf)
                         color: root.textMuted
                     }
                 }
             }
 
-            // ── Separator ──
             Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
             // ── Status Row ──
             Rectangle {
                 width: parent.width
-                height: 44
+                height: Math.round(44 * root.sf)
                 radius: root.radiusSm
                 color: owOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.06) : Qt.rgba(0.94, 0.27, 0.27, 0.06)
                 border.color: owOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.15) : Qt.rgba(0.94, 0.27, 0.27, 0.15)
@@ -388,17 +393,17 @@ Rectangle {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
+                    anchors.margins: Math.round(10 * root.sf)
+                    spacing: Math.round(8 * root.sf)
 
                     Rectangle {
-                        width: 9; height: 9; radius: 5
+                        width: Math.round(9 * root.sf); height: Math.round(9 * root.sf); radius: width / 2
                         color: owRestarting ? root.accentOrange : owOnline ? root.accentGreen : root.accentRed
                     }
 
                     Text {
                         text: owRestarting ? "Restarting..." : owOnline ? "Online" : "Offline"
-                        font.pixelSize: 13
+                        font.pixelSize: Math.round(13 * root.sf)
                         font.weight: Font.Medium
                         color: owRestarting ? root.accentOrange : owOnline ? root.accentGreen : root.accentRed
                         Layout.fillWidth: true
@@ -406,7 +411,7 @@ Rectangle {
 
                     Text {
                         text: "Port 7777"
-                        font.pixelSize: 10
+                        font.pixelSize: Math.round(10 * root.sf)
                         color: root.textMuted
                     }
                 }
@@ -415,142 +420,99 @@ Rectangle {
             // ── Action Buttons ──
             RowLayout {
                 width: parent.width
-                spacing: 8
+                spacing: Math.round(8 * root.sf)
 
-                // Restart Button
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 32
+                    height: Math.round(32 * root.sf)
                     radius: root.radiusSm
                     color: restartMa.containsMouse ? Qt.rgba(0.98, 0.45, 0.09, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08)
-                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 6
-                        // Circular arrow icon (canvas)
+                        spacing: Math.round(6 * root.sf)
                         Canvas {
-                            width: 12; height: 12
+                            width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
                             anchors.verticalCenter: parent.verticalCenter
+                            property real s: root.sf
                             onPaint: {
-                                var ctx = getContext("2d");
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.strokeStyle = owRestarting ? "#f97316" : "#999";
-                                ctx.lineWidth = 1.5;
-                                ctx.beginPath();
-                                ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5);
-                                ctx.stroke();
-                                // Arrow tip
-                                ctx.beginPath();
-                                ctx.moveTo(6, 1);
-                                ctx.lineTo(9, 2.5);
-                                ctx.lineTo(6, 4);
-                                ctx.stroke();
+                                var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                ctx.save(); ctx.scale(s, s);
+                                ctx.strokeStyle = owRestarting ? "#f97316" : "#999"; ctx.lineWidth = 1.5;
+                                ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
+                                ctx.restore();
                             }
+                            onSChanged: requestPaint()
                         }
                         Text {
                             text: owRestarting ? "Restarting..." : "Restart"
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
                             color: owRestarting ? root.accentOrange : root.textSecondary
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
-
-                    MouseArea {
-                        id: restartMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: !owRestarting
-                        onClicked: restartOw()
-                    }
+                    MouseArea { id: restartMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: !owRestarting; onClicked: restartOw() }
                 }
 
-                // View Logs Button
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 32
+                    height: Math.round(32 * root.sf)
                     radius: root.radiusSm
                     color: logsMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08)
-                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 6
-                        // Document icon (canvas)
+                        spacing: Math.round(6 * root.sf)
                         Canvas {
-                            width: 12; height: 12
+                            width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
                             anchors.verticalCenter: parent.verticalCenter
+                            property real s: root.sf
                             onPaint: {
-                                var ctx = getContext("2d");
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.strokeStyle = owLogsFetching ? "#3b82f6" : "#999";
-                                ctx.lineWidth = 1.2;
+                                var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                ctx.save(); ctx.scale(s, s);
+                                ctx.strokeStyle = owLogsFetching ? "#3b82f6" : "#999"; ctx.lineWidth = 1.2;
                                 ctx.strokeRect(1, 0, 10, 12);
-                                ctx.beginPath();
-                                ctx.moveTo(3.5, 3); ctx.lineTo(8.5, 3); ctx.stroke();
-                                ctx.beginPath();
-                                ctx.moveTo(3.5, 6); ctx.lineTo(8.5, 6); ctx.stroke();
-                                ctx.beginPath();
-                                ctx.moveTo(3.5, 9); ctx.lineTo(6.5, 9); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(3.5, 3); ctx.lineTo(8.5, 3); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(3.5, 6); ctx.lineTo(8.5, 6); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(3.5, 9); ctx.lineTo(6.5, 9); ctx.stroke();
+                                ctx.restore();
                             }
+                            onSChanged: requestPaint()
                         }
                         Text {
                             text: owLogsFetching ? "Fetching..." : "View Logs"
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
                             color: owLogsFetching ? root.accentBlue : root.textSecondary
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
-
-                    MouseArea {
-                        id: logsMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: !owLogsFetching
-                        onClicked: fetchLogs()
-                    }
+                    MouseArea { id: logsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: !owLogsFetching; onClicked: fetchLogs() }
                 }
 
-                // Refresh Health
                 Rectangle {
-                    width: 32; height: 32
+                    width: Math.round(32 * root.sf); height: Math.round(32 * root.sf)
                     radius: root.radiusSm
                     color: refreshMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08)
-                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
 
                     Canvas {
                         anchors.centerIn: parent
-                        width: 12; height: 12
+                        width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
+                        property real s: root.sf
                         onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.strokeStyle = "#999";
-                            ctx.lineWidth = 1.5;
-                            ctx.beginPath();
-                            ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5);
-                            ctx.stroke();
-                            ctx.beginPath();
-                            ctx.moveTo(6, 1);
-                            ctx.lineTo(9, 2.5);
-                            ctx.lineTo(6, 4);
-                            ctx.stroke();
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.5;
+                            ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
+                            ctx.restore();
                         }
+                        onSChanged: requestPaint()
                     }
-
-                    MouseArea {
-                        id: refreshMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: checkOwHealth()
-                    }
+                    MouseArea { id: refreshMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: checkOwHealth() }
                 }
             }
 
@@ -558,77 +520,50 @@ Rectangle {
             Rectangle {
                 visible: owLogs !== ""
                 width: parent.width
-                height: 200
+                height: Math.round(200 * root.sf)
                 radius: root.radiusSm
                 color: Qt.rgba(0, 0, 0, 0.4)
-                border.color: Qt.rgba(1, 1, 1, 0.06)
-                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
                 clip: true
 
-                // Header bar
                 Rectangle {
                     id: logsHeader
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    height: 24
+                    anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                    height: Math.round(24 * root.sf)
                     color: Qt.rgba(1, 1, 1, 0.03)
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
+                        anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
 
                         Text {
                             text: "LOGS — openwhale.service"
-                            font.pixelSize: 9
-                            color: root.textMuted
-                            Layout.fillWidth: true
+                            font.pixelSize: Math.round(9 * root.sf)
+                            color: root.textMuted; Layout.fillWidth: true
                         }
 
                         Text {
                             text: "x"
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
+                            font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold
                             color: clearLogsMa.containsMouse ? root.accentRed : root.textMuted
-
-                            MouseArea {
-                                id: clearLogsMa
-                                anchors.fill: parent
-                                anchors.margins: -4
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: owLogs = ""
-                            }
+                            MouseArea { id: clearLogsMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: owLogs = "" }
                         }
                     }
 
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width; height: 1
-                        color: Qt.rgba(1, 1, 1, 0.04)
-                    }
+                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.04) }
                 }
 
                 Flickable {
-                    anchors.top: logsHeader.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: 6
-                    contentHeight: logsText.height
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
+                    anchors.top: logsHeader.bottom; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                    anchors.margins: Math.round(6 * root.sf)
+                    contentHeight: logsText.height; clip: true; boundsBehavior: Flickable.StopAtBounds
 
                     Text {
                         id: logsText
                         width: parent.width
                         text: owLogs
-                        font.pixelSize: 10
-                        font.family: "monospace"
-                        color: "#a1a1aa"
-                        wrapMode: Text.WrapAnywhere
-                        lineHeight: 1.4
+                        font.pixelSize: Math.round(10 * root.sf); font.family: "monospace"
+                        color: "#a1a1aa"; wrapMode: Text.WrapAnywhere; lineHeight: 1.4
                     }
                 }
             }
@@ -651,107 +586,89 @@ Rectangle {
         visible: false
         anchors.right: parent.right
         anchors.top: parent.bottom
-        anchors.rightMargin: 14
-        anchors.topMargin: 6
-        width: 160
-        height: menuCol.height + 12
+        anchors.rightMargin: Math.round(14 * root.sf)
+        anchors.topMargin: Math.round(6 * root.sf)
+        width: Math.round(160 * root.sf)
+        height: menuCol.height + Math.round(12 * root.sf)
         radius: root.radiusMd
         color: root.bgElevated
-        border.color: root.borderColor
-        border.width: 1
+        border.color: root.borderColor; border.width: 1
         z: 1000
 
         Column {
             id: menuCol
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: 6
+            anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+            anchors.margins: Math.round(6 * root.sf)
             spacing: 2
 
-            // User info
             Rectangle {
-                width: parent.width
-                height: 36
-                radius: root.radiusSm
-                color: "transparent"
+                width: parent.width; height: Math.round(36 * root.sf)
+                radius: root.radiusSm; color: "transparent"
 
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8
-                    spacing: 8
+                    anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
+                    spacing: Math.round(8 * root.sf)
 
                     Canvas {
-                        width: 13; height: 13
+                        width: Math.round(13 * root.sf); height: Math.round(13 * root.sf)
                         anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
                         onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
                             ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
                             ctx.beginPath(); ctx.arc(6.5, 4.5, 3, 0, Math.PI * 2); ctx.stroke();
                             ctx.beginPath(); ctx.arc(6.5, 15, 6, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
+                            ctx.restore();
                         }
+                        onSChanged: requestPaint()
                     }
                     Text {
                         text: root.currentUser
-                        font.pixelSize: 12
-                        color: root.textPrimary
-                        font.weight: Font.Medium
+                        font.pixelSize: Math.round(12 * root.sf)
+                        color: root.textPrimary; font.weight: Font.Medium
                     }
                 }
             }
 
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: root.borderColor
-            }
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
-            // Logout
             Rectangle {
-                width: parent.width
-                height: 34
+                width: parent.width; height: Math.round(34 * root.sf)
                 radius: root.radiusSm
                 color: logoutMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
 
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8
-                    spacing: 8
+                    anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
+                    spacing: Math.round(8 * root.sf)
 
                     Canvas {
-                        width: 13; height: 13
+                        width: Math.round(13 * root.sf); height: Math.round(13 * root.sf)
                         anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
                         onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
                             ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
                             ctx.beginPath();
                             ctx.moveTo(5, 1); ctx.lineTo(1, 1); ctx.lineTo(1, 12);
                             ctx.lineTo(5, 12); ctx.stroke();
-                            ctx.beginPath();
-                            ctx.moveTo(5, 6.5); ctx.lineTo(12, 6.5); ctx.stroke();
-                            ctx.beginPath();
-                            ctx.moveTo(9, 3.5); ctx.lineTo(12, 6.5); ctx.lineTo(9, 9.5); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(5, 6.5); ctx.lineTo(12, 6.5); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(9, 3.5); ctx.lineTo(12, 6.5); ctx.lineTo(9, 9.5); ctx.stroke();
+                            ctx.restore();
                         }
+                        onSChanged: requestPaint()
                     }
                     Text {
                         text: "Sign Out"
-                        font.pixelSize: 12
+                        font.pixelSize: Math.round(12 * root.sf)
                         color: root.textSecondary
                     }
                 }
 
-                MouseArea {
-                    id: logoutMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: { userMenu.visible = false; root.doLogout(); }
-                }
+                MouseArea { id: logoutMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { userMenu.visible = false; root.doLogout(); } }
             }
         }
     }

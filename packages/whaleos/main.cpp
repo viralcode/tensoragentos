@@ -1,7 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickWindow>
 #include <QDebug>
+#include "systemmanager.h"
 
 int main(int argc, char *argv[]) {
     // Don't hardcode platform - let Qt auto-detect from environment
@@ -11,6 +13,10 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("TensorAgentOS");
 
     QQmlApplicationEngine engine;
+
+    // Register SystemManager for kernel-level OS operations
+    SystemManager sysManager;
+    engine.rootContext()->setContextProperty("sysManager", &sysManager);
 
     // Log QML errors
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,

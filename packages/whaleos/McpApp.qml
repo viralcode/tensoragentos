@@ -91,7 +91,13 @@ Rectangle {
         xhr.open("POST", root.apiBase + "/tools/" + toolName + "/toggle");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
-        xhr.onreadystatechange = function() { if (xhr.readyState === 4) loadTools(); };
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) { root.showToast(toolName + (enabled ? " enabled" : " disabled"), "success"); }
+                else { root.showToast("Failed to toggle " + toolName, "error"); }
+                loadTools();
+            }
+        };
         xhr.send(JSON.stringify({ disabled: !enabled }));
     }
 
@@ -118,32 +124,32 @@ Rectangle {
     }
 
     Flickable {
-        anchors.fill: parent; anchors.margins: 16
+        anchors.fill: parent; anchors.margins: Math.round(16 * root.sf)
         contentHeight: toolsCol.height; clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Column {
-            id: toolsCol; width: parent.width; spacing: 12
+            id: toolsCol; width: parent.width; spacing: Math.round(12 * root.sf)
 
             // Header
             RowLayout {
                 width: parent.width
                 Column {
-                    Layout.fillWidth: true; spacing: 2
-                    Text { text: "Tools"; font.pixelSize: 20; font.weight: Font.Bold; color: root.textPrimary }
-                    Text { text: allTools.length + " tools available for AI operations"; font.pixelSize: 12; color: root.textMuted }
+                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
+                    Text { text: "Tools"; font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+                    Text { text: allTools.length + " tools available for AI operations"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                 }
                 // Search
                 Rectangle {
-                    width: 180; height: 32; radius: root.radiusSm
+                    width: Math.round(180 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
                     color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
                     RowLayout {
-                        anchors.fill: parent; anchors.margins: 8; spacing: 6
-                        Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: 12; color: root.textMuted }
+                        anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                        Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                         TextInput {
-                            Layout.fillWidth: true; color: "#ffffff"; font.pixelSize: 12; clip: true
+                            Layout.fillWidth: true; color: "#ffffff"; font.pixelSize: Math.round(12 * root.sf); clip: true
                             onTextChanged: { searchText = text; filterTools(); }
-                            Text { anchors.fill: parent; text: "Search tools..."; color: Qt.rgba(1,1,1,0.25); font.pixelSize: 12; visible: !parent.text }
+                            Text { anchors.fill: parent; text: "Search tools..."; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
                         }
                     }
                 }
@@ -151,22 +157,22 @@ Rectangle {
 
             // Category pills
             Flow {
-                width: parent.width; spacing: 6
+                width: parent.width; spacing: Math.round(6 * root.sf)
                 Repeater {
                     model: categories
                     Rectangle {
-                        width: catLabel.width + (catCount.visible ? catCount.width + 18 : 16); height: 28; radius: 14
+                        width: catLabel.width + (catCount.visible ? catCount.width + 18 : 16); height: Math.round(28 * root.sf); radius: 14
                         color: activeCategory === modelData ? root.accentBlue : "transparent"
                         border.color: activeCategory === modelData ? root.accentBlue : root.borderColor; border.width: 1
 
                         Row {
-                            anchors.centerIn: parent; spacing: 5
-                            Text { id: catLabel; text: modelData === "all" ? "All" : modelData.charAt(0).toUpperCase() + modelData.slice(1); font.pixelSize: 11; font.weight: Font.DemiBold; color: activeCategory === modelData ? "#fff" : root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+                            anchors.centerIn: parent; spacing: Math.round(5 * root.sf)
+                            Text { id: catLabel; text: modelData === "all" ? "All" : modelData.charAt(0).toUpperCase() + modelData.slice(1); font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: activeCategory === modelData ? "#fff" : root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
                             Rectangle {
-                                id: catCount; visible: true; width: ccText.width + 8; height: 16; radius: 8
+                                id: catCount; visible: true; width: ccText.width + 8; height: Math.round(16 * root.sf); radius: 8
                                 color: activeCategory === modelData ? Qt.rgba(1,1,1,0.2) : root.bgElevated
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { id: ccText; anchors.centerIn: parent; font.pixelSize: 9;
+                                Text { id: ccText; anchors.centerIn: parent; font.pixelSize: Math.round(9 * root.sf);
                                     color: activeCategory === modelData ? "#fff" : root.textMuted
                                     text: {
                                         if (modelData === "all") return allTools.length;
@@ -181,11 +187,11 @@ Rectangle {
                 }
             }
 
-            Rectangle { width: parent.width; height: 1; color: root.borderColor }
+            Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
 
             // Tools grid (2-column)
             Grid {
-                id: toolsGrid; width: parent.width; columns: 2; spacing: 8
+                id: toolsGrid; width: parent.width; columns: 2; spacing: Math.round(8 * root.sf)
                 Repeater {
                     model: filteredTools
                     Rectangle {
@@ -195,39 +201,39 @@ Rectangle {
 
                         Column {
                             id: toolItemCol; anchors.left: parent.left; anchors.right: parent.right
-                            anchors.top: parent.top; anchors.margins: 10; spacing: 6
+                            anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
 
                             RowLayout {
-                                width: parent.width; spacing: 8
+                                width: parent.width; spacing: Math.round(8 * root.sf)
                                 Rectangle {
-                                    width: 32; height: 32; radius: 8
+                                    width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8
                                     color: Qt.rgba(getCategoryColor(modelData.category).r || 0.3, getCategoryColor(modelData.category).g || 0.5, getCategoryColor(modelData.category).b || 0.9, 0.15)
-                                    Text { anchors.centerIn: parent; text: getToolIcon(modelData.name); font.family: root.iconFont; font.pixelSize: 14; color: getCategoryColor(modelData.category) }
+                                    Text { anchors.centerIn: parent; text: getToolIcon(modelData.name); font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf); color: getCategoryColor(modelData.category) }
                                 }
                                 Column {
-                                    Layout.fillWidth: true; spacing: 1
-                                    Text { text: modelData.name; font.pixelSize: 13; font.weight: Font.DemiBold; color: "#ffffff" }
-                                    Text { text: (modelData.category || "").toUpperCase(); font.pixelSize: 9; color: root.textMuted; font.letterSpacing: 0.5 }
+                                    Layout.fillWidth: true; spacing: Math.round(1 * root.sf)
+                                    Text { text: modelData.name; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#ffffff" }
+                                    Text { text: (modelData.category || "").toUpperCase(); font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; font.letterSpacing: 0.5 }
                                 }
                                 // On/Off badge
                                 Rectangle {
-                                    width: onOffText.width + 12; height: 18; radius: 9
+                                    width: onOffText.width + 12; height: Math.round(18 * root.sf); radius: 9
                                     color: modelData.disabled ? Qt.rgba(0.94,0.27,0.27,0.15) : Qt.rgba(0.13,0.77,0.37,0.15)
-                                    Text { id: onOffText; anchors.centerIn: parent; text: modelData.disabled ? "Off" : "On"; font.pixelSize: 9; font.weight: Font.DemiBold; color: modelData.disabled ? "#ef4444" : root.accentGreen }
+                                    Text { id: onOffText; anchors.centerIn: parent; text: modelData.disabled ? "Off" : "On"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: modelData.disabled ? "#ef4444" : root.accentGreen }
                                 }
                             }
 
-                            Text { text: modelData.description || ""; font.pixelSize: 11; color: root.textSecondary; wrapMode: Text.WordWrap; width: parent.width; lineHeight: 1.3 }
+                            Text { text: modelData.description || ""; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary; wrapMode: Text.WordWrap; width: parent.width; lineHeight: 1.3 }
 
                             RowLayout {
-                                width: parent.width; spacing: 4
-                                Text { text: modelData.requiresApproval ? "\uf023 Approval required" : "\u26A1 Auto-execute"; font.pixelSize: 9; color: root.textMuted; Layout.fillWidth: true }
+                                width: parent.width; spacing: Math.round(4 * root.sf)
+                                Text { text: modelData.requiresApproval ? "\uf023 Approval required" : "\u26A1 Auto-execute"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; Layout.fillWidth: true }
                                 // Toggle
                                 Rectangle {
-                                    width: 34; height: 18; radius: 9
+                                    width: Math.round(34 * root.sf); height: Math.round(18 * root.sf); radius: 9
                                     color: !modelData.disabled ? root.accentBlue : Qt.rgba(1,1,1,0.1)
                                     Rectangle {
-                                        width: 14; height: 14; radius: 7; y: 2
+                                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: 7; y: 2
                                         x: !modelData.disabled ? 18 : 2; color: "white"
                                         Behavior on x { NumberAnimation { duration: 150 } }
                                     }
@@ -241,11 +247,11 @@ Rectangle {
 
             // Empty state
             Column {
-                width: parent.width; spacing: 8; visible: filteredTools.length === 0 && !loading
-                Item { width: 1; height: 30 }
-                Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: 32; color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
-                Text { text: "No tools found"; font.pixelSize: 14; color: root.textSecondary; anchors.horizontalCenter: parent.horizontalCenter }
-                Text { text: "Try a different search term or category"; font.pixelSize: 11; color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
+                width: parent.width; spacing: Math.round(8 * root.sf); visible: filteredTools.length === 0 && !loading
+                Item { width: Math.round(1 * root.sf); height: Math.round(30 * root.sf) }
+                Text { text: "\uf002"; font.family: root.iconFont; font.pixelSize: Math.round(32 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "No tools found"; font.pixelSize: Math.round(14 * root.sf); color: root.textSecondary; anchors.horizontalCenter: parent.horizontalCenter }
+                Text { text: "Try a different search term or category"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
             }
         }
     }

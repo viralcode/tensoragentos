@@ -10,6 +10,10 @@ Window {
     title: "TensorAgent OS"
     color: "#0d0d0d"
 
+    // ── Global Scale Factor ──
+    // Reference design: 1024×768. sf scales proportionally to actual window size.
+    readonly property real sf: Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
+
     // ── Global State ──
     property bool loggedIn: false
     property string currentUser: ""
@@ -33,9 +37,9 @@ Window {
     readonly property color accentGreen: "#22c55e"
     readonly property color accentRed: "#ef4444"
     readonly property color accentOrange: "#f97316"
-    readonly property int radiusSm: 6
-    readonly property int radiusMd: 10
-    readonly property int radiusLg: 14
+    readonly property int radiusSm: Math.round(6 * sf)
+    readonly property int radiusMd: Math.round(10 * sf)
+    readonly property int radiusLg: Math.round(14 * sf)
 
     // ── Icon Fonts (Font Awesome) ──
     property string iconFont: faLoader.name
@@ -107,8 +111,8 @@ Window {
     Item {
         id: toastContainer
         anchors.horizontalCenter: parent.horizontalCenter
-        y: -60; z: 99999
-        width: toastRow.width + 32; height: 44
+        y: Math.round(-60 * sf); z: 99999
+        width: toastRow.width + Math.round(32 * sf); height: Math.round(44 * sf)
         opacity: 0.0
 
         Behavior on opacity { NumberAnimation { duration: 300 } }
@@ -116,20 +120,20 @@ Window {
 
         Rectangle {
             id: toastBg
-            anchors.fill: parent; radius: 12
+            anchors.fill: parent; radius: Math.round(12 * sf)
             color: Qt.rgba(0.13, 0.77, 0.37, 0.95)
 
             Row {
                 id: toastRow
-                anchors.centerIn: parent; spacing: 8
-                Text { id: toastIcon; text: "✓"; font.pixelSize: 16; font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
-                Text { id: toastText; text: ""; font.pixelSize: 13; font.weight: Font.DemiBold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                anchors.centerIn: parent; spacing: Math.round(8 * sf)
+                Text { id: toastIcon; text: "✓"; font.pixelSize: Math.round(16 * sf); font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                Text { id: toastText; text: ""; font.pixelSize: Math.round(13 * sf); font.weight: Font.DemiBold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
             }
         }
 
         Timer {
             id: toastTimer; interval: 3000
-            onTriggered: { toastContainer.opacity = 0.0; toastContainer.y = -60; }
+            onTriggered: { toastContainer.opacity = 0.0; toastContainer.y = Math.round(-60 * sf); }
         }
     }
 }

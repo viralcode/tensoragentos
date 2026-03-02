@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "api.js" as API
 
 Rectangle {
     id: loginScreen
@@ -25,8 +24,9 @@ Rectangle {
         onPaint: {
             var ctx = getContext("2d");
             ctx.fillStyle = "#ffffff";
-            for (var x = 0; x < width; x += 30) {
-                for (var y = 0; y < height; y += 30) {
+            var step = Math.round(30 * root.sf);
+            for (var x = 0; x < width; x += step) {
+                for (var y = 0; y < height; y += step) {
                     ctx.beginPath();
                     ctx.arc(x, y, 1, 0, Math.PI * 2);
                     ctx.fill();
@@ -38,25 +38,27 @@ Rectangle {
     // ── Center Login Card ──
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 24
-        width: 340
+        spacing: Math.round(24 * root.sf)
+        width: Math.round(340 * root.sf)
 
         // Avatar circle
         Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            width: 88
-            height: 88
-            radius: 44
+            width: Math.round(88 * root.sf)
+            height: Math.round(88 * root.sf)
+            radius: width / 2
             color: root.bgElevated
             border.color: root.borderColor
             border.width: 1
 
             Canvas {
                 anchors.centerIn: parent
-                width: 48; height: 48
+                width: Math.round(48 * root.sf); height: Math.round(48 * root.sf)
+                property real s: root.sf
                 onPaint: {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
+                    ctx.save(); ctx.scale(s, s);
                     ctx.beginPath(); ctx.fillStyle = "#60a5fa";
                     ctx.moveTo(7, 32);
                     ctx.quadraticCurveTo(3, 19, 12, 14);
@@ -76,7 +78,9 @@ Rectangle {
                     ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.moveTo(27, 10); ctx.lineTo(27, 3); ctx.stroke();
                     ctx.beginPath(); ctx.moveTo(24, 3); ctx.quadraticCurveTo(27, -2, 30, 3); ctx.stroke();
+                    ctx.restore();
                 }
+                onSChanged: requestPaint()
             }
         }
 
@@ -84,7 +88,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "TensorAgent OS"
-            font.pixelSize: 22
+            font.pixelSize: Math.round(22 * root.sf)
             font.weight: Font.DemiBold
             color: root.textPrimary
         }
@@ -92,19 +96,19 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "Sign in to continue"
-            font.pixelSize: 13
+            font.pixelSize: Math.round(13 * root.sf)
             color: root.textSecondary
         }
 
         // Login form
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: Math.round(12 * root.sf)
 
             // Username field
             Rectangle {
                 Layout.fillWidth: true
-                height: 44
+                height: Math.round(44 * root.sf)
                 radius: root.radiusMd
                 color: root.bgSurface
                 border.color: userField.activeFocus ? root.accentBlue : root.borderColor
@@ -113,18 +117,19 @@ Rectangle {
                 TextInput {
                     id: userField
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.leftMargin: Math.round(14 * root.sf)
+                    anchors.rightMargin: Math.round(14 * root.sf)
                     verticalAlignment: TextInput.AlignVCenter
                     color: root.textPrimary
-                    font.pixelSize: 14
+                    font.pixelSize: Math.round(14 * root.sf)
                     clip: true
-                    text: "admin"
+                    text: "ainux"
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Username"
                         color: root.textMuted
-                        font.pixelSize: 14
+                        font.pixelSize: Math.round(14 * root.sf)
                         visible: !parent.text && !parent.activeFocus
                     }
                 }
@@ -133,7 +138,7 @@ Rectangle {
             // Password field
             Rectangle {
                 Layout.fillWidth: true
-                height: 44
+                height: Math.round(44 * root.sf)
                 radius: root.radiusMd
                 color: root.bgSurface
                 border.color: passField.activeFocus ? root.accentBlue : root.borderColor
@@ -142,19 +147,20 @@ Rectangle {
                 TextInput {
                     id: passField
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.leftMargin: Math.round(14 * root.sf)
+                    anchors.rightMargin: Math.round(14 * root.sf)
                     verticalAlignment: TextInput.AlignVCenter
                     color: root.textPrimary
-                    font.pixelSize: 14
+                    font.pixelSize: Math.round(14 * root.sf)
                     echoMode: TextInput.Password
                     clip: true
-                    text: "admin"
+                    text: "ainux"
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Password"
                         color: root.textMuted
-                        font.pixelSize: 14
+                        font.pixelSize: Math.round(14 * root.sf)
                         visible: !parent.text && !parent.activeFocus
                     }
 
@@ -168,14 +174,14 @@ Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 text: ""
                 color: root.accentRed
-                font.pixelSize: 12
+                font.pixelSize: Math.round(12 * root.sf)
                 visible: text !== ""
             }
 
             // Sign in button
             Rectangle {
                 Layout.fillWidth: true
-                height: 44
+                height: Math.round(44 * root.sf)
                 radius: root.radiusMd
                 color: loginMouse.pressed ? Qt.darker(root.accentBlue, 1.2) :
                        loginMouse.containsMouse ? Qt.lighter(root.accentBlue, 1.1) : root.accentBlue
@@ -184,7 +190,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: loginBusy ? "Signing in..." : "Sign In"
                     color: "#ffffff"
-                    font.pixelSize: 14
+                    font.pixelSize: Math.round(14 * root.sf)
                     font.weight: Font.Medium
                 }
 
@@ -201,9 +207,9 @@ Rectangle {
         // Version
         Text {
             Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 16
+            Layout.topMargin: Math.round(16 * root.sf)
             text: "Powered by OpenWhale Engine"
-            font.pixelSize: 11
+            font.pixelSize: Math.round(11 * root.sf)
             color: root.textMuted
         }
     }
@@ -215,14 +221,13 @@ Rectangle {
         loginBusy = true;
         errorText.text = "";
 
-        API.login(userField.text, passField.text, function(status, data) {
-            loginBusy = false;
-            if (status === 200 && data.sessionId) {
-                API.setSession(data.sessionId);
-                root.onLoginSuccess(userField.text, data.sessionId);
-            } else {
-                errorText.text = data.error || "Login failed";
-            }
-        });
+        // Authenticate against Linux kernel (PAM/shadow)
+        var ok = sysManager.authenticate(userField.text, passField.text);
+        loginBusy = false;
+        if (ok) {
+            root.onLoginSuccess(userField.text, "system");
+        } else {
+            errorText.text = "Invalid username or password";
+        }
     }
 }

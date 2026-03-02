@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? (chatFullScreen ? parent.height - 20 : Math.min(450, parent.height - 70)) : 48
+    height: chatExpanded ? (chatFullScreen ? parent.height - Math.round(20 * root.sf) : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(48 * root.sf)
     radius: root.radiusLg
     color: "transparent"
     clip: true
@@ -18,37 +18,46 @@ Rectangle {
     property string selectedAgent: "main"
     property var agentList: [{ id: "main", name: "TensorAgent AI", description: "Default AI" }]
     property bool showAgentPicker: false
-    property string streamingText: ""
+    // Streaming state
+    property string streamingContent: ""
     property bool isStreaming: false
+    property var streamingSteps: []
+    property var activePlan: null
     property var commandSuggestions: ["/help", "/new", "/status", "/think", "/usage", "/compact"]
     property bool showSuggestions: false
     property var chatHistory: []
     property int historyIndex: -1
 
-    // Strip emoji and unsupported unicode from text
-    function cleanText(text) {
+    // Simple markdown to StyledText converter
+    function mdToStyled(text) {
         if (!text) return "";
-        // Remove emoji/symbol unicode ranges that QML can't render
-        var cleaned = "";
-        for (var i = 0; i < text.length; i++) {
-            var code = text.charCodeAt(i);
-            // Skip surrogate pairs (emoji), and common symbol blocks
-            if (code >= 0xD800 && code <= 0xDFFF) continue;
-            if (code >= 0x2600 && code <= 0x27BF) continue; // misc symbols
-            if (code >= 0xFE00 && code <= 0xFE0F) continue; // variation selectors
-            if (code >= 0x1F000) continue; // supplementary
-            cleaned += text.charAt(i);
-        }
-        // Clean up markdown bold markers
-        cleaned = cleaned.replace(/\*\*/g, "");
-        // Rebrand names
-        cleaned = cleaned.replace(/OpenWhale/g, "TensorAgent AI");
-        cleaned = cleaned.replace(/AInux OS/g, "TensorAgent OS");
-        cleaned = cleaned.replace(/AInux/g, "TensorAgent OS");
-        return cleaned.trim();
+        var s = text;
+        // Escape HTML
+        s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Code blocks: ```...``` -> monospace
+        s = s.replace(/```[\s\S]*?```/g, function(m) {
+            var code = m.replace(/```\w*\n?/g, "").replace(/```/g, "");
+            return "<br><font color='#94a3b8' face='monospace'>" + code.replace(/\n/g, "<br>") + "</font><br>";
+        });
+        // Inline code
+        s = s.replace(/`([^`]+)`/g, "<font color='#93c5fd' face='monospace'>$1</font>");
+        // Bold
+        s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+        // Italic
+        s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
+        // Bullet points
+        s = s.replace(/\n- /g, "\n• ");
+        s = s.replace(/\n(\d+)\. /g, "\n$1. ");
+        // Line breaks
+        s = s.replace(/\n/g, "<br>");
+        // Clean branding
+        s = s.replace(/OpenWhale/g, "TensorAgent AI");
+        s = s.replace(/AInux OS/g, "TensorAgent OS");
+        s = s.replace(/AInux/g, "TensorAgent OS");
+        return s;
     }
 
-    Component.onCompleted: loadAgents()
+    Component.onCompleted: { loadAgents(); loadHistory(); }
 
     function loadAgents() {
         var xhr = new XMLHttpRequest();
@@ -62,6 +71,22 @@ Rectangle {
         xhr.send();
     }
 
+    function loadHistory() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.apiBase + "/chat/history");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var d = JSON.parse(xhr.responseText);
+                    var hist = d.messages || d || [];
+                    if (hist.length > 0) messages = hist;
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
+
     function getAgentName() {
         for (var i = 0; i < agentList.length; i++) {
             if (agentList[i].id === selectedAgent) return agentList[i].name;
@@ -69,18 +94,15 @@ Rectangle {
         return "AI";
     }
 
-    // ══════════════════════════════════════
     // ── Glass background ──
-    // ══════════════════════════════════════
     Rectangle {
         anchors.fill: parent; radius: parent.radius
         color: Qt.rgba(0.06, 0.06, 0.10, 0.88)
         border.color: Qt.rgba(0.35, 0.45, 0.85, 0.15); border.width: 1
 
-        // Top glow line
         Rectangle {
             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-            anchors.leftMargin: 20; anchors.rightMargin: 20
+            anchors.leftMargin: Math.round(20 * root.sf); anchors.rightMargin: Math.round(20 * root.sf)
             height: 1; radius: 1
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -92,27 +114,25 @@ Rectangle {
         }
     }
 
-    // ══════════════════════════════════════
     // ── Chat Header (expanded) ──
-    // ══════════════════════════════════════
     Rectangle {
         id: chatHeader
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: 42; visible: chatExpanded
+        height: Math.round(42 * root.sf); visible: chatExpanded
         color: Qt.rgba(0.05, 0.05, 0.08, 0.95); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.04) }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 8; spacing: 8
+            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
 
-            // AI Brain icon
             Canvas {
-                width: 18; height: 18
+                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                property real s: root.sf
                 onPaint: {
-                    var ctx = getContext("2d"); ctx.clearRect(0, 0, 18, 18);
-                    // Circuit brain
+                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                    ctx.save(); ctx.scale(s, s);
                     ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
                     ctx.beginPath(); ctx.arc(9, 9, 7, 0, Math.PI * 2); ctx.stroke();
                     ctx.fillStyle = "#60a5fa";
@@ -121,24 +141,24 @@ Rectangle {
                     ctx.beginPath(); ctx.arc(9, 11, 1.5, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.8;
                     ctx.beginPath(); ctx.moveTo(6, 7); ctx.lineTo(9, 11); ctx.lineTo(12, 7); ctx.stroke();
+                    ctx.restore();
                 }
+                onSChanged: requestPaint()
             }
 
-            // Agent label (clickable)
             Text {
                 text: getAgentName()
-                font.pixelSize: 13; font.weight: Font.DemiBold; color: "#fff"
+                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff"
             }
 
-            // Agent selector badge
             Rectangle {
-                width: agentSelectorRow.width + 12; height: 20; radius: 4
+                width: agentSelectorRow.width + Math.round(12 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(4 * root.sf)
                 color: agentPickerMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(0.35, 0.55, 1.0, 0.1)
                 visible: agentList.length > 1
 
-                Row { id: agentSelectorRow; anchors.centerIn: parent; spacing: 3
-                    Text { text: "▾"; font.pixelSize: 8; color: "#60a5fa"; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "switch"; font.pixelSize: 9; color: "#60a5fa"; anchors.verticalCenter: parent.verticalCenter }
+                Row { id: agentSelectorRow; anchors.centerIn: parent; spacing: Math.round(3 * root.sf)
+                    Text { text: "▾"; font.pixelSize: Math.round(8 * root.sf); color: "#60a5fa"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "switch"; font.pixelSize: Math.round(9 * root.sf); color: "#60a5fa"; anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 MouseArea {
@@ -150,80 +170,90 @@ Rectangle {
 
             Item { Layout.fillWidth: true }
 
-            // Message count
             Text {
                 text: messages.length + " msgs"
-                font.pixelSize: 10; color: root.textMuted
+                font.pixelSize: Math.round(10 * root.sf); color: root.textMuted
                 visible: messages.length > 0
             }
 
-            // Clear chat
+            // Stop button (visible when streaming)
             Rectangle {
-                width: 28; height: 28; radius: 6
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
+                color: stopMa.containsMouse ? Qt.rgba(0.9, 0.2, 0.2, 0.3) : Qt.rgba(0.9, 0.2, 0.2, 0.15)
+                visible: isSending
+                Text { anchors.centerIn: parent; text: "■"; font.pixelSize: Math.round(10 * root.sf); color: root.accentRed }
+                MouseArea { id: stopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { isSending = false; isStreaming = false; } }
+            }
+
+            Rectangle {
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
                 color: clearMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                visible: !isSending
 
                 Canvas {
-                    anchors.centerIn: parent; width: 12; height: 12
+                    anchors.centerIn: parent; width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
+                    property real s: root.sf
                     onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, 12, 12);
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.moveTo(1, 3); ctx.lineTo(11, 3); ctx.stroke();
                         ctx.strokeRect(3, 3, 6, 8);
                         ctx.beginPath(); ctx.moveTo(5, 5); ctx.lineTo(5, 9); ctx.stroke();
                         ctx.beginPath(); ctx.moveTo(7, 5); ctx.lineTo(7, 9); ctx.stroke();
+                        ctx.restore();
                     }
+                    onSChanged: requestPaint()
                 }
 
-                MouseArea { id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { messages = []; } }
+                MouseArea { id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { messages = []; streamingSteps = []; activePlan = null; } }
             }
 
-            // Fullscreen toggle
             Rectangle {
-                width: 28; height: 28; radius: 6
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
                 color: fsMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
 
                 Canvas {
-                    anchors.centerIn: parent; width: 12; height: 12
+                    anchors.centerIn: parent; width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
                     property bool fs: chatFullScreen
+                    property real s: root.sf
                     onFsChanged: requestPaint()
+                    onSChanged: requestPaint()
                     onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, 12, 12);
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.strokeStyle = chatFullScreen ? "#60a5fa" : "#94a3b8"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         if (chatFullScreen) {
-                            // Contract icon
                             ctx.strokeRect(2, 2, 8, 8);
                             ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(8, 4); ctx.lineTo(8, 8); ctx.stroke();
                         } else {
-                            // Expand icon
                             ctx.beginPath(); ctx.moveTo(1, 4); ctx.lineTo(1, 1); ctx.lineTo(4, 1); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(11, 1); ctx.lineTo(11, 4); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(1, 8); ctx.lineTo(1, 11); ctx.lineTo(4, 11); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(8, 11); ctx.lineTo(11, 11); ctx.lineTo(11, 8); ctx.stroke();
                         }
+                        ctx.restore();
                     }
                 }
 
                 MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chatFullScreen = !chatFullScreen }
             }
 
-            // Collapse
             Rectangle {
-                width: 28; height: 28; radius: 6
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
                 color: collMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                Text { anchors.centerIn: parent; text: "▾"; font.pixelSize: 12; color: root.textSecondary }
+                Text { anchors.centerIn: parent; text: "▾"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                 MouseArea { id: collMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { chatExpanded = false; chatFullScreen = false; } }
             }
         }
     }
 
-    // ══════════════════════════════════════
     // ── Agent Picker Dropdown ──
-    // ══════════════════════════════════════
     Rectangle {
         id: agentPicker
-        anchors.top: chatHeader.bottom; anchors.topMargin: 4
-        anchors.left: parent.left; anchors.leftMargin: 12
-        width: 220; height: apCol.height + 12
+        anchors.top: chatHeader.bottom; anchors.topMargin: Math.round(4 * root.sf)
+        anchors.left: parent.left; anchors.leftMargin: Math.round(12 * root.sf)
+        width: Math.round(220 * root.sf); height: apCol.height + Math.round(12 * root.sf)
         radius: root.radiusMd; z: 100
         color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
         border.color: Qt.rgba(0.35, 0.55, 1.0, 0.2); border.width: 1
@@ -231,35 +261,33 @@ Rectangle {
 
         Column {
             id: apCol; anchors.left: parent.left; anchors.right: parent.right
-            anchors.top: parent.top; anchors.margins: 6; spacing: 2
+            anchors.top: parent.top; anchors.margins: Math.round(6 * root.sf); spacing: 2
 
-            Text { text: "Select Agent"; font.pixelSize: 10; font.weight: Font.Bold; color: root.textMuted; leftPadding: 6; bottomPadding: 4 }
+            Text { text: "Select Agent"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: root.textMuted; leftPadding: Math.round(6 * root.sf); bottomPadding: Math.round(4 * root.sf) }
 
             Repeater {
                 model: agentList
 
                 Rectangle {
-                    width: apCol.width; height: 32; radius: 4
+                    width: apCol.width; height: Math.round(32 * root.sf); radius: Math.round(4 * root.sf)
                     color: modelData.id === selectedAgent ? Qt.rgba(0.35, 0.55, 1.0, 0.15) :
                            apItemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
 
                     RowLayout {
-                        anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 6
+                        anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
 
-                        // Dot indicator
                         Rectangle {
-                            width: 6; height: 6; radius: 3
+                            width: Math.round(6 * root.sf); height: Math.round(6 * root.sf); radius: width / 2
                             color: modelData.enabled !== false ? root.accentGreen : root.textMuted
                         }
 
                         Column { Layout.fillWidth: true; spacing: 0
-                            Text { text: modelData.name || modelData.id; font.pixelSize: 11; font.weight: Font.Medium; color: "#fff" }
+                            Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#fff" }
                         }
 
-                        // Selected checkmark
                         Text {
                             visible: modelData.id === selectedAgent
-                            text: "✓"; font.pixelSize: 11; color: root.accentBlue
+                            text: "✓"; font.pixelSize: Math.round(11 * root.sf); color: root.accentBlue
                         }
                     }
 
@@ -273,9 +301,7 @@ Rectangle {
         }
     }
 
-    // ══════════════════════════════════════
     // ── Messages Area ──
-    // ══════════════════════════════════════
     Item {
         anchors.top: chatHeader.bottom; anchors.left: parent.left
         anchors.right: parent.right; anchors.bottom: inputArea.top
@@ -283,19 +309,57 @@ Rectangle {
 
         ListView {
             id: messageList
-            anchors.fill: parent; anchors.margins: 8
-            model: messages; spacing: 10; clip: true
+            anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+            model: messages; spacing: Math.round(10 * root.sf); clip: true
 
             delegate: Item {
                 width: messageList.width
-                height: msgBubble.height + 6
+                height: msgBubble.height + (modelData.toolCalls ? toolCol.height : 0) + Math.round(6 * root.sf)
+
+                // Tool calls display (above the message if present)
+                Column {
+                    id: toolCol
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.rightMargin: parent.width * 0.12
+                    visible: modelData.toolCalls && modelData.toolCalls.length > 0
+                    spacing: Math.round(4 * root.sf)
+                    bottomPadding: visible ? Math.round(6 * root.sf) : 0
+
+                    Repeater {
+                        model: (modelData.toolCalls || [])
+                        Rectangle {
+                            width: toolCol.width; height: toolRow.height + Math.round(10 * root.sf)
+                            radius: Math.round(8 * root.sf)
+                            color: Qt.rgba(0.15, 0.2, 0.15, 0.5)
+                            border.color: Qt.rgba(0.2, 0.8, 0.4, 0.2); border.width: 1
+
+                            Row {
+                                id: toolRow; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+
+                                Text { text: "⚡"; font.pixelSize: Math.round(10 * root.sf) }
+                                Text {
+                                    text: modelData.name || "tool"
+                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#34d399"
+                                }
+                                Text {
+                                    text: modelData.status === "success" ? "✓" : (modelData.status === "error" ? "✗" : "⋯")
+                                    font.pixelSize: Math.round(10 * root.sf)
+                                    color: modelData.status === "success" ? "#34d399" : (modelData.status === "error" ? root.accentRed : root.textMuted)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 Rectangle {
                     id: msgBubble
-                    width: modelData.role === "user" ? Math.min(parent.width * 0.75, msgContentCol.implicitHeight > 30 ? parent.width * 0.75 : userMsgMetrics.width + 40)
+                    anchors.top: toolCol.visible ? toolCol.bottom : parent.top
+                    width: modelData.role === "user" ? Math.min(parent.width * 0.75, userMsgMetrics.width + Math.round(40 * root.sf))
                                                      : parent.width * 0.88
-                    height: msgContentCol.height + 20
-                    radius: modelData.role === "user" ? 14 : 14
+                    height: msgContentCol.height + Math.round(20 * root.sf)
+                    radius: Math.round(14 * root.sf)
                     anchors.right: modelData.role === "user" ? parent.right : undefined
                     anchors.left: modelData.role !== "user" ? parent.left : undefined
 
@@ -307,65 +371,203 @@ Rectangle {
                         Qt.rgba(1, 1, 1, 0.06)
                     border.width: 1
 
-                    // Hidden metrics for user short messages
                     TextMetrics {
                         id: userMsgMetrics
                         text: modelData.content || ""
-                        font.pixelSize: 13
+                        font.pixelSize: Math.round(13 * root.sf)
                     }
 
                     Column {
                         id: msgContentCol
                         anchors.left: parent.left; anchors.right: parent.right
-                        anchors.top: parent.top; anchors.margins: 10; spacing: 3
+                        anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(3 * root.sf)
 
-                        Text {
-                            text: modelData.role === "user" ? "You" : (modelData.agent || getAgentName())
-                            font.pixelSize: 10; font.weight: Font.Bold
-                            color: modelData.role === "user" ? "#60a5fa" : "#34d399"
+                        Row {
+                            spacing: Math.round(6 * root.sf)
+                            Text {
+                                text: modelData.role === "user" ? "You" : (modelData.agent || getAgentName())
+                                font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold
+                                color: modelData.role === "user" ? "#60a5fa" : "#34d399"
+                            }
+                            Text {
+                                visible: modelData.model && modelData.role !== "user"
+                                text: modelData.model || ""
+                                font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
+                            }
                         }
 
                         Text {
                             width: parent.width
-                            text: modelData.content || ""
-                            font.pixelSize: 13; color: "#e4e4e7"
+                            text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
+                            font.pixelSize: Math.round(13 * root.sf); color: "#e4e4e7"
                             wrapMode: Text.Wrap; lineHeight: 1.45
-                            textFormat: Text.PlainText
+                            textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
                         }
                     }
                 }
             }
 
-            // Streaming indicator
+            // ── Live streaming footer ──
             footer: Item {
-                width: messageList.width; height: isStreaming ? 40 : 0; visible: isStreaming
+                width: messageList.width
+                height: streamCol.height + Math.round(10 * root.sf)
+                visible: isSending
 
-                Rectangle {
-                    width: streamRow.width + 20; height: 32; radius: 10
-                    color: Qt.rgba(1, 1, 1, 0.03)
-                    border.color: Qt.rgba(0.2, 0.83, 0.6, 0.15); border.width: 1
+                Column {
+                    id: streamCol
+                    anchors.left: parent.left; anchors.right: parent.right
+                    spacing: Math.round(6 * root.sf)
 
-                    Row {
-                        id: streamRow; anchors.centerIn: parent; spacing: 6
+                    // Plan display
+                    Rectangle {
+                        visible: activePlan !== null
+                        width: parent.width * 0.88; height: planCol.height + Math.round(16 * root.sf)
+                        radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(0.1, 0.1, 0.2, 0.7)
+                        border.color: Qt.rgba(0.35, 0.55, 1.0, 0.25); border.width: 1
 
-                        // Thinking dots animation
-                        Repeater {
-                            model: 3
-                            Rectangle {
-                                width: 5; height: 5; radius: 2.5; color: "#34d399"
-                                SequentialAnimation on opacity {
-                                    running: isStreaming; loops: Animation.Infinite
-                                    PauseAnimation { duration: index * 200 }
-                                    NumberAnimation { to: 0.2; duration: 400 }
-                                    NumberAnimation { to: 1.0; duration: 400 }
-                                    PauseAnimation { duration: (2 - index) * 200 }
+                        Column {
+                            id: planCol; anchors.left: parent.left; anchors.right: parent.right
+                            anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
+
+                            Text {
+                                text: "📋 " + (activePlan ? activePlan.title || "Plan" : "")
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#60a5fa"
+                            }
+
+                            Repeater {
+                                model: activePlan ? activePlan.steps || [] : []
+                                Row {
+                                    spacing: Math.round(6 * root.sf)
+                                    Text {
+                                        text: modelData.status === "completed" ? "✓" : (modelData.status === "in_progress" ? "⋯" : (modelData.status === "skipped" ? "—" : "○"))
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#60a5fa" : root.textMuted)
+                                    }
+                                    Text {
+                                        text: modelData.description || modelData.title || ""
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#e4e4e7" : root.textMuted)
+                                    }
                                 }
                             }
                         }
+                    }
 
-                        Text {
-                            text: getAgentName() + " is thinking..."
-                            font.pixelSize: 11; color: root.textMuted
+                    // Live tool steps
+                    Repeater {
+                        model: streamingSteps
+
+                        Rectangle {
+                            width: parent.width * 0.88; height: stepRow.height + Math.round(12 * root.sf)
+                            radius: Math.round(8 * root.sf)
+                            color: modelData.type === "error" ? Qt.rgba(0.3, 0.1, 0.1, 0.6) :
+                                   modelData.type === "tool" ? Qt.rgba(0.1, 0.15, 0.1, 0.6) :
+                                   Qt.rgba(0.1, 0.1, 0.15, 0.6)
+                            border.color: modelData.type === "error" ? Qt.rgba(0.9, 0.2, 0.2, 0.2) :
+                                          modelData.type === "tool" ? Qt.rgba(0.2, 0.8, 0.4, 0.2) :
+                                          Qt.rgba(0.4, 0.5, 1.0, 0.15)
+                            border.width: 1
+
+                            Row {
+                                id: stepRow; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+
+                                Text {
+                                    text: modelData.type === "thinking" ? "💭" :
+                                          modelData.type === "tool" ? "⚡" :
+                                          modelData.type === "error" ? "✗" : "•"
+                                    font.pixelSize: Math.round(11 * root.sf)
+                                }
+
+                                Text {
+                                    text: {
+                                        if (modelData.type === "thinking") {
+                                            var iter = modelData.iteration || 1;
+                                            return modelData.done ? "Thought complete" : "Thinking" + (iter > 1 ? " (round " + iter + ")" : "") + "...";
+                                        } else if (modelData.type === "tool") {
+                                            return (modelData.name || "tool") + (modelData.status === "running" ? " ⋯" : (modelData.status === "success" ? " ✓" : " ✗"));
+                                        } else if (modelData.type === "error") {
+                                            return modelData.message || "Error";
+                                        }
+                                        return "";
+                                    }
+                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium
+                                    color: modelData.type === "error" ? root.accentRed :
+                                           modelData.type === "tool" ? "#34d399" : "#93c5fd"
+                                    width: parent.width - Math.round(40 * root.sf)
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    }
+
+                    // Streaming content preview
+                    Rectangle {
+                        visible: streamingContent.length > 0
+                        width: parent.width * 0.88; height: streamTextCol.height + Math.round(16 * root.sf)
+                        radius: Math.round(14 * root.sf)
+                        color: Qt.rgba(0.08, 0.10, 0.16, 0.85)
+                        border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
+
+                        Column {
+                            id: streamTextCol; anchors.left: parent.left; anchors.right: parent.right
+                            anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(3 * root.sf)
+
+                            Text {
+                                text: getAgentName()
+                                font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#34d399"
+                            }
+                            Text {
+                                width: parent.width
+                                text: mdToStyled(streamingContent)
+                                font.pixelSize: Math.round(13 * root.sf); color: "#e4e4e7"
+                                wrapMode: Text.Wrap; lineHeight: 1.45
+                                textFormat: Text.StyledText
+                            }
+                        }
+
+                        // Typing cursor
+                        Rectangle {
+                            anchors.bottom: parent.bottom; anchors.bottomMargin: Math.round(12 * root.sf)
+                            anchors.right: streamTextCol.right; anchors.rightMargin: Math.round(10 * root.sf)
+                            width: Math.round(2 * root.sf); height: Math.round(14 * root.sf)
+                            color: "#60a5fa"
+                            SequentialAnimation on opacity {
+                                running: isSending; loops: Animation.Infinite
+                                NumberAnimation { to: 0; duration: 500 }
+                                NumberAnimation { to: 1; duration: 500 }
+                            }
+                        }
+                    }
+
+                    // Thinking dots (when no content yet)
+                    Rectangle {
+                        visible: isSending && streamingContent.length === 0 && streamingSteps.length === 0
+                        width: streamRow2.width + Math.round(20 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
+                        color: Qt.rgba(1, 1, 1, 0.03)
+                        border.color: Qt.rgba(0.2, 0.83, 0.6, 0.15); border.width: 1
+
+                        Row {
+                            id: streamRow2; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+                            Repeater {
+                                model: 3
+                                Rectangle {
+                                    width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#34d399"
+                                    SequentialAnimation on opacity {
+                                        running: isSending; loops: Animation.Infinite
+                                        PauseAnimation { duration: index * 200 }
+                                        NumberAnimation { to: 0.2; duration: 400 }
+                                        NumberAnimation { to: 1.0; duration: 400 }
+                                        PauseAnimation { duration: (2 - index) * 200 }
+                                    }
+                                }
+                            }
+                            Text {
+                                text: getAgentName() + " is thinking..."
+                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                            }
                         }
                     }
                 }
@@ -375,14 +577,12 @@ Rectangle {
         }
     }
 
-    // ══════════════════════════════════════
     // ── Slash Command Suggestions ──
-    // ══════════════════════════════════════
     Rectangle {
         id: suggestionsBox
-        anchors.bottom: inputArea.top; anchors.bottomMargin: 4
-        anchors.left: parent.left; anchors.leftMargin: 8
-        width: sugCol.width + 16; height: sugCol.height + 12
+        anchors.bottom: inputArea.top; anchors.bottomMargin: Math.round(4 * root.sf)
+        anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
+        width: sugCol.width + Math.round(16 * root.sf); height: sugCol.height + Math.round(12 * root.sf)
         radius: root.radiusMd; z: 50
         color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
         border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15); border.width: 1
@@ -403,12 +603,12 @@ Rectangle {
                 }
 
                 Rectangle {
-                    width: 140; height: 26; radius: 4
+                    width: Math.round(140 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(4 * root.sf)
                     color: sugItemMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.15) : "transparent"
 
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter; leftPadding: 8
-                        text: modelData; font.pixelSize: 12; font.family: "monospace"; color: "#60a5fa"
+                        anchors.verticalCenter: parent.verticalCenter; leftPadding: Math.round(8 * root.sf)
+                        text: modelData; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; color: "#60a5fa"
                     }
 
                     MouseArea {
@@ -421,13 +621,11 @@ Rectangle {
         }
     }
 
-    // ══════════════════════════════════════
     // ── Input Area ──
-    // ══════════════════════════════════════
     Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.margins: 5; height: 40; radius: 10
+        anchors.margins: Math.round(5 * root.sf); height: Math.round(40 * root.sf); radius: Math.round(10 * root.sf)
         color: Qt.rgba(0.08, 0.08, 0.12, 0.9)
         border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.3) : Qt.rgba(1, 1, 1, 0.06)
         border.width: 1
@@ -435,13 +633,14 @@ Rectangle {
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 6; spacing: 8
+            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(6 * root.sf); spacing: Math.round(8 * root.sf)
 
-            // AI icon (collapsed)
             Canvas {
-                width: 16; height: 16; visible: !chatExpanded
+                width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); visible: !chatExpanded
+                property real s: root.sf
                 onPaint: {
-                    var ctx = getContext("2d"); ctx.clearRect(0, 0, 16, 16);
+                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                    ctx.save(); ctx.scale(s, s);
                     ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
                     ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI * 2); ctx.stroke();
                     ctx.fillStyle = "#60a5fa";
@@ -450,19 +649,21 @@ Rectangle {
                     ctx.beginPath(); ctx.arc(8, 10, 1.2, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.6;
                     ctx.beginPath(); ctx.moveTo(5.5, 7); ctx.lineTo(8, 10); ctx.lineTo(10.5, 7); ctx.stroke();
+                    ctx.restore();
                 }
+                onSChanged: requestPaint()
             }
 
             TextInput {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: "#e4e4e7"; font.pixelSize: 13; clip: true
+                color: "#e4e4e7"; font.pixelSize: Math.round(13 * root.sf); clip: true
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Ask TensorAgent AI anything..."
-                    color: Qt.rgba(1, 1, 1, 0.25); font.pixelSize: 13
+                    color: Qt.rgba(1, 1, 1, 0.25); font.pixelSize: Math.round(13 * root.sf)
                     visible: !parent.text && !parent.activeFocus
                 }
 
@@ -496,22 +697,20 @@ Rectangle {
                 }
             }
 
-            // Agent indicator pill (when expanded)
             Rectangle {
                 visible: chatExpanded
-                width: agentPillText.width + 14; height: 22; radius: 11
+                width: agentPillText.width + Math.round(14 * root.sf); height: Math.round(22 * root.sf); radius: Math.round(11 * root.sf)
                 color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
                 border.color: Qt.rgba(0.2, 0.83, 0.6, 0.2); border.width: 1
 
                 Text {
                     id: agentPillText; anchors.centerIn: parent
-                    text: getAgentName(); font.pixelSize: 9; font.weight: Font.Bold; color: "#34d399"
+                    text: getAgentName(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#34d399"
                 }
             }
 
-            // Send button
             Rectangle {
-                width: 32; height: 32; radius: 10
+                width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
 
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: chatInput.text.trim() ? "#4f6ef7" : Qt.rgba(1, 1, 1, 0.06) }
@@ -519,20 +718,23 @@ Rectangle {
                 }
 
                 Canvas {
-                    anchors.centerIn: parent; width: 14; height: 14
+                    anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                    property real s: root.sf
                     onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, 14, 14);
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
                         ctx.fillStyle = chatInput.text.trim() ? "#fff" : "#666";
                         ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(12, 7); ctx.lineTo(8, 7);
                         ctx.lineTo(8, 13); ctx.lineTo(6, 13); ctx.lineTo(6, 7); ctx.lineTo(2, 7);
                         ctx.closePath(); ctx.fill();
+                        ctx.restore();
                     }
+                    onSChanged: requestPaint()
                 }
 
-                // Pulse glow when text
                 Rectangle {
                     visible: chatInput.text.trim() !== ""
-                    anchors.fill: parent; anchors.margins: -2; radius: 12
+                    anchors.fill: parent; anchors.margins: -2; radius: Math.round(12 * root.sf)
                     color: "transparent"; border.color: Qt.rgba(0.5, 0.3, 0.95, 0.3); border.width: 1
                     SequentialAnimation on border.color {
                         running: chatInput.text.trim() !== ""; loops: Animation.Infinite
@@ -549,9 +751,7 @@ Rectangle {
         }
     }
 
-    // ══════════════════════════════════════
-    // ── Send Message ──
-    // ══════════════════════════════════════
+    // ── Send Message via SSE Stream ──
     function sendMessage() {
         var msg = chatInput.text.trim();
         if (!msg || isSending) return;
@@ -560,55 +760,178 @@ Rectangle {
         showSuggestions = false;
         showAgentPicker = false;
 
-        // Save to history
         var hist = chatHistory.slice();
         hist.push(msg);
         if (hist.length > 50) hist = hist.slice(-50);
         chatHistory = hist;
         historyIndex = -1;
 
-        // Add user message
         var msgs = messages.slice();
-        msgs.push({ role: "user", content: msg });
+        msgs.push({ role: "user", content: msg, createdAt: new Date().toISOString() });
         messages = msgs;
         chatInput.text = "";
         isSending = true;
         isStreaming = true;
+        streamingContent = "";
+        streamingSteps = [];
+        activePlan = null;
 
-        // Build message history for context
-        var apiMessages = [];
-        for (var i = 0; i < messages.length; i++) {
-            apiMessages.push({ role: messages[i].role, content: messages[i].content });
-        }
-
-        // Use the agent/chat/completions endpoint for streaming
+        // Use SSE streaming endpoint
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", root.apiBase + "/chat");
+        xhr.open("POST", root.apiBase + "/chat/stream");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+
+        var lastIndex = 0;
+
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
+            // readyState 3 = LOADING (progressive data)
+            if (xhr.readyState === 3 || xhr.readyState === 4) {
+                var text = "";
+                try { text = xhr.responseText; } catch(e) { return; }
+                var newData = text.substring(lastIndex);
+                lastIndex = text.length;
+
+                if (newData) {
+                    var lines = newData.split("\n");
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i].trim();
+                        if (!line.startsWith("data: ")) continue;
+                        try {
+                            var parsed = JSON.parse(line.substring(6));
+                            handleStreamEvent(parsed.event, parsed.data);
+                        } catch(e) { /* skip malformed */ }
+                    }
+                }
+            }
+
+            if (xhr.readyState === 4) {
                 isSending = false;
                 isStreaming = false;
-                var msgs2 = messages.slice();
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    var content = data.response || data.message || data.content || "";
-                    if (data.choices && data.choices.length > 0) {
-                        content = data.choices[0].message.content;
-                    }
-                    if (content) {
-                        msgs2.push({ role: "assistant", content: cleanText(content), agent: getAgentName() });
-                    } else if (data.error) {
-                        msgs2.push({ role: "assistant", content: "Error: " + data.error, agent: "System" });
-                    }
-                } catch(e) {
-                    var raw = xhr.responseText || "No response";
-                    msgs2.push({ role: "assistant", content: cleanText(raw), agent: getAgentName() });
+
+                // If we got streaming content but no done event, add it as a message
+                if (streamingContent && !messages[messages.length - 1] || messages[messages.length - 1].role === "user") {
+                    var msgs2 = messages.slice();
+                    msgs2.push({ role: "assistant", content: streamingContent, agent: getAgentName() });
+                    messages = msgs2;
+                    streamingContent = "";
                 }
-                messages = msgs2;
+                streamingSteps = [];
+                activePlan = null;
             }
         };
+
         xhr.send(JSON.stringify({ message: msg, agent: selectedAgent }));
+    }
+
+    function handleStreamEvent(event, data) {
+        if (!data) return;
+        switch (event) {
+            case "thinking": {
+                var steps = streamingSteps.slice();
+                var found = false;
+                for (var i = 0; i < steps.length; i++) {
+                    if (steps[i].type === "thinking") { steps[i].iteration = data.iteration; found = true; break; }
+                }
+                if (!found) steps.push({ type: "thinking", iteration: data.iteration || 1, done: false });
+                streamingSteps = steps;
+                break;
+            }
+            case "content": {
+                streamingContent = data.text || "";
+                // Mark thinking as done
+                var steps2 = streamingSteps.slice();
+                for (var j = 0; j < steps2.length; j++) {
+                    if (steps2[j].type === "thinking") steps2[j].done = true;
+                }
+                streamingSteps = steps2;
+                break;
+            }
+            case "tool_start": {
+                var steps3 = streamingSteps.slice();
+                steps3.push({ type: "tool", id: data.id, name: data.name, arguments: data.arguments, status: "running" });
+                streamingSteps = steps3;
+                break;
+            }
+            case "tool_end": {
+                var steps4 = streamingSteps.slice();
+                for (var k = 0; k < steps4.length; k++) {
+                    if (steps4[k].id === data.id) {
+                        steps4[k].status = data.status || "success";
+                        steps4[k].result = data.result;
+                        break;
+                    }
+                }
+                streamingSteps = steps4;
+                break;
+            }
+            case "plan_created": {
+                var plan = { title: data.title, steps: [], completed: false };
+                if (data.steps) {
+                    for (var p = 0; p < data.steps.length; p++) {
+                        plan.steps.push({ id: data.steps[p].id, description: data.steps[p].description || data.steps[p].title,
+                                          status: data.steps[p].status || "pending", toolCalls: [] });
+                    }
+                }
+                activePlan = plan;
+                break;
+            }
+            case "plan_step_update": {
+                if (activePlan) {
+                    var newPlan = JSON.parse(JSON.stringify(activePlan));
+                    for (var q = 0; q < newPlan.steps.length; q++) {
+                        if (newPlan.steps[q].id === data.stepId) {
+                            newPlan.steps[q].status = data.status;
+                            if (data.notes) newPlan.steps[q].notes = data.notes;
+                            break;
+                        }
+                    }
+                    activePlan = newPlan;
+                }
+                break;
+            }
+            case "plan_completed": {
+                if (activePlan) {
+                    var cp = JSON.parse(JSON.stringify(activePlan));
+                    cp.completed = true;
+                    for (var r = 0; r < cp.steps.length; r++) {
+                        if (cp.steps[r].status !== "skipped") cp.steps[r].status = "completed";
+                    }
+                    activePlan = cp;
+                }
+                break;
+            }
+            case "done": {
+                if (data.message) {
+                    var msgs3 = messages.slice();
+                    msgs3.push({
+                        role: "assistant",
+                        content: data.message.content || streamingContent,
+                        toolCalls: data.message.toolCalls,
+                        model: data.message.model,
+                        agent: getAgentName(),
+                        createdAt: data.message.createdAt || new Date().toISOString()
+                    });
+                    messages = msgs3;
+                    streamingContent = "";
+                }
+                isSending = false;
+                isStreaming = false;
+                break;
+            }
+            case "error": {
+                var steps5 = streamingSteps.slice();
+                steps5.push({ type: "error", message: data.message || "Unknown error" });
+                streamingSteps = steps5;
+                break;
+            }
+            case "stopped": {
+                isSending = false;
+                isStreaming = false;
+                break;
+            }
+        }
+        // Auto-scroll
+        Qt.callLater(function() { messageList.positionViewAtEnd(); });
     }
 }

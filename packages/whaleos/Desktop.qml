@@ -6,105 +6,338 @@ Rectangle {
     anchors.fill: parent
     color: "#050510"
 
-    // ── Beautiful Gradient Wallpaper ──
-    // Base deep blue-purple gradient
-    Rectangle {
+    // ── Wallpaper State ──
+    property string currentWallpaper: "default"
+    property var wallpaperList: [
+        { id: "default",        name: "Default Aurora",    file: "" },
+        { id: "nebula",         name: "🌌 Nebula",         file: "wallpapers/nebula.png" },
+        { id: "cyber-grid",     name: "🔮 Cyber Grid",     file: "wallpapers/cyber-grid.png" },
+        { id: "aurora",         name: "🌈 Aurora",          file: "wallpapers/aurora.png" },
+        { id: "ocean-depth",    name: "🌊 Ocean Depth",    file: "wallpapers/ocean-depth.png" },
+        { id: "abstract-waves", name: "🔥 Abstract Waves", file: "wallpapers/abstract-waves.png" },
+        { id: "crystal",        name: "💎 Crystal",         file: "wallpapers/crystal.png" },
+        { id: "ocean",          name: "🐋 Ocean",           file: "wallpapers/ocean.png" },
+        { id: "topology",       name: "🧬 Topology",       file: "wallpapers/topology.png" },
+        { id: "abstract",       name: "🎨 Abstract",       file: "wallpapers/abstract.png" },
+        { id: "alien",          name: "👽 Alien",           file: "wallpapers/alien.png" },
+        { id: "cosmic",         name: "🪐 Cosmic",         file: "wallpapers/cosmic.png" },
+        { id: "cyberpunk",      name: "⚡ Cyberpunk",      file: "wallpapers/cyberpunk.png" }
+    ]
+
+    // ── Wallpaper Image (shown when not "default") ──
+    Image {
+        id: wallpaperImage
         anchors.fill: parent
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: "#0c0a1a" }
-            GradientStop { position: 0.3; color: "#0f1628" }
-            GradientStop { position: 0.6; color: "#101830" }
-            GradientStop { position: 1.0; color: "#080e1c" }
+        fillMode: Image.PreserveAspectCrop
+        visible: currentWallpaper !== "default"
+        source: {
+            for (var i = 0; i < wallpaperList.length; i++) {
+                if (wallpaperList[i].id === currentWallpaper && wallpaperList[i].file !== "") {
+                    return wallpaperList[i].file;
+                }
+            }
+            return "";
+        }
+
+        // Subtle dark overlay to keep UI readable
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.25)
         }
     }
 
-    // Aurora glow - top left (teal/cyan)
-    Rectangle {
-        x: -parent.width * 0.1
-        y: parent.height * 0.05
-        width: parent.width * 0.7
-        height: parent.height * 0.5
-        radius: width / 2
-        opacity: 0.15
-        rotation: -15
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0ea5e9" }
-            GradientStop { position: 0.4; color: "#06b6d4" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    // Aurora glow - center (purple/indigo)
-    Rectangle {
-        x: parent.width * 0.2
-        y: parent.height * 0.1
-        width: parent.width * 0.65
-        height: parent.height * 0.55
-        radius: width / 2
-        opacity: 0.12
-        rotation: 10
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#7c3aed" }
-            GradientStop { position: 0.5; color: "#4f46e5" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    // Aurora glow - right (blue/electric)
-    Rectangle {
-        x: parent.width * 0.4
-        y: parent.height * 0.15
-        width: parent.width * 0.55
-        height: parent.height * 0.45
-        radius: width / 2
-        opacity: 0.1
-        rotation: 20
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#2563eb" }
-            GradientStop { position: 0.5; color: "#1d4ed8" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    // Warm accent glow - bottom right (rose/pink)
-    Rectangle {
-        x: parent.width * 0.5
-        y: parent.height * 0.5
-        width: parent.width * 0.5
-        height: parent.height * 0.4
-        radius: width / 2
-        opacity: 0.06
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#e11d48" }
-            GradientStop { position: 0.5; color: "#be185d" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    // Star field Canvas
-    Canvas {
+    // ── Default Gradient Wallpaper (shown when "default") ──
+    Item {
         anchors.fill: parent
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
+        visible: currentWallpaper === "default"
 
-            // Draw stars
-            var seed = 42;
-            function pseudoRandom() {
-                seed = (seed * 16807 + 0) % 2147483647;
-                return seed / 2147483647;
+        // Base deep blue-purple gradient
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: "#0c0a1a" }
+                GradientStop { position: 0.3; color: "#0f1628" }
+                GradientStop { position: 0.6; color: "#101830" }
+                GradientStop { position: 1.0; color: "#080e1c" }
+            }
+        }
+
+        // Aurora glow - top left (teal/cyan)
+        Rectangle {
+            x: -parent.width * 0.1
+            y: parent.height * 0.05
+            width: parent.width * 0.7
+            height: parent.height * 0.5
+            radius: width / 2
+            opacity: 0.15
+            rotation: -15
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#0ea5e9" }
+                GradientStop { position: 0.4; color: "#06b6d4" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Aurora glow - center (purple/indigo)
+        Rectangle {
+            x: parent.width * 0.2
+            y: parent.height * 0.1
+            width: parent.width * 0.65
+            height: parent.height * 0.55
+            radius: width / 2
+            opacity: 0.12
+            rotation: 10
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#7c3aed" }
+                GradientStop { position: 0.5; color: "#4f46e5" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Aurora glow - right (blue/electric)
+        Rectangle {
+            x: parent.width * 0.4
+            y: parent.height * 0.15
+            width: parent.width * 0.55
+            height: parent.height * 0.45
+            radius: width / 2
+            opacity: 0.1
+            rotation: 20
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#2563eb" }
+                GradientStop { position: 0.5; color: "#1d4ed8" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Warm accent glow - bottom right (rose/pink)
+        Rectangle {
+            x: parent.width * 0.5
+            y: parent.height * 0.5
+            width: parent.width * 0.5
+            height: parent.height * 0.4
+            radius: width / 2
+            opacity: 0.06
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#e11d48" }
+                GradientStop { position: 0.5; color: "#be185d" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Star field Canvas
+        Canvas {
+            anchors.fill: parent
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+
+                // Draw stars
+                var seed = 42;
+                function pseudoRandom() {
+                    seed = (seed * 16807 + 0) % 2147483647;
+                    return seed / 2147483647;
+                }
+
+                for (var i = 0; i < 80; i++) {
+                    var sx = pseudoRandom() * width;
+                    var sy = pseudoRandom() * height;
+                    var sr = pseudoRandom() * 1.2 + 0.3;
+                    var so = pseudoRandom() * 0.4 + 0.1;
+                    ctx.beginPath();
+                    ctx.fillStyle = "rgba(255, 255, 255, " + so + ")";
+                    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+    }
+
+    // ── Right-Click Desktop Context Menu ──
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        z: 1
+        onClicked: function(mouse) {
+            contextMenu.x = mouse.x;
+            contextMenu.y = mouse.y;
+            contextMenu.visible = !contextMenu.visible;
+        }
+    }
+
+    // ── Context Menu ──
+    Rectangle {
+        id: contextMenu
+        visible: false
+        width: Math.round(220 * root.sf)
+        height: menuCol.height + Math.round(16 * root.sf)
+        radius: root.radiusMd
+        color: Qt.rgba(0.08, 0.08, 0.10, 0.95)
+        border.color: Qt.rgba(1, 1, 1, 0.1)
+        border.width: 1
+        z: 500
+
+        // Close when clicking elsewhere
+        Connections {
+            target: desktop
+            function onWidthChanged() { contextMenu.visible = false; }
+        }
+
+        Column {
+            id: menuCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Math.round(8 * root.sf)
+            spacing: 2
+
+            // Header
+            Text {
+                text: "🖼  Change Wallpaper"
+                font.pixelSize: Math.round(11 * root.sf)
+                font.weight: Font.DemiBold
+                color: root.textMuted
+                leftPadding: Math.round(8 * root.sf)
+                topPadding: Math.round(4 * root.sf)
+                bottomPadding: Math.round(6 * root.sf)
             }
 
-            for (var i = 0; i < 80; i++) {
-                var sx = pseudoRandom() * width;
-                var sy = pseudoRandom() * height;
-                var sr = pseudoRandom() * 1.2 + 0.3;
-                var so = pseudoRandom() * 0.4 + 0.1;
-                ctx.beginPath();
-                ctx.fillStyle = "rgba(255, 255, 255, " + so + ")";
-                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-                ctx.fill();
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.06)
+            }
+
+            // Wallpaper list
+            Repeater {
+                model: desktop.wallpaperList
+
+                delegate: Rectangle {
+                    width: parent.width
+                    height: Math.round(36 * root.sf)
+                    radius: root.radiusSm
+                    color: wpItemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) :
+                           desktop.currentWallpaper === modelData.id ? Qt.rgba(1, 1, 1, 0.05) :
+                           "transparent"
+
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: Math.round(10 * root.sf)
+                        anchors.right: parent.right
+                        anchors.rightMargin: Math.round(10 * root.sf)
+                        spacing: Math.round(10 * root.sf)
+
+                        // Thumbnail preview
+                        Rectangle {
+                            width: Math.round(26 * root.sf); height: Math.round(26 * root.sf)
+                            radius: Math.round(4 * root.sf)
+                            color: modelData.file === "" ? "#0f1628" : "transparent"
+                            border.color: desktop.currentWallpaper === modelData.id ? root.accentBlue : Qt.rgba(1, 1, 1, 0.15)
+                            border.width: desktop.currentWallpaper === modelData.id ? 1.5 : 1
+                            clip: true
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            // Default gradient thumbnail
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                radius: Math.round(3 * root.sf)
+                                visible: modelData.file === ""
+                                gradient: Gradient {
+                                    orientation: Gradient.Vertical
+                                    GradientStop { position: 0.0; color: "#0c0a1a" }
+                                    GradientStop { position: 0.4; color: "#0f1628" }
+                                    GradientStop { position: 1.0; color: "#101830" }
+                                }
+                                Rectangle {
+                                    width: parent.width * 0.7; height: parent.height * 0.5
+                                    x: parent.width * 0.1; y: parent.height * 0.15
+                                    radius: width / 2; opacity: 0.4
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: "#0ea5e9" }
+                                        GradientStop { position: 1.0; color: "transparent" }
+                                    }
+                                }
+                            }
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                source: modelData.file !== "" ? modelData.file : ""
+                                fillMode: Image.PreserveAspectCrop
+                                visible: modelData.file !== ""
+                                asynchronous: true
+                                sourceSize.width: Math.round(52 * root.sf)
+                                sourceSize.height: Math.round(52 * root.sf)
+                            }
+                        }
+
+                        Text {
+                            text: modelData.name
+                            font.pixelSize: Math.round(13 * root.sf)
+                            color: desktop.currentWallpaper === modelData.id ? root.accentBlue : root.textPrimary
+                            font.weight: desktop.currentWallpaper === modelData.id ? Font.Medium : Font.Normal
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Item { width: 1; height: 1; Layout.fillWidth: true }
+
+                        // Active indicator dot
+                        Rectangle {
+                            width: Math.round(6 * root.sf); height: Math.round(6 * root.sf)
+                            radius: Math.round(3 * root.sf)
+                            color: root.accentBlue
+                            visible: desktop.currentWallpaper === modelData.id
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    MouseArea {
+                        id: wpItemMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            desktop.currentWallpaper = modelData.id;
+                            contextMenu.visible = false;
+                        }
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.06)
+            }
+
+            // Close option
+            Rectangle {
+                width: parent.width
+                height: Math.round(30 * root.sf)
+                radius: root.radiusSm
+                color: closeMenuMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: Math.round(10 * root.sf)
+                    text: "✕  Close"
+                    font.pixelSize: Math.round(12 * root.sf)
+                    color: root.textSecondary
+                }
+
+                MouseArea {
+                    id: closeMenuMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: contextMenu.visible = false
+                }
             }
         }
     }
@@ -112,12 +345,12 @@ Rectangle {
     // ── Whale Logo Watermark ──
     Column {
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -20
-        spacing: 14
-        opacity: 0.35
+        anchors.verticalCenterOffset: Math.round(-20 * root.sf)
+        spacing: Math.round(14 * root.sf)
+        opacity: currentWallpaper === "default" ? 0.35 : 0.20
 
         Rectangle {
-            width: 90; height: 90; radius: 45
+            width: Math.round(90 * root.sf); height: Math.round(90 * root.sf); radius: width / 2
             color: Qt.rgba(0.15, 0.3, 0.7, 0.2)
             border.color: Qt.rgba(0.4, 0.6, 1.0, 0.25)
             border.width: 1.5
@@ -125,10 +358,12 @@ Rectangle {
 
             Canvas {
                 anchors.centerIn: parent
-                width: 56; height: 56
+                width: Math.round(56 * root.sf); height: Math.round(56 * root.sf)
+                property real s: root.sf
                 onPaint: {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
+                    ctx.save(); ctx.scale(s, s);
                     ctx.beginPath();
                     ctx.fillStyle = "#93c5fd";
                     ctx.moveTo(8, 36);
@@ -142,29 +377,24 @@ Rectangle {
                     ctx.quadraticCurveTo(38, 50, 28, 48);
                     ctx.quadraticCurveTo(16, 46, 8, 36);
                     ctx.fill();
-                    ctx.beginPath();
-                    ctx.fillStyle = "#0f172a";
-                    ctx.arc(22, 24, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.fillStyle = "#ffffff";
-                    ctx.arc(23, 23, 1, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.strokeStyle = "#93c5fd";
-                    ctx.lineWidth = 1.5;
-                    ctx.moveTo(32, 12); ctx.lineTo(32, 4); ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(28, 4); ctx.quadraticCurveTo(32, -1, 36, 4); ctx.stroke();
+                    ctx.beginPath(); ctx.fillStyle = "#0f172a";
+                    ctx.arc(22, 24, 2.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.fillStyle = "#ffffff";
+                    ctx.arc(23, 23, 1, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#93c5fd"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(32, 12); ctx.lineTo(32, 4); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(28, 4); ctx.quadraticCurveTo(32, -1, 36, 4); ctx.stroke();
+                    ctx.restore();
                 }
+                onSChanged: requestPaint()
             }
         }
 
         Text {
             text: "T E N S O R A G E N T   O S"
-            font.pixelSize: 13
+            font.pixelSize: Math.round(13 * root.sf)
             font.weight: Font.Normal
-            font.letterSpacing: 2
+            font.letterSpacing: Math.round(2 * root.sf)
             color: "#93c5fd"
             anchors.horizontalCenter: parent.horizontalCenter
         }
@@ -195,8 +425,8 @@ Rectangle {
             windowIcon: modelData.icon
             appId: modelData.appId
             windowArea: windowArea
-            initialX: parent.width / 2 - 350 + index * 30
-            initialY: 80 + index * 30
+            initialX: parent.width / 2 - Math.round(350 * root.sf) + index * Math.round(30 * root.sf)
+            initialY: Math.round(80 * root.sf) + index * Math.round(30 * root.sf)
         }
     }
 
@@ -205,9 +435,9 @@ Rectangle {
         id: siriGlow
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: appDock.top
-        anchors.bottomMargin: 6
-        width: Math.min(parent.width - 80, 500)
-        height: 28
+        anchors.bottomMargin: Math.round(6 * root.sf)
+        width: Math.min(parent.width - Math.round(80 * root.sf), Math.round(500 * root.sf))
+        height: Math.round(28 * root.sf)
         visible: chatBarItem.chatExpanded
         opacity: (chatBarItem.isSending || chatBarItem.isStreaming) ? 1.0 : 0.35
         Behavior on opacity { NumberAnimation { duration: 500 } }
@@ -269,7 +499,7 @@ Rectangle {
         id: appDock
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: chatBarItem.top
-        anchors.bottomMargin: 10
+        anchors.bottomMargin: Math.round(10 * root.sf)
     }
 
     // ── Chat Bar (absolute positioned, expands upward) ──
@@ -277,7 +507,7 @@ Rectangle {
         id: chatBarItem
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 16
-        width: Math.min(parent.width - 32, 620)
+        anchors.bottomMargin: Math.round(16 * root.sf)
+        width: Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
     }
 }

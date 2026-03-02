@@ -3,8 +3,8 @@ import QtQuick.Layouts
 
 Rectangle {
     id: dock
-    width: dockRow.width + 24
-    height: 68
+    width: dockRow.width + Math.round(24 * root.sf)
+    height: Math.round(68 * root.sf)
     radius: root.radiusLg
     color: Qt.rgba(0.1, 0.1, 0.12, 0.8)
     border.color: Qt.rgba(1, 1, 1, 0.08)
@@ -16,7 +16,7 @@ Rectangle {
     }
 
     Row {
-        id: dockRow; anchors.centerIn: parent; spacing: 6
+        id: dockRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
 
         Repeater {
             model: [
@@ -30,29 +30,31 @@ Rectangle {
             ]
 
             delegate: Rectangle {
-                width: 58; height: 56; radius: root.radiusMd
+                width: Math.round(58 * root.sf); height: Math.round(56 * root.sf); radius: root.radiusMd
                 color: dockItemMouse.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
                 Behavior on color { ColorAnimation { duration: 150 } }
 
                 Column {
-                    anchors.centerIn: parent; spacing: 4
+                    anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
 
                     Canvas {
                         id: dockIcon
-                        width: 22; height: 22
+                        width: Math.round(22 * root.sf); height: Math.round(22 * root.sf)
                         anchors.horizontalCenter: parent.horizontalCenter
 
                         property string appId: modelData.appId
                         property bool hovered: dockItemMouse.containsMouse
+                        property real s: root.sf
 
                         onPaint: {
-                            var ctx = getContext("2d"); ctx.clearRect(0,0,22,22);
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save();
+                            ctx.scale(s, s);
                             ctx.strokeStyle = hovered ? "#93c5fd" : "#94a3b8";
                             ctx.fillStyle = hovered ? "#93c5fd" : "#94a3b8";
                             ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
 
                             if (appId === "settings") {
-                                // Gear icon
                                 ctx.beginPath();
                                 for (var i = 0; i < 8; i++) {
                                     var a = i * Math.PI / 4;
@@ -63,13 +65,11 @@ Rectangle {
                                 ctx.closePath(); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(11, 11, 3.5, 0, Math.PI*2); ctx.stroke();
                             } else if (appId === "skills") {
-                                // Lightning bolt
                                 ctx.beginPath();
                                 ctx.moveTo(13,1); ctx.lineTo(5,12); ctx.lineTo(11,12);
                                 ctx.lineTo(9,21); ctx.lineTo(17,10); ctx.lineTo(11,10);
                                 ctx.lineTo(13,1); ctx.closePath(); ctx.fill();
                             } else if (appId === "apps") {
-                                // Puzzle piece
                                 ctx.lineWidth = 1.6;
                                 ctx.beginPath();
                                 ctx.moveTo(3,8); ctx.lineTo(7,8);
@@ -79,7 +79,6 @@ Rectangle {
                                 ctx.lineTo(19,16); ctx.lineTo(19,20); ctx.lineTo(3,20); ctx.lineTo(3,8);
                                 ctx.stroke();
                             } else if (appId === "providers") {
-                                // Cloud
                                 ctx.beginPath();
                                 ctx.arc(8,13,4.5,Math.PI,1.5*Math.PI);
                                 ctx.arc(14,11,3.5,1.25*Math.PI,2*Math.PI);
@@ -87,47 +86,38 @@ Rectangle {
                                 ctx.lineTo(5,17.5); ctx.arc(5,15,2.5,0.5*Math.PI,Math.PI);
                                 ctx.closePath(); ctx.fill();
                             } else if (appId === "mcp") {
-                                // MCP - interconnected nodes
                                 ctx.lineWidth = 1.4;
-                                // Center node
                                 ctx.beginPath(); ctx.arc(11,11,3,0,Math.PI*2); ctx.stroke();
-                                // Top node
                                 ctx.beginPath(); ctx.arc(11,3,2,0,Math.PI*2); ctx.fill();
                                 ctx.beginPath(); ctx.moveTo(11,5); ctx.lineTo(11,8); ctx.stroke();
-                                // Left node
                                 ctx.beginPath(); ctx.arc(4,16,2,0,Math.PI*2); ctx.fill();
                                 ctx.beginPath(); ctx.moveTo(5.5,14.5); ctx.lineTo(9,13); ctx.stroke();
-                                // Right node
                                 ctx.beginPath(); ctx.arc(18,16,2,0,Math.PI*2); ctx.fill();
                                 ctx.beginPath(); ctx.moveTo(16.5,14.5); ctx.lineTo(13,13); ctx.stroke();
                             } else if (appId === "agents") {
-                                // Robot/Agent icon
                                 ctx.lineWidth = 1.5;
-                                // Head
                                 ctx.strokeRect(5,5,12,10);
-                                // Eyes
                                 ctx.beginPath(); ctx.arc(9,10,1.5,0,Math.PI*2); ctx.fill();
                                 ctx.beginPath(); ctx.arc(15,10,1.5,0,Math.PI*2); ctx.fill();
-                                // Antenna
                                 ctx.beginPath(); ctx.moveTo(11,5); ctx.lineTo(11,2); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(11,1.5,1.5,0,Math.PI*2); ctx.fill();
-                                // Body
                                 ctx.strokeRect(6,15,10,5);
                             } else if (appId === "terminal") {
-                                // Terminal prompt
                                 ctx.strokeRect(1,3,20,17);
                                 ctx.beginPath(); ctx.moveTo(5,10); ctx.lineTo(10,14); ctx.lineTo(5,18); ctx.stroke();
                                 ctx.beginPath(); ctx.moveTo(12,18); ctx.lineTo(17,18); ctx.stroke();
                             }
+                            ctx.restore();
                         }
 
                         onHoveredChanged: requestPaint()
+                        onSChanged: requestPaint()
                         Component.onCompleted: requestPaint()
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: modelData.label; font.pixelSize: 10
+                        text: modelData.label; font.pixelSize: Math.round(10 * root.sf)
                         color: dockItemMouse.containsMouse ? "#93c5fd" : root.textSecondary
                         Behavior on color { ColorAnimation { duration: 150 } }
                     }

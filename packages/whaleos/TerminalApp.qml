@@ -51,7 +51,7 @@ Rectangle {
     Flickable {
         id: termFlick
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.margins: Math.round(10 * root.sf)
         contentHeight: termCol.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -60,7 +60,7 @@ Rectangle {
         Column {
             id: termCol
             width: parent.width
-            spacing: 0
+            spacing: Math.round(0 * root.sf)
 
             // ── Output Lines ──
             Repeater {
@@ -74,7 +74,7 @@ Rectangle {
                         if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
                         return "#d4d4d8";
                     }
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
                     wrapMode: Text.WrapAnywhere
                     height: implicitHeight + 2
@@ -85,13 +85,13 @@ Rectangle {
             Row {
                 visible: !isRunning
                 width: termCol.width
-                spacing: 0
+                spacing: Math.round(0 * root.sf)
 
                 Text {
                     id: promptText
                     text: getPrompt()
                     color: "#60a5fa"
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
                     height: implicitHeight + 2
                 }
@@ -102,7 +102,7 @@ Rectangle {
                     color: "#d4d4d8"
                     selectionColor: "#3b82f6"
                     selectedTextColor: "#ffffff"
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
                     focus: true
                     activeFocusOnTab: true
@@ -112,7 +112,7 @@ Rectangle {
                     cursorVisible: true
                     cursorDelegate: Rectangle {
                         width: 8
-                        height: 15
+                        height: Math.round(15 * root.sf)
                         color: "#d4d4d8"
                         visible: cmdInput.activeFocus
 
@@ -151,19 +151,19 @@ Rectangle {
             Row {
                 visible: isRunning
                 width: termCol.width
-                spacing: 0
+                spacing: Math.round(0 * root.sf)
 
                 Text {
                     text: getPrompt()
                     color: "#60a5fa"
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
                 }
 
                 Text {
                     text: "..."
                     color: "#f59e0b"
-                    font.pixelSize: 13
+                    font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
 
                     SequentialAnimation on opacity {

@@ -13,21 +13,21 @@ Rectangle {
 
     Flickable {
         anchors.fill: parent
-        anchors.margins: 20
+        anchors.margins: Math.round(20 * root.sf)
         contentHeight: appsCol.height
         clip: true
 
         ColumnLayout {
             id: appsCol
             width: parent.width
-            spacing: 16
+            spacing: Math.round(16 * root.sf)
 
             RowLayout {
                 Layout.fillWidth: true
 
                 Text {
                     text: "Extensions"
-                    font.pixelSize: 18
+                    font.pixelSize: Math.round(18 * root.sf)
                     font.weight: Font.DemiBold
                     color: root.textPrimary
                 }
@@ -35,18 +35,18 @@ Rectangle {
                 Item { Layout.fillWidth: true }
 
                 Rectangle {
-                    width: 100; height: 32; radius: root.radiusSm
+                    width: Math.round(100 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
                     color: Qt.rgba(1,1,1,0.06)
                     border.color: root.borderColor; border.width: 1
 
-                    Text { anchors.centerIn: parent; text: "+ New App"; font.pixelSize: 12; color: root.textSecondary }
+                    Text { anchors.centerIn: parent; text: "+ New App"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
                 }
             }
 
             Text {
                 text: "Extensions and automations installed on this system"
-                font.pixelSize: 13
+                font.pixelSize: Math.round(13 * root.sf)
                 color: root.textSecondary
             }
 
@@ -74,25 +74,25 @@ Rectangle {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            anchors.margins: 14
-                            spacing: 8
+                            anchors.margins: Math.round(14 * root.sf)
+                            spacing: Math.round(8 * root.sf)
 
                             RowLayout {
-                                spacing: 8
+                                spacing: Math.round(8 * root.sf)
 
-                                Text { text: ""; font.pixelSize: 18; font.family: root.iconFont; color: root.textSecondary }
+                                Text { text: ""; font.pixelSize: Math.round(18 * root.sf); font.family: root.iconFont; color: root.textSecondary }
 
                                 ColumnLayout {
-                                    spacing: 2
+                                    spacing: Math.round(2 * root.sf)
                                     Text {
                                         text: modelData.name || "Extension"
-                                        font.pixelSize: 13
+                                        font.pixelSize: Math.round(13 * root.sf)
                                         font.weight: Font.Medium
                                         color: root.textPrimary
                                     }
                                     Text {
                                         text: modelData.schedule || "Manual"
-                                        font.pixelSize: 10
+                                        font.pixelSize: Math.round(10 * root.sf)
                                         color: root.textMuted
                                     }
                                 }
@@ -101,14 +101,14 @@ Rectangle {
 
                                 // Status
                                 Rectangle {
-                                    width: 56; height: 22; radius: 11
+                                    width: Math.round(56 * root.sf); height: Math.round(22 * root.sf); radius: 11
                                     color: modelData.enabled ?
                                         Qt.rgba(0.13, 0.77, 0.37, 0.15) :
                                         Qt.rgba(1, 1, 1, 0.06)
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.enabled ? "On" : "Off"
-                                        font.pixelSize: 10
+                                        font.pixelSize: Math.round(10 * root.sf)
                                         color: modelData.enabled ? root.accentGreen : root.textMuted
                                     }
                                 }
@@ -117,7 +117,7 @@ Rectangle {
                             Text {
                                 Layout.fillWidth: true
                                 text: modelData.description || "No description"
-                                font.pixelSize: 12
+                                font.pixelSize: Math.round(12 * root.sf)
                                 color: root.textSecondary
                                 wrapMode: Text.WordWrap
                                 maximumLineCount: 2
@@ -126,7 +126,7 @@ Rectangle {
 
                             // Actions
                             RowLayout {
-                                spacing: 6
+                                spacing: Math.round(6 * root.sf)
 
                                 Repeater {
                                     model: [
@@ -137,7 +137,7 @@ Rectangle {
                                     ]
 
                                     delegate: Rectangle {
-                                        width: 52; height: 26; radius: root.radiusSm
+                                        width: Math.round(52 * root.sf); height: Math.round(26 * root.sf); radius: root.radiusSm
                                         color: modelData.color
                                         border.color: modelData.label !== "Run" ? root.borderColor : "transparent"
                                         border.width: modelData.label !== "Run" ? 1 : 0
@@ -145,7 +145,7 @@ Rectangle {
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.label === "Edit" ? "Edit ..." : modelData.label
-                                            font.pixelSize: 10
+                                            font.pixelSize: Math.round(10 * root.sf)
                                             color: modelData.label === "Run" ? "#ffffff" :
                                                    modelData.label === "Delete" ? root.accentRed :
                                                    modelData.label === "Edit" ? root.textMuted : root.textSecondary
@@ -174,24 +174,24 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                spacing: 8
+                spacing: Math.round(8 * root.sf)
                 visible: extensions.length === 0
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: ""
-                    font.pixelSize: 40; font.family: root.iconFont; color: root.textSecondary
+                    font.pixelSize: Math.round(40 * root.sf); font.family: root.iconFont; color: root.textSecondary
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: "No extensions installed yet"
-                    font.pixelSize: 14
+                    font.pixelSize: Math.round(14 * root.sf)
                     color: root.textSecondary
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: "Ask TensorAgent AI to create extensions for you"
-                    font.pixelSize: 12
+                    font.pixelSize: Math.round(12 * root.sf)
                     color: root.textMuted
                 }
             }
