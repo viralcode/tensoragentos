@@ -118,29 +118,29 @@ Rectangle {
     Rectangle {
         id: chatHeader
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: Math.round(42 * root.sf); visible: chatExpanded
-        color: Qt.rgba(0.05, 0.05, 0.08, 0.95); radius: root.radiusLg
+        height: Math.round(48 * root.sf); visible: chatExpanded
+        color: Qt.rgba(0.08, 0.09, 0.13, 0.85); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.04) }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.08) }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(18 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(12 * root.sf)
 
             Canvas {
-                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                width: Math.round(20 * root.sf); height: Math.round(20 * root.sf)
                 property real s: root.sf
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
-                    ctx.beginPath(); ctx.arc(9, 9, 7, 0, Math.PI * 2); ctx.stroke();
-                    ctx.fillStyle = "#60a5fa";
-                    ctx.beginPath(); ctx.arc(6, 7, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(12, 7, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(9, 11, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.8;
-                    ctx.beginPath(); ctx.moveTo(6, 7); ctx.lineTo(9, 11); ctx.lineTo(12, 7); ctx.stroke();
+                    ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1.5; ctx.lineCap = "round";
+                    ctx.beginPath(); ctx.arc(10, 10, 8, 0, Math.PI * 2); ctx.stroke();
+                    ctx.fillStyle = "#3b82f6";
+                    ctx.beginPath(); ctx.arc(7, 8, 1.6, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(13, 8, 1.6, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(10, 12, 1.6, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1.0;
+                    ctx.beginPath(); ctx.moveTo(7, 8); ctx.lineTo(10, 12); ctx.lineTo(13, 8); ctx.stroke();
                     ctx.restore();
                 }
                 onSChanged: requestPaint()
@@ -148,7 +148,7 @@ Rectangle {
 
             Text {
                 text: getAgentName()
-                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                font.pixelSize: Math.round(15 * root.sf); font.weight: Font.DemiBold; color: "#f8fafc"
             }
 
             Rectangle {
@@ -367,41 +367,38 @@ Rectangle {
                 Rectangle {
                     id: msgBubble
                     anchors.top: toolCol.visible ? toolCol.bottom : parent.top
-                    width: modelData.role === "user" ? Math.min(parent.width * 0.75, userMsgMetrics.width + Math.round(40 * root.sf))
-                                                     : parent.width * 0.88
-                    height: msgContentCol.height + Math.round(20 * root.sf)
-                    radius: Math.round(14 * root.sf)
+                    width: modelData.role === "user" ? Math.min(parent.width * 0.85, userMsgMetrics.width + Math.round(40 * root.sf))
+                                                     : parent.width * 0.92
+                    height: msgContentCol.height + Math.round(24 * root.sf)
+                    radius: Math.round(18 * root.sf)
                     anchors.right: modelData.role === "user" ? parent.right : undefined
                     anchors.left: modelData.role !== "user" ? parent.left : undefined
 
-                    color: modelData.role === "user" ?
-                        Qt.rgba(0.23, 0.44, 0.96, 0.15) :
-                        Qt.rgba(0.08, 0.10, 0.16, 0.85)
-                    border.color: modelData.role === "user" ?
-                        Qt.rgba(0.35, 0.55, 1.0, 0.2) :
-                        Qt.rgba(1, 1, 1, 0.06)
+                    color: modelData.role === "user" ? "#2563eb" : Qt.rgba(0.12, 0.13, 0.18, 0.95)
+                    border.color: modelData.role === "user" ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.05)
                     border.width: 1
 
                     TextMetrics {
                         id: userMsgMetrics
                         text: modelData.content || ""
-                        font.pixelSize: Math.round(13 * root.sf)
+                        font.pixelSize: Math.round(14 * root.sf)
                     }
 
                     Column {
                         id: msgContentCol
                         anchors.left: parent.left; anchors.right: parent.right
-                        anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(3 * root.sf)
+                        anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(6 * root.sf)
 
                         Row {
                             spacing: Math.round(6 * root.sf)
+                            visible: modelData.role !== "user" // Hide 'You' for user bubbles to look more like native iMessage/modern chat
                             Text {
-                                text: modelData.role === "user" ? "You" : (modelData.agent || getAgentName())
-                                font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold
-                                color: modelData.role === "user" ? "#60a5fa" : "#34d399"
+                                text: modelData.agent || getAgentName()
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold
+                                color: "#34d399"
                             }
                             Text {
-                                visible: modelData.model && modelData.role !== "user"
+                                visible: modelData.model !== undefined && modelData.model !== null
                                 text: modelData.model || ""
                                 font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
                             }
@@ -410,8 +407,9 @@ Rectangle {
                         Text {
                             width: parent.width
                             text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
-                            font.pixelSize: Math.round(13 * root.sf); color: "#e4e4e7"
-                            wrapMode: Text.Wrap; lineHeight: 1.45
+                            font.pixelSize: Math.round(14 * root.sf)
+                            color: modelData.role === "user" ? "#ffffff" : "#f8fafc"
+                            wrapMode: Text.Wrap; lineHeight: 1.5
                             textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
                         }
                     }
@@ -636,30 +634,30 @@ Rectangle {
     Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.margins: Math.round(5 * root.sf); height: Math.round(40 * root.sf); radius: Math.round(10 * root.sf)
-        color: Qt.rgba(0.08, 0.08, 0.12, 0.9)
-        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.3) : Qt.rgba(1, 1, 1, 0.06)
+        anchors.margins: Math.round(8 * root.sf); height: Math.round(50 * root.sf); radius: Math.round(25 * root.sf)
+        color: Qt.rgba(0.12, 0.13, 0.18, 0.95)
+        border.color: chatInput.activeFocus ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
 
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(6 * root.sf); spacing: Math.round(8 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(18 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
 
             Canvas {
-                width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); visible: !chatExpanded
+                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf); visible: !chatExpanded
                 property real s: root.sf
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
-                    ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI * 2); ctx.stroke();
+                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.3;
+                    ctx.beginPath(); ctx.arc(9, 9, 7, 0, Math.PI * 2); ctx.stroke();
                     ctx.fillStyle = "#60a5fa";
-                    ctx.beginPath(); ctx.arc(5.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(10.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(8, 10, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.6;
-                    ctx.beginPath(); ctx.moveTo(5.5, 7); ctx.lineTo(8, 10); ctx.lineTo(10.5, 7); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(6, 8, 1.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(12, 8, 1.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(9, 11.5, 1.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.moveTo(6, 8); ctx.lineTo(9, 11.5); ctx.lineTo(12, 8); ctx.stroke();
                     ctx.restore();
                 }
                 onSChanged: requestPaint()
@@ -669,12 +667,12 @@ Rectangle {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: "#e4e4e7"; font.pixelSize: Math.round(13 * root.sf); clip: true
+                color: "#f8fafc"; font.pixelSize: Math.round(14 * root.sf); clip: true
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Ask TensorAgent AI anything..."
-                    color: Qt.rgba(1, 1, 1, 0.25); font.pixelSize: Math.round(13 * root.sf)
+                    color: Qt.rgba(1, 1, 1, 0.35); font.pixelSize: Math.round(14 * root.sf)
                     visible: !parent.text && !parent.activeFocus
                 }
 
@@ -710,31 +708,31 @@ Rectangle {
 
             Rectangle {
                 visible: chatExpanded
-                width: agentPillText.width + Math.round(14 * root.sf); height: Math.round(22 * root.sf); radius: Math.round(11 * root.sf)
+                width: agentPillText.width + Math.round(16 * root.sf); height: Math.round(24 * root.sf); radius: Math.round(12 * root.sf)
                 color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
-                border.color: Qt.rgba(0.2, 0.83, 0.6, 0.2); border.width: 1
+                border.color: Qt.rgba(0.2, 0.83, 0.6, 0.25); border.width: 1
 
                 Text {
                     id: agentPillText; anchors.centerIn: parent
-                    text: getAgentName(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#34d399"
+                    text: getAgentName(); font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#34d399"
                 }
             }
 
             Rectangle {
-                width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
+                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(18 * root.sf)
 
-                color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.05)
+                color: chatInput.text.trim() ? "#2563eb" : Qt.rgba(1, 1, 1, 0.05)
                 Behavior on color { ColorAnimation { duration: 150 } }
 
                 Canvas {
-                    anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                    anchors.centerIn: parent; width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
                     property real s: root.sf
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.fillStyle = chatInput.text.trim() ? "#fff" : "#666";
-                        ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(12, 7); ctx.lineTo(8, 7);
-                        ctx.lineTo(8, 13); ctx.lineTo(6, 13); ctx.lineTo(6, 7); ctx.lineTo(2, 7);
+                        ctx.fillStyle = chatInput.text.trim() ? "#ffffff" : "#64748b";
+                        ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(14, 8); ctx.lineTo(9, 8);
+                        ctx.lineTo(9, 15); ctx.lineTo(7, 15); ctx.lineTo(7, 8); ctx.lineTo(2, 8);
                         ctx.closePath(); ctx.fill();
                         ctx.restore();
                     }
