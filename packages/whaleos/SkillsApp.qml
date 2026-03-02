@@ -135,15 +135,22 @@ Rectangle {
             Text { text: "API integrations and markdown-based skills"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
 
             // Tab bar
-            Row {
-                spacing: Math.round(0 * root.sf)
-                Repeater {
-                    model: [{ key: "api", label: "API Skills" }, { key: "markdown", label: "Markdown Skills" }]
-                    Rectangle {
-                        width: Math.round(120 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
-                        color: activeTab === modelData.key ? root.accentBlue : "transparent"
-                        Text { anchors.centerIn: parent; text: modelData.label; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: activeTab === modelData.key ? "#fff" : root.textSecondary }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: activeTab = modelData.key }
+            Rectangle {
+                width: tabRow.width + Math.round(6 * root.sf); height: Math.round(40 * root.sf)
+                radius: Math.round(10 * root.sf); color: Qt.rgba(1, 1, 1, 0.04)
+                border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
+
+                Row {
+                    id: tabRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
+                    Repeater {
+                        model: [{ key: "api", label: "API Skills" }, { key: "markdown", label: "Markdown Skills" }]
+                        Rectangle {
+                            width: Math.round(130 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(8 * root.sf)
+                            color: activeTab === modelData.key ? root.accentBlue : "transparent"
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Text { anchors.centerIn: parent; text: modelData.label; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: activeTab === modelData.key ? "#fff" : root.textSecondary }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: activeTab = modelData.key }
+                        }
                     }
                 }
             }

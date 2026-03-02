@@ -136,7 +136,7 @@ Rectangle {
                 width: parent.width
                 Column {
                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                    Text { text: "Tools"; font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+                    Text { text: "Tools"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
                     Text { text: allTools.length + " tools available for AI operations"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                 }
                 // Search
@@ -157,17 +157,17 @@ Rectangle {
 
             // Category pills
             Flow {
-                width: parent.width; spacing: Math.round(6 * root.sf)
+                width: parent.width; spacing: Math.round(10 * root.sf)
                 Repeater {
                     model: categories
                     Rectangle {
-                        width: catLabel.width + (catCount.visible ? catCount.width + 18 : 16); height: Math.round(28 * root.sf); radius: 14
+                        width: catLabel.width + (catCount.visible ? catCount.width + 22 : 20); height: Math.round(34 * root.sf); radius: 17
                         color: activeCategory === modelData ? root.accentBlue : "transparent"
                         border.color: activeCategory === modelData ? root.accentBlue : root.borderColor; border.width: 1
 
                         Row {
                             anchors.centerIn: parent; spacing: Math.round(5 * root.sf)
-                            Text { id: catLabel; text: modelData === "all" ? "All" : modelData.charAt(0).toUpperCase() + modelData.slice(1); font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: activeCategory === modelData ? "#fff" : root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
+                            Text { id: catLabel; text: modelData === "all" ? "All" : modelData.charAt(0).toUpperCase() + modelData.slice(1); font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: activeCategory === modelData ? "#fff" : root.textSecondary; anchors.verticalCenter: parent.verticalCenter }
                             Rectangle {
                                 id: catCount; visible: true; width: ccText.width + 8; height: Math.round(16 * root.sf); radius: 8
                                 color: activeCategory === modelData ? Qt.rgba(1,1,1,0.2) : root.bgElevated

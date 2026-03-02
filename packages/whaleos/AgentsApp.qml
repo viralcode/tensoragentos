@@ -117,14 +117,14 @@ Rectangle {
                 width: parent.width
 
                 Column {
-                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                    Text { text: "Agents"; font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+                    Layout.fillWidth: true; spacing: Math.round(4 * root.sf)
+                    Text { text: "Agents"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
                     Text { text: "Configure and manage AI agents for multi-agent coordination"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                 }
 
                 // Coordination Button
                 Rectangle {
-                    width: coordBtnRow.width + 20; height: Math.round(34 * root.sf); radius: root.radiusSm
+                    width: coordBtnRow.width + 28; height: Math.round(36 * root.sf); radius: Math.round(8 * root.sf)
                     color: coordBtnMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
                     border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
 
@@ -159,7 +159,7 @@ Rectangle {
 
                 // + New Agent Button
                 Rectangle {
-                    width: newBtnRow.width + 20; height: Math.round(34 * root.sf); radius: root.radiusSm
+                    width: newBtnRow.width + 28; height: Math.round(36 * root.sf); radius: Math.round(8 * root.sf)
                     color: newBtnMa.containsMouse ? Qt.darker(root.accentBlue, 1.2) : root.accentBlue
 
                     Row {
