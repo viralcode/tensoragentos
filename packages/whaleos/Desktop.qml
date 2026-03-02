@@ -168,17 +168,21 @@ Rectangle {
     // ── Right-Click Desktop Context Menu ──
     MouseArea {
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.RightButton
         z: 1
         onClicked: function(mouse) {
-            if (mouse.button === Qt.RightButton) {
-                contextMenu.x = mouse.x;
-                contextMenu.y = mouse.y;
-                contextMenu.visible = !contextMenu.visible;
-            } else {
-                contextMenu.visible = false;
-            }
+            contextMenu.x = mouse.x;
+            contextMenu.y = mouse.y;
+            contextMenu.visible = !contextMenu.visible;
         }
+    }
+
+    // ── Click-Outside Dismiss Overlay (only visible when context menu is open) ──
+    MouseArea {
+        anchors.fill: parent
+        visible: contextMenu.visible
+        z: 499  // Below context menu (500) but above everything else
+        onClicked: contextMenu.visible = false
     }
 
     // ── Context Menu ──
