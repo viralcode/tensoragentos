@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtMultimedia
 
 Rectangle {
     id: desktop
@@ -554,11 +553,11 @@ Rectangle {
         }
     }
 
-    // ── AI Processing Chime Sound ──
-    SoundEffect {
-        id: aiChime
-        source: "assets/ai_chime.wav"
-        volume: 0.5
+    // ── AI Processing Chime Sound (via system) ──
+    function playChime() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:7778/system/exec?cmd=aplay+-q+/opt/ainux/whaleos/assets/ai_chime.wav+%26");
+        xhr.send();
     }
 
     // ── Siri-like Orb Animation ──
@@ -579,7 +578,7 @@ Rectangle {
 
         // Play chime when processing starts
         onActiveChanged: {
-            if (active && !wasActive) { aiChime.play(); }
+            if (active && !wasActive) { playChime(); }
             wasActive = active;
         }
 
