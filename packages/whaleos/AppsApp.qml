@@ -33,15 +33,6 @@ Rectangle {
                 }
 
                 Item { Layout.fillWidth: true }
-
-                Rectangle {
-                    width: Math.round(100 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
-                    color: Qt.rgba(1,1,1,0.06)
-                    border.color: root.borderColor; border.width: 1
-
-                    Text { anchors.centerIn: parent; text: "+ New App"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
-                }
             }
 
             Text {
