@@ -485,7 +485,7 @@ Rectangle {
                             anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
 
                             Text {
-                                text: "📋 " + (activePlan ? activePlan.title || "Plan" : "")
+                                text: "≣ " + (activePlan ? activePlan.title || "Plan" : "")
                                 font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#60a5fa"
                             }
 

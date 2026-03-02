@@ -216,7 +216,7 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: copyMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "📋"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "⧉"; font.pixelSize: Math.round(13 * root.sf); color: "#8b9dc3" }
                     Text { text: "Copy"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                     Item { width: Math.round(40 * root.sf); height: 1 }
                     Text { text: "Ctrl+C"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
@@ -229,7 +229,7 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: pasteMa2.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "📋"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "⎘"; font.pixelSize: Math.round(13 * root.sf); color: "#8b9dc3" }
                     Text { text: "Paste"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                     Item { width: Math.round(36 * root.sf); height: 1 }
                     Text { text: "Ctrl+V"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
@@ -245,7 +245,7 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: worksMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "📂"; font.pixelSize: Math.round(13 * root.sf) }
+                    Text { text: "▨"; font.pixelSize: Math.round(14 * root.sf); color: "#64b5f6" }
                     Text { text: "Open Works"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                 }
                 MouseArea { id: worksMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { desktop.openFilesApp(); contextMenu.visible = false; } }
@@ -262,7 +262,7 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
                     Text { text: desktop.wpExpanded ? "▾" : "▸"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "🖼"; font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "◫"; font.pixelSize: Math.round(13 * root.sf); color: "#a78bfa"; anchors.verticalCenter: parent.verticalCenter }
                     Text { text: "Change Wallpaper"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                 }
                 MouseArea { id: wpHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.wpExpanded = !desktop.wpExpanded }
