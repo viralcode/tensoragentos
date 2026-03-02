@@ -203,42 +203,146 @@ Rectangle {
         // LEFT WIDGET — Brand + Status Pill
         // ═══════════════════════════════════
         Rectangle {
+            id: brandPill
             Layout.alignment: Qt.AlignVCenter
-            width: owLeftRow.width + Math.round(24 * root.sf)
+            width: owLeftRow.width + Math.round(28 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0.08, 0.08, 0.12, 0.65)
-            border.color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.10)
+            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
             border.width: 1
+            clip: true
 
-            Behavior on color { ColorAnimation { duration: 200 } }
-            Behavior on border.color { ColorAnimation { duration: 200 } }
+            // Animated border glow — cycles through accent colors
+            property real glowPhase: 0
+            NumberAnimation on glowPhase { from: 0; to: 6.2832; duration: 8000; loops: Animation.Infinite }
+            border.color: owAreaMouse.containsMouse
+                ? Qt.rgba(0.4 + 0.15 * Math.sin(glowPhase), 0.5 + 0.15 * Math.sin(glowPhase + 2), 1, 0.35)
+                : Qt.rgba(1, 1, 1, 0.10 + 0.04 * Math.sin(glowPhase))
+
+            scale: owAreaMouse.containsMouse ? 1.03 : 1.0
+            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+            Behavior on color { ColorAnimation { duration: 250 } }
+
+            // ── Shimmer sweep on hover ──
+            Rectangle {
+                id: brandShimmer
+                width: Math.round(40 * root.sf); height: parent.height
+                radius: parent.radius
+                rotation: -20
+                opacity: 0
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.08) }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.15) }
+                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.08) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+
+                property real sweepX: -width
+                x: sweepX; y: 0
+
+                SequentialAnimation {
+                    running: owAreaMouse.containsMouse
+                    loops: Animation.Infinite
+                    PropertyAction { target: brandShimmer; property: "opacity"; value: 1 }
+                    NumberAnimation { target: brandShimmer; property: "sweepX"; from: -brandShimmer.width; to: brandPill.width + brandShimmer.width; duration: 1200; easing.type: Easing.InOutQuad }
+                    PauseAnimation { duration: 600 }
+                }
+                // Hide shimmer when not hovering
+                Binding { target: brandShimmer; property: "opacity"; value: 0; when: !owAreaMouse.containsMouse }
+            }
 
             Row {
                 id: owLeftRow
                 anchors.centerIn: parent
                 spacing: Math.round(7 * root.sf)
 
-                // Whale logo
+                // Whale logo with subtle rotation on hover
                 Image {
+                    id: whaleLogo
                     width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
                     source: "assets/whale_logo.png"
                     fillMode: Image.PreserveAspectFit
                     smooth: true; mipmap: true
+                    rotation: owAreaMouse.containsMouse ? 8 : 0
+                    Behavior on rotation { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
                 }
 
-                // Status dot
-                Rectangle {
-                    width: Math.round(7 * root.sf); height: Math.round(7 * root.sf); radius: width / 2
+                // ── Status indicator with ripple rings ──
+                Item {
+                    width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: owOnline ? "#34d399" : "#f87171"
 
-                    SequentialAnimation on opacity {
-                        running: owOnline
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.4; duration: 1500; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 1.0; duration: 1500; easing.type: Easing.InOutSine }
+                    // Ripple ring 1 — outer
+                    Rectangle {
+                        id: ripple1
+                        anchors.centerIn: parent
+                        width: Math.round(7 * root.sf); height: width; radius: width / 2
+                        color: "transparent"
+                        border.color: owOnline ? "#34d399" : "#f87171"
+                        border.width: 1
+                        opacity: 0
+                        property real rippleScale: 1.0
+                        transform: Scale { origin.x: ripple1.width / 2; origin.y: ripple1.height / 2; xScale: ripple1.rippleScale; yScale: ripple1.rippleScale }
+
+                        SequentialAnimation {
+                            running: owOnline; loops: Animation.Infinite
+                            ParallelAnimation {
+                                NumberAnimation { target: ripple1; property: "rippleScale"; from: 1.0; to: 2.8; duration: 2000; easing.type: Easing.OutQuad }
+                                NumberAnimation { target: ripple1; property: "opacity"; from: 0.7; to: 0; duration: 2000; easing.type: Easing.OutQuad }
+                            }
+                            PauseAnimation { duration: 500 }
+                        }
+                    }
+
+                    // Ripple ring 2 — staggered
+                    Rectangle {
+                        id: ripple2
+                        anchors.centerIn: parent
+                        width: Math.round(7 * root.sf); height: width; radius: width / 2
+                        color: "transparent"
+                        border.color: owOnline ? "#34d399" : "#f87171"
+                        border.width: 1
+                        opacity: 0
+                        property real rippleScale: 1.0
+                        transform: Scale { origin.x: ripple2.width / 2; origin.y: ripple2.height / 2; xScale: ripple2.rippleScale; yScale: ripple2.rippleScale }
+
+                        SequentialAnimation {
+                            running: owOnline; loops: Animation.Infinite
+                            PauseAnimation { duration: 800 }
+                            ParallelAnimation {
+                                NumberAnimation { target: ripple2; property: "rippleScale"; from: 1.0; to: 2.4; duration: 1800; easing.type: Easing.OutQuad }
+                                NumberAnimation { target: ripple2; property: "opacity"; from: 0.5; to: 0; duration: 1800; easing.type: Easing.OutQuad }
+                            }
+                            PauseAnimation { duration: 700 }
+                        }
+                    }
+
+                    // Core dot with glow
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: Math.round(7 * root.sf); height: width; radius: width / 2
+                        color: owOnline ? "#34d399" : "#f87171"
+
+                        // Outer glow halo
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.width + Math.round(6 * root.sf)
+                            height: width; radius: width / 2
+                            color: "transparent"
+                            border.color: owOnline ? Qt.rgba(0.2, 0.83, 0.6, 0.25) : Qt.rgba(0.97, 0.44, 0.44, 0.25)
+                            border.width: Math.round(2 * root.sf)
+                            opacity: glowHaloOp
+
+                            property real glowHaloOp: 0.3
+                            SequentialAnimation on glowHaloOp {
+                                running: true; loops: Animation.Infinite
+                                NumberAnimation { to: 0.8; duration: 1800; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 0.3; duration: 1800; easing.type: Easing.InOutSine }
+                            }
+                        }
                     }
                 }
 
@@ -247,8 +351,9 @@ Rectangle {
                     font.pixelSize: Math.round(11.5 * root.sf)
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.3
-                    color: "#e2e8f0"
+                    color: owAreaMouse.containsMouse ? "#f8fafc" : "#e2e8f0"
                     anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 200 } }
                 }
             }
 
@@ -271,16 +376,50 @@ Rectangle {
         // CENTER WIDGET — Clock Pill
         // ═══════════════════════════════════
         Rectangle {
+            id: clockPill
             Layout.alignment: Qt.AlignVCenter
-            width: clockRow.width + Math.round(28 * root.sf)
+            width: clockRow.width + Math.round(30 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: clockMa.containsMouse || timePanelVisible ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0.08, 0.08, 0.12, 0.65)
-            border.color: clockMa.containsMouse || timePanelVisible ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.10)
+            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
             border.width: 1
+            clip: true
 
-            Behavior on color { ColorAnimation { duration: 200 } }
-            Behavior on border.color { ColorAnimation { duration: 200 } }
+            property real clockGlow: 0
+            NumberAnimation on clockGlow { from: 0; to: 6.2832; duration: 10000; loops: Animation.Infinite }
+            border.color: clockMa.containsMouse || timePanelVisible
+                ? Qt.rgba(0.5 + 0.1 * Math.sin(clockGlow), 0.6 + 0.1 * Math.sin(clockGlow + 1.5), 1, 0.30)
+                : Qt.rgba(1, 1, 1, 0.10)
+
+            scale: clockMa.containsMouse ? 1.03 : 1.0
+            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+            Behavior on color { ColorAnimation { duration: 250 } }
+
+            // ── Shimmer sweep ──
+            Rectangle {
+                id: clockShimmer
+                width: Math.round(35 * root.sf); height: parent.height
+                radius: parent.radius; rotation: -20; opacity: 0
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.06) }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.12) }
+                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.06) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+                property real sweepX: -width
+                x: sweepX; y: 0
+
+                SequentialAnimation {
+                    running: clockMa.containsMouse
+                    loops: Animation.Infinite
+                    PropertyAction { target: clockShimmer; property: "opacity"; value: 1 }
+                    NumberAnimation { target: clockShimmer; property: "sweepX"; from: -clockShimmer.width; to: clockPill.width + clockShimmer.width; duration: 1000; easing.type: Easing.InOutQuad }
+                    PauseAnimation { duration: 800 }
+                }
+                Binding { target: clockShimmer; property: "opacity"; value: 0; when: !clockMa.containsMouse }
+            }
 
             Row {
                 id: clockRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -290,8 +429,9 @@ Rectangle {
                     text: Qt.formatTime(new Date(), "h:mm AP")
                     font.pixelSize: Math.round(12.5 * root.sf)
                     font.weight: Font.DemiBold
-                    color: "#f1f5f9"
+                    color: clockMa.containsMouse ? "#ffffff" : "#f1f5f9"
                     anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 200 } }
 
                     Timer {
                         interval: 30000; running: true; repeat: true
@@ -299,15 +439,20 @@ Rectangle {
                     }
                 }
 
-                // Subtle separator dot
+                // Animated separator — pulses
                 Rectangle {
                     visible: currentTimezone !== ""
                     width: Math.round(3 * root.sf); height: Math.round(3 * root.sf)
-                    radius: width / 2; color: Qt.rgba(1, 1, 1, 0.25)
-                    anchors.verticalCenter: parent.verticalCenter
+                    radius: width / 2; anchors.verticalCenter: parent.verticalCenter
+                    color: Qt.rgba(1, 1, 1, 0.25)
+
+                    SequentialAnimation on opacity {
+                        running: true; loops: Animation.Infinite
+                        NumberAnimation { to: 0.3; duration: 1000; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutSine }
+                    }
                 }
 
-                // Timezone
                 Text {
                     visible: currentTimezone !== ""
                     text: {
@@ -316,8 +461,9 @@ Rectangle {
                     }
                     font.pixelSize: Math.round(10 * root.sf)
                     font.weight: Font.Medium
-                    color: Qt.rgba(1, 1, 1, 0.50)
+                    color: clockMa.containsMouse ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.45)
                     anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 200 } }
                 }
             }
 
@@ -341,11 +487,12 @@ Rectangle {
         // RIGHT WIDGET — Controls Pill
         // ═══════════════════════════════════
         Rectangle {
+            id: controlsPill
             Layout.alignment: Qt.AlignVCenter
-            width: rightRow.width + Math.round(20 * root.sf)
+            width: rightRow.width + Math.round(22 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.08, 0.08, 0.12, 0.65)
+            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
             border.color: Qt.rgba(1, 1, 1, 0.10)
             border.width: 1
 
@@ -354,25 +501,37 @@ Rectangle {
                 anchors.centerIn: parent
                 spacing: Math.round(6 * root.sf)
 
-                // Settings gear
+                // Settings gear with rotation
                 Rectangle {
                     width: Math.round(26 * root.sf)
                     height: Math.round(26 * root.sf)
                     radius: Math.round(13 * root.sf)
-                    color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                    color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    scale: settingsMouse.containsMouse ? 1.12 : 1.0
+                    Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
 
                     Canvas {
+                        id: gearCanvas
                         anchors.centerIn: parent
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
                         property real s: root.sf
+
+                        // Slow rotation on hover
+                        rotation: 0
+                        RotationAnimation on rotation {
+                            running: settingsMouse.containsMouse
+                            from: gearCanvas.rotation; to: gearCanvas.rotation + 360
+                            duration: 3000; loops: Animation.Infinite
+                        }
+
                         onPaint: {
                             var ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = settingsMouse.containsMouse ? "#cbd5e1" : "#94a3b8";
+                            ctx.strokeStyle = settingsMouse.containsMouse ? "#e2e8f0" : "#94a3b8";
                             ctx.lineWidth = 1.2;
                             ctx.beginPath();
                             var cx = 7, cy = 7;
@@ -407,38 +566,76 @@ Rectangle {
                     }
                 }
 
-                // Subtle separator
+                // Animated separator
                 Rectangle {
                     width: 1; height: Math.round(16 * root.sf)
                     color: Qt.rgba(1, 1, 1, 0.10)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                // User avatar
-                Rectangle {
-                    width: Math.round(24 * root.sf)
-                    height: Math.round(24 * root.sf)
-                    radius: width / 2
+                // User avatar with animated ring
+                Item {
+                    width: Math.round(28 * root.sf)
+                    height: Math.round(28 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
 
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#6366f1" }
-                        GradientStop { position: 1.0; color: "#8b5cf6" }
-                    }
-
-                    Text {
+                    // Animated gradient ring
+                    Canvas {
+                        id: avatarRing
                         anchors.centerIn: parent
-                        text: root.currentUser.charAt(0).toUpperCase()
-                        font.pixelSize: Math.round(11 * root.sf)
-                        font.weight: Font.Bold
-                        color: "#ffffff"
+                        width: parent.width; height: parent.height
+                        property real ringPhase: 0
+                        NumberAnimation on ringPhase { from: 0; to: 6.2832; duration: 4000; loops: Animation.Infinite }
+                        onRingPhaseChanged: requestPaint()
+                        property real s: root.sf
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            var cx = width / 2, cy = height / 2, r = width / 2 - 1;
+                            ctx.lineWidth = 1.5;
+
+                            // Create rotating gradient border
+                            var grad = ctx.createConicalGradient(cx, cy, ringPhase);
+                            grad.addColorStop(0.0, "#6366f1");
+                            grad.addColorStop(0.25, "#8b5cf6");
+                            grad.addColorStop(0.5, "#a78bfa");
+                            grad.addColorStop(0.75, "#818cf8");
+                            grad.addColorStop(1.0, "#6366f1");
+                            ctx.strokeStyle = grad;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: Math.round(22 * root.sf)
+                        height: width; radius: width / 2
+
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#6366f1" }
+                            GradientStop { position: 1.0; color: "#8b5cf6" }
+                        }
+
+                        scale: avatarMa.containsMouse ? 1.1 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.currentUser.charAt(0).toUpperCase()
+                            font.pixelSize: Math.round(10 * root.sf)
+                            font.weight: Font.Bold
+                            color: "#ffffff"
+                        }
+
+                        MouseArea {
+                            id: avatarMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; }
+                        }
                     }
                 }
             }
