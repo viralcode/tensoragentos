@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? (chatFullScreen ? parent.height - Math.round(20 * root.sf) : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(48 * root.sf)
+    height: chatExpanded ? (chatFullScreen ? parent.height - Math.round(20 * root.sf) : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(54 * root.sf)
     radius: root.radiusLg
     color: "transparent"
     clip: true
@@ -695,7 +695,7 @@ Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
-        anchors.bottomMargin: Math.round(8 * root.sf)
+        anchors.bottomMargin: Math.round(5 * root.sf)
         height: Math.round(44 * root.sf); radius: Math.round(12 * root.sf)
         color: Qt.rgba(0.06, 0.06, 0.10, 0.95)
         border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
