@@ -168,12 +168,16 @@ Rectangle {
     // ── Right-Click Desktop Context Menu ──
     MouseArea {
         anchors.fill: parent
-        acceptedButtons: Qt.RightButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         z: 1
         onClicked: function(mouse) {
-            contextMenu.x = mouse.x;
-            contextMenu.y = mouse.y;
-            contextMenu.visible = !contextMenu.visible;
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.x = mouse.x;
+                contextMenu.y = mouse.y;
+                contextMenu.visible = !contextMenu.visible;
+            } else {
+                contextMenu.visible = false;
+            }
         }
     }
 
