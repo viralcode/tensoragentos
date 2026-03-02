@@ -698,7 +698,7 @@ Rectangle {
         anchors.bottomMargin: Math.round(8 * root.sf)
         height: Math.round(48 * root.sf); radius: Math.round(14 * root.sf)
         color: Qt.rgba(0.06, 0.06, 0.10, 0.95)
-        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
+        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.18)
         border.width: 1
 
         Behavior on border.color { ColorAnimation { duration: 200 } }
