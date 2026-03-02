@@ -3,11 +3,11 @@ import QtQuick.Layouts
 
 Rectangle {
     id: dock
-    width: dockRow.width + Math.round(24 * root.sf)
-    height: Math.round(68 * root.sf)
+    width: dockRow.width + Math.round(28 * root.sf)
+    height: Math.round(74 * root.sf)
     radius: root.radiusLg
-    color: Qt.rgba(0.1, 0.1, 0.12, 0.8)
-    border.color: Qt.rgba(1, 1, 1, 0.08)
+    color: Qt.rgba(0.08, 0.08, 0.11, 0.85)
+    border.color: Qt.rgba(1, 1, 1, 0.1)
     border.width: 1
 
     Rectangle {
@@ -16,7 +16,7 @@ Rectangle {
     }
 
     Row {
-        id: dockRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+        id: dockRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
 
         Repeater {
             model: [
@@ -30,8 +30,8 @@ Rectangle {
             ]
 
             delegate: Rectangle {
-                width: Math.round(58 * root.sf); height: Math.round(56 * root.sf); radius: root.radiusMd
-                color: dockItemMouse.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
+                width: Math.round(64 * root.sf); height: Math.round(60 * root.sf); radius: root.radiusMd
+                color: dockItemMouse.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                 Behavior on color { ColorAnimation { duration: 150 } }
 
                 Column {

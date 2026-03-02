@@ -216,7 +216,15 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: copyMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "⧉"; font.pixelSize: Math.round(13 * root.sf); color: "#8b9dc3" }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
+                        onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
+                            ctx.strokeStyle = "#8b9dc3"; ctx.lineWidth = 1.2;
+                            ctx.strokeRect(1, 3, 8, 10); ctx.strokeRect(5, 1, 8, 10);
+                            ctx.restore(); }
+                        onSChanged: requestPaint()
+                    }
                     Text { text: "Copy"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                     Item { width: Math.round(40 * root.sf); height: 1 }
                     Text { text: "Ctrl+C"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
@@ -229,7 +237,17 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: pasteMa2.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "⎘"; font.pixelSize: Math.round(13 * root.sf); color: "#8b9dc3" }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
+                        onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
+                            ctx.strokeStyle = "#8b9dc3"; ctx.lineWidth = 1.2;
+                            ctx.strokeRect(2, 4, 10, 10);
+                            ctx.beginPath(); ctx.moveTo(4, 1); ctx.lineTo(10, 1); ctx.lineTo(10, 4); ctx.lineTo(4, 4); ctx.closePath(); ctx.stroke();
+                            ctx.fillStyle = "#8b9dc3"; ctx.fillRect(5, 7, 6, 1); ctx.fillRect(5, 9, 4, 1); ctx.fillRect(5, 11, 5, 1);
+                            ctx.restore(); }
+                        onSChanged: requestPaint()
+                    }
                     Text { text: "Paste"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                     Item { width: Math.round(36 * root.sf); height: 1 }
                     Text { text: "Ctrl+V"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
@@ -245,7 +263,18 @@ Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                 color: worksMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
-                    Text { text: "▨"; font.pixelSize: Math.round(14 * root.sf); color: "#64b5f6" }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
+                        onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
+                            ctx.fillStyle = "#64b5f6";
+                            ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(6,5); ctx.lineTo(7,3); ctx.lineTo(1,3); ctx.closePath(); ctx.fill();
+                            ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(13,5); ctx.lineTo(13,13); ctx.lineTo(1,13); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle = "#42a5f5";
+                            ctx.beginPath(); ctx.moveTo(1,7); ctx.lineTo(13,7); ctx.lineTo(13,13); ctx.lineTo(1,13); ctx.closePath(); ctx.fill();
+                            ctx.restore(); }
+                        onSChanged: requestPaint()
+                    }
                     Text { text: "Open Works"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary }
                 }
                 MouseArea { id: worksMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { desktop.openFilesApp(); contextMenu.visible = false; } }
@@ -262,7 +291,16 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
                     Text { text: desktop.wpExpanded ? "▾" : "▸"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "◫"; font.pixelSize: Math.round(13 * root.sf); color: "#a78bfa"; anchors.verticalCenter: parent.verticalCenter }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
+                        onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
+                            ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 1.2; ctx.strokeRect(1, 1, 12, 12);
+                            ctx.fillStyle = "#a78bfa";
+                            ctx.beginPath(); ctx.moveTo(3,10); ctx.lineTo(5,6); ctx.lineTo(7,8); ctx.lineTo(9,4); ctx.lineTo(11,10); ctx.closePath(); ctx.fill();
+                            ctx.restore(); }
+                        onSChanged: requestPaint()
+                    }
                     Text { text: "Change Wallpaper"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary; anchors.verticalCenter: parent.verticalCenter }
                 }
                 MouseArea { id: wpHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.wpExpanded = !desktop.wpExpanded }

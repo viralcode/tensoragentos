@@ -50,19 +50,36 @@ Rectangle {
     }
 
     function getFileIcon(item) {
-        if (item.isDir) return "▨";
+        if (item.isDir) return "/";
         var ext = item.ext || "";
-        if (["png","jpg","jpeg","gif","bmp","svg","webp"].indexOf(ext) >= 0) return "▣";
-        if (["mp4","avi","mkv","mov","webm"].indexOf(ext) >= 0) return "▶";
-        if (["mp3","wav","flac","ogg","aac"].indexOf(ext) >= 0) return "♫";
-        if (["pdf"].indexOf(ext) >= 0) return "▥";
-        if (["zip","tar","gz","7z","rar"].indexOf(ext) >= 0) return "⊞";
-        if (["js","ts","py","c","cpp","h","rs","go","java"].indexOf(ext) >= 0) return "⟨⟩";
-        if (["json","xml","yaml","yml","toml"].indexOf(ext) >= 0) return "⚙";
-        if (["md","txt","log","csv","xlsx","xls"].indexOf(ext) >= 0) return "≣";
-        if (["html","css","htm"].indexOf(ext) >= 0) return "⧀";
-        if (["sh","bash","zsh"].indexOf(ext) >= 0) return "⚡";
-        return "□";
+        if (["png","jpg","jpeg","gif","bmp","svg","webp"].indexOf(ext) >= 0) return "IMG";
+        if (["mp4","avi","mkv","mov","webm"].indexOf(ext) >= 0) return "VID";
+        if (["mp3","wav","flac","ogg","aac"].indexOf(ext) >= 0) return "AUD";
+        if (["pdf"].indexOf(ext) >= 0) return "PDF";
+        if (["xlsx","xls","csv"].indexOf(ext) >= 0) return "XLS";
+        if (["zip","tar","gz","7z","rar"].indexOf(ext) >= 0) return "ZIP";
+        if (["js","ts","py","c","cpp","h","rs","go","java"].indexOf(ext) >= 0) return "<>";
+        if (["json","xml","yaml","yml","toml"].indexOf(ext) >= 0) return "CFG";
+        if (["md","txt","log"].indexOf(ext) >= 0) return "TXT";
+        if (["html","css","htm"].indexOf(ext) >= 0) return "WEB";
+        if (["sh","bash","zsh"].indexOf(ext) >= 0) return ">_";
+        return "DOC";
+    }
+
+    function getFileIconColor(item) {
+        if (item.isDir) return "#64b5f6";
+        var ext = item.ext || "";
+        if (["png","jpg","jpeg","gif","bmp","svg","webp"].indexOf(ext) >= 0) return "#a78bfa";
+        if (["mp4","avi","mkv","mov","webm"].indexOf(ext) >= 0) return "#f472b6";
+        if (["mp3","wav","flac","ogg","aac"].indexOf(ext) >= 0) return "#34d399";
+        if (["pdf"].indexOf(ext) >= 0) return "#ef4444";
+        if (["xlsx","xls","csv"].indexOf(ext) >= 0) return "#22c55e";
+        if (["zip","tar","gz","7z","rar"].indexOf(ext) >= 0) return "#f59e0b";
+        if (["js","ts","py","c","cpp","h","rs","go","java"].indexOf(ext) >= 0) return "#60a5fa";
+        if (["json","xml","yaml","yml","toml"].indexOf(ext) >= 0) return "#94a3b8";
+        if (["html","css","htm"].indexOf(ext) >= 0) return "#f97316";
+        if (["sh","bash","zsh"].indexOf(ext) >= 0) return "#34d399";
+        return "#94a3b8";
     }
 
     // ── Toolbar ──
@@ -88,7 +105,7 @@ Rectangle {
             Rectangle {
                 width: Math.round(30 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm
                 color: homeMa.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
-                Text { anchors.centerIn: parent; text: "⌂"; font.pixelSize: Math.round(14 * root.sf); color: "#8b9dc3" }
+                Text { anchors.centerIn: parent; text: "~"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#8b9dc3" }
                 MouseArea { id: homeMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: navigateTo("/home/" + root.currentUser + "/Works") }
             }
 
@@ -180,7 +197,7 @@ Rectangle {
             // Empty state
             Text {
                 visible: fileList.length === 0
-                text: "□  This folder is empty"
+                text: "This folder is empty"
                 font.pixelSize: Math.round(13 * root.sf); color: root.textMuted
                 anchors.horizontalCenter: parent.horizontalCenter
                 topPadding: Math.round(60 * root.sf)
@@ -199,9 +216,14 @@ Rectangle {
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(16 * root.sf); spacing: Math.round(8 * root.sf)
 
-                        Text {
-                            text: getFileIcon(modelData); font.pixelSize: Math.round(16 * root.sf)
-                            color: modelData.isDir ? "#64b5f6" : "#8b9dc3"
+                        Rectangle {
+                            width: Math.round(30 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(3 * root.sf)
+                            color: Qt.rgba(0, 0, 0, 0.3); border.color: getFileIconColor(modelData); border.width: 1
+                            Text {
+                                anchors.centerIn: parent; text: getFileIcon(modelData)
+                                font.pixelSize: Math.round(8 * root.sf); font.weight: Font.Bold
+                                color: getFileIconColor(modelData)
+                            }
                         }
                         Text {
                             text: modelData.name; font.pixelSize: Math.round(12 * root.sf)
@@ -285,12 +307,12 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { label: "▨  Open", action: "open" },
-                    { label: "⧉  Copy Path", action: "copypath" },
-                    { label: "✂  Cut", action: "cut" },
-                    { label: "⎘  Copy", action: "copy" },
-                    { label: "✎  Rename", action: "rename" },
-                    { label: "✖  Delete", action: "delete" }
+                    { label: "Open", action: "open" },
+                    { label: "Copy Path", action: "copypath" },
+                    { label: "Cut", action: "cut" },
+                    { label: "Copy", action: "copy" },
+                    { label: "Rename", action: "rename" },
+                    { label: "Delete", action: "delete" }
                 ]
 
                 delegate: Rectangle {
@@ -319,7 +341,7 @@ Rectangle {
             Rectangle {
                 visible: clipboardPath !== ""; width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm
                 color: pasteMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); text: "⎘  Paste Here"; font.pixelSize: Math.round(12 * root.sf); color: root.accentGreen }
+                Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); text: "Paste Here"; font.pixelSize: Math.round(12 * root.sf); color: root.accentGreen }
                 MouseArea { id: pasteMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         fileContextMenu.visible = false;
