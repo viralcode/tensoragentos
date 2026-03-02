@@ -236,7 +236,7 @@ Rectangle {
                     }
                 }
 
-                MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chatFullScreen = !chatFullScreen }
+                MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (chatFullScreen) { chatFullScreen = false; chatExpanded = false; } else { chatFullScreen = true; } } }
             }
 
             Rectangle {
