@@ -185,6 +185,32 @@ const server = createServer(async (req, res) => {
                 res.end(JSON.stringify({ ok: false, error: e.message, timezones: [] }));
             }
 
+            // ── WebMCP Status ──
+        } else if (url === '/browser/webmcp-status') {
+            try {
+                const r = await safeExec('/opt/ainux/chromium/chrome --version 2>/dev/null || chromium --version 2>/dev/null || echo "not found"', '/');
+                const version = r.stdout.trim();
+                const match = version.match(/(\d+)\./);
+                const major = match ? parseInt(match[1]) : 0;
+                const webmcpEnabled = major >= 146;
+                // Check if WebMCP flag is in the launcher
+                let launcherHasFlag = false;
+                try {
+                    const lr = await safeExec('grep -c "enable-features=WebMCP" /opt/ainux/bin/ainux-browser 2>/dev/null || echo 0', '/');
+                    launcherHasFlag = parseInt(lr.stdout.trim()) > 0;
+                } catch { launcherHasFlag = false; }
+                res.end(JSON.stringify({
+                    ok: true,
+                    chromeVersion: version,
+                    chromeMajor: major,
+                    webmcpSupported: webmcpEnabled,
+                    launcherWebMCPFlag: launcherHasFlag,
+                    status: webmcpEnabled ? 'WebMCP available' : `Chrome ${major} — WebMCP requires 146+`
+                }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.message }));
+            }
+
         } else {
             res.end(JSON.stringify({ ok: true, service: 'tensoragent-helper', port: PORT }));
         }
