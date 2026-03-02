@@ -706,23 +706,55 @@ Rectangle {
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
 
-            Canvas {
-                width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); visible: !chatExpanded
-                property real s: root.sf
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                    ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
-                    ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI * 2); ctx.stroke();
-                    ctx.fillStyle = "#60a5fa";
-                    ctx.beginPath(); ctx.arc(5.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(10.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(8, 10, 1.2, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.6;
-                    ctx.beginPath(); ctx.moveTo(5.5, 7); ctx.lineTo(8, 10); ctx.lineTo(10.5, 7); ctx.stroke();
-                    ctx.restore();
+            // AI icon — clickable expand button when collapsed
+            Rectangle {
+                visible: !chatExpanded
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
+                color: expandIconMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(0.35, 0.55, 1.0, 0.08)
+
+                Canvas {
+                    anchors.centerIn: parent
+                    width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
+                    property real s: root.sf
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
+                        ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = "#60a5fa";
+                        ctx.beginPath(); ctx.arc(5.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(10.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(8, 10, 1.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.6;
+                        ctx.beginPath(); ctx.moveTo(5.5, 7); ctx.lineTo(8, 10); ctx.lineTo(10.5, 7); ctx.stroke();
+                        ctx.restore();
+                    }
+                    onSChanged: requestPaint()
                 }
-                onSChanged: requestPaint()
+
+                MouseArea {
+                    id: expandIconMa; anchors.fill: parent; hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { chatExpanded = true; chatInput.forceActiveFocus(); }
+                }
+            }
+
+            // Message count badge when collapsed (shows there are messages)
+            Rectangle {
+                visible: !chatExpanded && messages.length > 0
+                width: collapsedBadge.width + Math.round(10 * root.sf); height: Math.round(20 * root.sf); radius: 10
+                color: Qt.rgba(0.35, 0.55, 1.0, 0.15)
+
+                Text {
+                    id: collapsedBadge; anchors.centerIn: parent
+                    text: messages.length + " msgs"
+                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: "#60a5fa"
+                }
+
+                MouseArea {
+                    anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                    onClicked: { chatExpanded = true; chatInput.forceActiveFocus(); }
+                }
             }
 
             TextInput {
@@ -740,6 +772,13 @@ Rectangle {
 
                 onActiveFocusChanged: {
                     if (activeFocus && !chatExpanded) chatExpanded = true;
+                }
+
+                // Also expand on mouse click (in case focus doesn't change)
+                MouseArea {
+                    anchors.fill: parent; visible: !chatExpanded
+                    cursorShape: Qt.IBeamCursor
+                    onClicked: { chatExpanded = true; chatInput.forceActiveFocus(); }
                 }
 
                 onTextChanged: {
