@@ -287,8 +287,8 @@ Rectangle {
 
                 // Sign In button
                 Rectangle {
-                    Layout.fillWidth: true; height: Math.round(46 * root.sf)
-                    radius: Math.round(10 * root.sf)
+                    Layout.fillWidth: true; height: Math.round(52 * root.sf)
+                    radius: Math.round(12 * root.sf)
 
                     color: loginMouse.pressed ? "#2563eb" : loginMouse.containsMouse ? "#4f7df7" : "#3b82f6"
                     Behavior on color { ColorAnimation { duration: 150 } }
