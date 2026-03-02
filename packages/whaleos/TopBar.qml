@@ -4,8 +4,8 @@ import "api.js" as API
 
 Rectangle {
     id: topBar
-    height: Math.round(36 * root.sf)
-    color: Qt.rgba(0.10, 0.10, 0.14, 1.0)
+    height: Math.round(44 * root.sf)
+    color: "transparent"
 
     // ── OpenWhale state ──
     property bool owOnline: false
@@ -190,35 +190,34 @@ Rectangle {
         onTriggered: { owRestarting = false; checkOwHealth(); }
     }
 
-    // Bottom border
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
-        color: root.borderColor
-    }
-
+    // ── Widget Layout ──
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Math.round(14 * root.sf)
-        anchors.rightMargin: Math.round(14 * root.sf)
+        anchors.leftMargin: Math.round(10 * root.sf)
+        anchors.rightMargin: Math.round(10 * root.sf)
+        anchors.topMargin: Math.round(6 * root.sf)
+        anchors.bottomMargin: Math.round(4 * root.sf)
         spacing: Math.round(8 * root.sf)
 
-        // ── Left: Whale + OpenWhale (Clickable) ──
+        // ═══════════════════════════════════
+        // LEFT WIDGET — Brand + Status Pill
+        // ═══════════════════════════════════
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            width: owLeftRow.width + Math.round(16 * root.sf)
-            height: Math.round(28 * root.sf)
-            radius: root.radiusSm
-            color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+            width: owLeftRow.width + Math.round(24 * root.sf)
+            height: Math.round(32 * root.sf)
+            radius: Math.round(16 * root.sf)
+            color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0.08, 0.08, 0.12, 0.65)
+            border.color: owAreaMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.10)
+            border.width: 1
 
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on border.color { ColorAnimation { duration: 200 } }
 
             Row {
                 id: owLeftRow
                 anchors.centerIn: parent
-                spacing: Math.round(6 * root.sf)
+                spacing: Math.round(7 * root.sf)
 
                 // Whale logo
                 Image {
@@ -233,21 +232,22 @@ Rectangle {
                 Rectangle {
                     width: Math.round(7 * root.sf); height: Math.round(7 * root.sf); radius: width / 2
                     anchors.verticalCenter: parent.verticalCenter
-                    color: owOnline ? root.accentGreen : root.accentRed
+                    color: owOnline ? "#34d399" : "#f87171"
 
                     SequentialAnimation on opacity {
                         running: owOnline
                         loops: Animation.Infinite
-                        NumberAnimation { to: 0.5; duration: 1200; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 1.0; duration: 1200; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 0.4; duration: 1500; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 1.0; duration: 1500; easing.type: Easing.InOutSine }
                     }
                 }
 
                 Text {
                     text: "TensorAgent OS"
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.weight: Font.Medium
-                    color: root.textPrimary
+                    font.pixelSize: Math.round(11.5 * root.sf)
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.3
+                    color: "#e2e8f0"
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -267,14 +267,20 @@ Rectangle {
 
         Item { Layout.fillWidth: true }
 
-        // ── Center: Clock (clickable) ──
+        // ═══════════════════════════════════
+        // CENTER WIDGET — Clock Pill
+        // ═══════════════════════════════════
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            width: clockRow.width + Math.round(16 * root.sf)
-            height: Math.round(28 * root.sf)
-            radius: root.radiusSm
-            color: clockMa.containsMouse || timePanelVisible ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-            Behavior on color { ColorAnimation { duration: 150 } }
+            width: clockRow.width + Math.round(28 * root.sf)
+            height: Math.round(32 * root.sf)
+            radius: Math.round(16 * root.sf)
+            color: clockMa.containsMouse || timePanelVisible ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0.08, 0.08, 0.12, 0.65)
+            border.color: clockMa.containsMouse || timePanelVisible ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.10)
+            border.width: 1
+
+            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on border.color { ColorAnimation { duration: 200 } }
 
             Row {
                 id: clockRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -282,9 +288,9 @@ Rectangle {
                 Text {
                     id: clockText
                     text: Qt.formatTime(new Date(), "h:mm AP")
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.weight: Font.Medium
-                    color: root.textPrimary
+                    font.pixelSize: Math.round(12.5 * root.sf)
+                    font.weight: Font.DemiBold
+                    color: "#f1f5f9"
                     anchors.verticalCenter: parent.verticalCenter
 
                     Timer {
@@ -293,15 +299,24 @@ Rectangle {
                     }
                 }
 
-                // Small timezone abbreviation
+                // Subtle separator dot
+                Rectangle {
+                    visible: currentTimezone !== ""
+                    width: Math.round(3 * root.sf); height: Math.round(3 * root.sf)
+                    radius: width / 2; color: Qt.rgba(1, 1, 1, 0.25)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                // Timezone
                 Text {
                     visible: currentTimezone !== ""
                     text: {
                         var parts = currentTimezone.split("/");
                         return parts.length > 1 ? parts[parts.length - 1].replace(/_/g, " ") : currentTimezone;
                     }
-                    font.pixelSize: Math.round(9 * root.sf)
-                    color: root.textMuted
+                    font.pixelSize: Math.round(10 * root.sf)
+                    font.weight: Font.Medium
+                    color: Qt.rgba(1, 1, 1, 0.50)
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -322,83 +337,109 @@ Rectangle {
 
         Item { Layout.fillWidth: true }
 
-        // ── Right: Settings + User ──
-        Row {
-            spacing: Math.round(10 * root.sf)
+        // ═══════════════════════════════════
+        // RIGHT WIDGET — Controls Pill
+        // ═══════════════════════════════════
+        Rectangle {
             Layout.alignment: Qt.AlignVCenter
+            width: rightRow.width + Math.round(20 * root.sf)
+            height: Math.round(32 * root.sf)
+            radius: Math.round(16 * root.sf)
+            color: Qt.rgba(0.08, 0.08, 0.12, 0.65)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.width: 1
 
-            // Settings gear (canvas drawn)
-            Rectangle {
-                width: Math.round(26 * root.sf)
-                height: Math.round(26 * root.sf)
-                radius: Math.round(6 * root.sf)
-                color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                anchors.verticalCenter: parent.verticalCenter
+            Row {
+                id: rightRow
+                anchors.centerIn: parent
+                spacing: Math.round(6 * root.sf)
 
-                Canvas {
-                    anchors.centerIn: parent
-                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = "#999";
-                        ctx.lineWidth = 1.2;
-                        ctx.beginPath();
-                        var cx = 7, cy = 7;
-                        for (var i = 0; i < 8; i++) {
-                            var a1 = (i * Math.PI / 4) - 0.18;
-                            var a2 = (i * Math.PI / 4) + 0.18;
-                            ctx.lineTo(cx + 6 * Math.cos(a1), cy + 6 * Math.sin(a1));
-                            ctx.lineTo(cx + 6 * Math.cos(a2), cy + 6 * Math.sin(a2));
-                            var a3 = ((i + 0.5) * Math.PI / 4) - 0.12;
-                            var a4 = ((i + 0.5) * Math.PI / 4) + 0.12;
-                            ctx.lineTo(cx + 4.5 * Math.cos(a3), cy + 4.5 * Math.sin(a3));
-                            ctx.lineTo(cx + 4.5 * Math.cos(a4), cy + 4.5 * Math.sin(a4));
+                // Settings gear
+                Rectangle {
+                    width: Math.round(26 * root.sf)
+                    height: Math.round(26 * root.sf)
+                    radius: Math.round(13 * root.sf)
+                    color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Canvas {
+                        anchors.centerIn: parent
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                        property real s: root.sf
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+                            ctx.strokeStyle = settingsMouse.containsMouse ? "#cbd5e1" : "#94a3b8";
+                            ctx.lineWidth = 1.2;
+                            ctx.beginPath();
+                            var cx = 7, cy = 7;
+                            for (var i = 0; i < 8; i++) {
+                                var a1 = (i * Math.PI / 4) - 0.18;
+                                var a2 = (i * Math.PI / 4) + 0.18;
+                                ctx.lineTo(cx + 6 * Math.cos(a1), cy + 6 * Math.sin(a1));
+                                ctx.lineTo(cx + 6 * Math.cos(a2), cy + 6 * Math.sin(a2));
+                                var a3 = ((i + 0.5) * Math.PI / 4) - 0.12;
+                                var a4 = ((i + 0.5) * Math.PI / 4) + 0.12;
+                                ctx.lineTo(cx + 4.5 * Math.cos(a3), cy + 4.5 * Math.sin(a3));
+                                ctx.lineTo(cx + 4.5 * Math.cos(a4), cy + 4.5 * Math.sin(a4));
+                            }
+                            ctx.closePath();
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.restore();
                         }
-                        ctx.closePath();
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
-                        ctx.stroke();
-                        ctx.restore();
+                        onSChanged: requestPaint()
+                        property bool hov: settingsMouse.containsMouse
+                        onHovChanged: requestPaint()
                     }
-                    onSChanged: requestPaint()
+
+                    MouseArea {
+                        id: settingsMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: openApp("settings", "Settings", "settings")
+                    }
                 }
 
-                MouseArea {
-                    id: settingsMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: openApp("settings", "Settings", "settings")
-                }
-            }
-
-            // User avatar
-            Rectangle {
-                width: Math.round(24 * root.sf)
-                height: Math.round(24 * root.sf)
-                radius: width / 2
-                color: root.bgElevated
-                border.color: root.borderColor
-                border.width: 1
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.currentUser.charAt(0).toUpperCase()
-                    font.pixelSize: Math.round(11 * root.sf)
-                    font.weight: Font.Medium
-                    color: root.textPrimary
+                // Subtle separator
+                Rectangle {
+                    width: 1; height: Math.round(16 * root.sf)
+                    color: Qt.rgba(1, 1, 1, 0.10)
+                    anchors.verticalCenter: parent.verticalCenter
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; }
+                // User avatar
+                Rectangle {
+                    width: Math.round(24 * root.sf)
+                    height: Math.round(24 * root.sf)
+                    radius: width / 2
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#6366f1" }
+                        GradientStop { position: 1.0; color: "#8b5cf6" }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.currentUser.charAt(0).toUpperCase()
+                        font.pixelSize: Math.round(11 * root.sf)
+                        font.weight: Font.Bold
+                        color: "#ffffff"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; }
+                    }
                 }
             }
         }
