@@ -105,40 +105,49 @@ const server = createServer(async (req, res) => {
             clipboardBuffer = body.text || body.raw || '';
             res.end(JSON.stringify({ ok: true, length: clipboardBuffer.length }));
 
-            // ── Time Management ──
+            // ── Time Management (Linux kernel via timedatectl) ──
         } else if (url === '/time/info') {
             try {
-                const tz = await safeExec('timedatectl show --property=Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || echo UTC', '/');
-                const ntp = await safeExec('timedatectl show --property=NTP --value 2>/dev/null || echo unknown', '/');
-                const ntpSync = await safeExec('timedatectl show --property=NTPSynchronized --value 2>/dev/null || echo unknown', '/');
-                const dt = new Date();
+                const r = await safeExec('timedatectl show --no-pager 2>/dev/null || timedatectl status 2>/dev/null', '/');
+                const lines = r.stdout.trim().split('\n');
+                const info = {};
+                for (const line of lines) {
+                    const [key, ...vals] = line.split('=');
+                    if (key && vals.length) info[key.trim()] = vals.join('=').trim();
+                }
+                // Also get readable timezone
+                let timezone = info.Timezone || '';
+                let ntpSync = info.NTPSynchronized === 'yes';
+                let ntpActive = info.NTP === 'yes';
+                let localTime = info.TimeUSec || '';
+                let utcTime = info.UniversalTimeUSec || '';
+                // Fallback: parse timedatectl status output
+                if (!timezone) {
+                    const r2 = await safeExec('timedatectl status 2>/dev/null', '/');
+                    const statusLines = r2.stdout.trim().split('\n');
+                    for (const sl of statusLines) {
+                        if (sl.includes('Time zone:')) timezone = sl.split(':').slice(1).join(':').trim().split(' ')[0];
+                        if (sl.includes('NTP synchronized:')) ntpSync = sl.includes('yes');
+                        if (sl.includes('NTP service:')) ntpActive = sl.includes('active');
+                        if (sl.includes('Local time:')) localTime = sl.split(':').slice(1).join(':').trim();
+                        if (sl.includes('Universal time:')) utcTime = sl.split(':').slice(1).join(':').trim();
+                    }
+                }
                 res.end(JSON.stringify({
                     ok: true,
-                    timezone: tz.stdout.trim(),
-                    ntpEnabled: ntp.stdout.trim() === 'yes',
-                    ntpSynced: ntpSync.stdout.trim() === 'yes',
-                    iso: dt.toISOString(),
-                    unix: Math.floor(dt.getTime() / 1000)
+                    timezone, ntpSync, ntpActive, localTime, utcTime,
+                    raw: info
                 }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.message }));
             }
 
-        } else if (url === '/time/zones') {
-            try {
-                const r = await safeExec('timedatectl list-timezones 2>/dev/null || ls /usr/share/zoneinfo/posix/ -R 2>/dev/null', '/');
-                const zones = r.stdout.trim().split('\n').filter(z => z && !z.endsWith('/') && !z.startsWith('/'));
-                res.end(JSON.stringify({ ok: true, zones }));
-            } catch (e) {
-                res.end(JSON.stringify({ ok: false, zones: [], error: e.message }));
-            }
-
         } else if (url === '/time/timezone' && req.method === 'POST') {
             const body = await parseBody(req);
             const tz = (body.timezone || '').trim();
-            if (!tz) { res.end(JSON.stringify({ ok: false, error: 'No timezone specified' })); return; }
+            if (!tz) { res.end(JSON.stringify({ ok: false, error: 'No timezone provided' })); return; }
             try {
-                await safeExec(`sudo timedatectl set-timezone "${tz}" 2>&1`, '/');
+                await safeExec(`sudo timedatectl set-timezone ${JSON.stringify(tz)}`, '/');
                 res.end(JSON.stringify({ ok: true, timezone: tz }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
@@ -148,18 +157,32 @@ const server = createServer(async (req, res) => {
             const body = await parseBody(req);
             const enable = body.enable !== false;
             try {
-                await safeExec(`sudo timedatectl set-ntp ${enable ? 'true' : 'false'} 2>&1`, '/');
-                res.end(JSON.stringify({ ok: true, ntpEnabled: enable }));
+                await safeExec(`sudo timedatectl set-ntp ${enable ? 'true' : 'false'}`, '/');
+                res.end(JSON.stringify({ ok: true, ntp: enable }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
             }
 
-        } else if (url === '/time/sync' && req.method === 'POST') {
+        } else if (url === '/time/set' && req.method === 'POST') {
+            const body = await parseBody(req);
+            const time = (body.time || '').trim(); // Format: "YYYY-MM-DD HH:MM:SS"
+            if (!time) { res.end(JSON.stringify({ ok: false, error: 'No time provided' })); return; }
             try {
-                await safeExec('sudo systemctl restart systemd-timesyncd 2>&1 && sleep 1 && timedatectl show --property=NTPSynchronized --value', '/');
-                res.end(JSON.stringify({ ok: true, message: 'NTP sync initiated' }));
+                // Must disable NTP first to set manual time
+                await safeExec('sudo timedatectl set-ntp false', '/');
+                await safeExec(`sudo timedatectl set-time ${JSON.stringify(time)}`, '/');
+                res.end(JSON.stringify({ ok: true, time }));
             } catch (e) {
                 res.end(JSON.stringify({ ok: false, error: e.stderr || e.message }));
+            }
+
+        } else if (url === '/time/timezones') {
+            try {
+                const r = await safeExec('timedatectl list-timezones 2>/dev/null', '/');
+                const zones = r.stdout.trim().split('\n').filter(z => z.length > 0);
+                res.end(JSON.stringify({ ok: true, timezones: zones }));
+            } catch (e) {
+                res.end(JSON.stringify({ ok: false, error: e.message, timezones: [] }));
             }
 
         } else {
