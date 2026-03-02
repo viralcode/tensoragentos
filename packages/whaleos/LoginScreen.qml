@@ -290,11 +290,8 @@ Rectangle {
                     Layout.fillWidth: true; height: Math.round(46 * root.sf)
                     radius: Math.round(10 * root.sf)
 
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: loginMouse.pressed ? "#2563eb" : loginMouse.containsMouse ? "#4f7df7" : "#3b82f6" }
-                        GradientStop { position: 1.0; color: loginMouse.pressed ? "#5b21b6" : loginMouse.containsMouse ? "#8b5cf6" : "#7c3aed" }
-                    }
+                    color: loginMouse.pressed ? "#2563eb" : loginMouse.containsMouse ? "#4f7df7" : "#3b82f6"
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
                     // Button glow
                     Rectangle {
@@ -303,11 +300,7 @@ Rectangle {
                         radius: Math.round(14 * root.sf)
                         opacity: loginMouse.containsMouse ? 0.3 : 0.15
                         Behavior on opacity { NumberAnimation { duration: 200 } }
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "#3b82f6" }
-                            GradientStop { position: 1.0; color: "#7c3aed" }
-                        }
+                        color: "#3b82f6"
                     }
 
                     Row {

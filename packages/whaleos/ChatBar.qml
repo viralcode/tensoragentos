@@ -712,10 +712,8 @@ Rectangle {
             Rectangle {
                 width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
 
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: chatInput.text.trim() ? "#4f6ef7" : Qt.rgba(1, 1, 1, 0.06) }
-                    GradientStop { position: 1.0; color: chatInput.text.trim() ? "#7c3aed" : Qt.rgba(1, 1, 1, 0.03) }
-                }
+                color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.05)
+                Behavior on color { ColorAnimation { duration: 150 } }
 
                 Canvas {
                     anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
