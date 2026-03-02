@@ -18,6 +18,7 @@ Rectangle {
 
     // ── Wallpaper State ──
     property string currentWallpaper: "default"
+    property bool wpExpanded: false
     property var wallpaperList: [
         { id: "default",        name: "Default Aurora",    file: "" },
         { id: "nebula",         name: "🌌 Nebula",         file: "wallpapers/nebula.png" },
@@ -245,27 +246,23 @@ Rectangle {
             // Separator
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
 
-            // Header
-            Text {
-                text: "🖼  Change Wallpaper"
-                font.pixelSize: Math.round(11 * root.sf)
-                font.weight: Font.DemiBold
-                color: root.textMuted
-                leftPadding: Math.round(8 * root.sf)
-                topPadding: Math.round(4 * root.sf)
-                bottomPadding: Math.round(6 * root.sf)
-            }
-
-            // Separator
+            // ── Wallpaper Section (expandable/collapsible) ──
             Rectangle {
-                width: parent.width
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.06)
+                width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                color: wpHeaderMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
+                    anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                    Text { text: desktop.wpExpanded ? "▾" : "▸"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "🖼"; font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Change Wallpaper"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                }
+                MouseArea { id: wpHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.wpExpanded = !desktop.wpExpanded }
             }
 
-            // Wallpaper list
+            // Wallpaper list (shown when expanded)
             Repeater {
-                model: desktop.wallpaperList
+                model: desktop.wpExpanded ? desktop.wallpaperList : []
 
                 delegate: Rectangle {
                     width: parent.width

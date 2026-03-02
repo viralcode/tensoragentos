@@ -292,6 +292,46 @@ public:
         }
         return "";
     }
+
+    // ════════════════════════════════════════════════
+    // ── File Launching (via xdg-open / app-specific) ──
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE bool openFile(const QString &path) {
+        QFileInfo info(path);
+        if (!info.exists()) return false;
+
+        QString ext = info.suffix().toLower();
+        QStringList args;
+
+        // PDF → evince
+        if (ext == "pdf") {
+            args << "evince" << path;
+        }
+        // Spreadsheets → gnumeric
+        else if (ext == "xlsx" || ext == "xls" || ext == "ods" || ext == "csv") {
+            args << "gnumeric" << path;
+        }
+        // Documents → libreoffice
+        else if (ext == "doc" || ext == "docx" || ext == "odt" || ext == "pptx" || ext == "ppt") {
+            args << "libreoffice" << "--norestore" << path;
+        }
+        // Images → eog (Eye of GNOME) or feh
+        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" || ext == "bmp" || ext == "svg" || ext == "webp") {
+            args << "feh" << "--scale-down" << path;
+        }
+        // Text/code → xdg-open (fallback to terminal editor)
+        else {
+            args << "xdg-open" << path;
+        }
+
+        QProcess *proc = new QProcess();
+        proc->setProgram(args.takeFirst());
+        proc->setArguments(args);
+        proc->startDetached();
+        qDebug() << "SystemManager: Opening file:" << path;
+        return true;
+    }
 };
 
 #endif // SYSTEMMANAGER_H

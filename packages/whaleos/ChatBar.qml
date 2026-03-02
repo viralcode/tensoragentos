@@ -825,7 +825,7 @@ Rectangle {
             }
         };
 
-        xhr.send(JSON.stringify({ message: msg, agent: selectedAgent }));
+        xhr.send(JSON.stringify({ message: msg, agent: selectedAgent, workDir: workDir }));
     }
 
     function handleStreamEvent(event, data) {

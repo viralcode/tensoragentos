@@ -235,6 +235,8 @@ Rectangle {
                         onDoubleClicked: {
                             if (modelData.isDir) {
                                 navigateTo(modelData.path);
+                            } else {
+                                sysManager.openFile(modelData.path);
                             }
                         }
                     }
