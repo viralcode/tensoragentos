@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? (chatFullScreen ? parent.height : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(54 * root.sf)
+    height: chatExpanded ? (chatFullScreen ? parent.height : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(60 * root.sf)
     radius: root.radiusLg
     color: "transparent"
     clip: true
