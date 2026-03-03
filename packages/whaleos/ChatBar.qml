@@ -641,9 +641,10 @@ Rectangle {
                     // Thinking dots (when no content yet)
                     Rectangle {
                         visible: isSending && streamingContent.length === 0 && streamingSteps.length === 0
-                        width: streamRow2.width + Math.round(20 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(10 * root.sf)
+                        width: streamRow2.width + Math.round(20 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
                         color: Qt.rgba(1, 1, 1, 0.03)
                         border.color: Qt.rgba(0.2, 0.83, 0.6, 0.15); border.width: 1
+                        x: Math.round(8 * root.sf)
 
                         Row {
                             id: streamRow2; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -661,7 +662,7 @@ Rectangle {
                                 }
                             }
                             Text {
-                                text: getAgentName() + " is thinking..."
+                                text: "Thinking..."
                                 font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
                             }
                         }

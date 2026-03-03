@@ -798,23 +798,36 @@ Rectangle {
                             }
                         }
 
-                        // Activate button — only visible when provider has an API key
+                        // Activate button — switch chat to use this model
                         Rectangle {
-                            visible: modelData.hasKey
                             width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                            color: activateMa.containsMouse ? Qt.darker("#22c55e", 1.15) : "#22c55e"
+                            color: {
+                                if (activateMa.containsMouse) return Qt.darker("#22c55e", 1.15);
+                                return modelData.hasKey ? "#22c55e" : Qt.rgba(1,1,1,0.08);
+                            }
 
                             RowLayout {
                                 anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
                                 Text { text: "⚡"; font.pixelSize: Math.round(12 * root.sf) }
                                 Text {
                                     text: "Use " + provCard.selectedModel
-                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#ffffff"
+                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
+                                    color: modelData.hasKey ? "#ffffff" : root.textMuted
                                 }
                             }
                             MouseArea {
                                 id: activateMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                onClicked: activateProvider(modelData.type, provCard.selectedModel)
+                                onClicked: {
+                                    if (!modelData.hasKey && !keyInput.text) {
+                                        root.showToast("Enter an API key first for " + modelData.name, "error");
+                                    } else {
+                                        // If user typed a key, save it first
+                                        if (keyInput.text) {
+                                            saveProvider(modelData.type, keyInput.text, provCard.selectedModel);
+                                        }
+                                        activateProvider(modelData.type, provCard.selectedModel);
+                                    }
+                                }
                             }
                         }
                     }
