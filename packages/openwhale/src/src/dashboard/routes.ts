@@ -1738,6 +1738,17 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
         // Switch active model when a selectedModel is provided
         if (selectedModel) {
             setModel(selectedModel);
+
+            // Disable all other providers so this one takes priority
+            if (enabled) {
+                for (const [otherType, otherConfig] of providerConfigs.entries()) {
+                    if (otherType !== type && otherConfig.enabled) {
+                        providerConfigs.set(otherType, { ...otherConfig, enabled: false });
+                        console.log(`[Dashboard] Disabled provider ${otherType} (switching to ${type})`);
+                    }
+                }
+            }
+
             // Also persist to global config
             try {
                 db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('defaultModel', ?)").run(selectedModel);
