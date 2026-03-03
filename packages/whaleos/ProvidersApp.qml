@@ -84,6 +84,25 @@ Rectangle {
         xhr.send(JSON.stringify({ provider: providerType, apiKey: apiKey }));
     }
 
+    // Activate a specific provider model as the chat's active model
+    function activateProvider(providerType, selectedModel) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/providers/" + providerType + "/config");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    root.showToast(providerType.charAt(0).toUpperCase() + providerType.slice(1) + " " + selectedModel + " activated!", "success");
+                    loadProviders();
+                } else {
+                    root.showToast("Failed to activate (HTTP " + xhr.status + ")", "error");
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ selectedModel: selectedModel, enabled: true }));
+    }
+
     // ── Ollama Functions ──
     function checkOllama() {
         ollamaChecking = true;
@@ -776,6 +795,26 @@ Rectangle {
                                 color: Qt.rgba(1,1,1,0.06); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
                                 Text { anchors.centerIn: parent; text: "Test"; font.pixelSize: Math.round(11 * root.sf); color: "#e0e0e0" }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: testProvider(modelData.type, keyInput.text) }
+                            }
+                        }
+
+                        // Activate button — only visible when provider has an API key
+                        Rectangle {
+                            visible: modelData.hasKey
+                            width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                            color: activateMa.containsMouse ? Qt.darker("#22c55e", 1.15) : "#22c55e"
+
+                            RowLayout {
+                                anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+                                Text { text: "⚡"; font.pixelSize: Math.round(12 * root.sf) }
+                                Text {
+                                    text: "Use " + provCard.selectedModel
+                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#ffffff"
+                                }
+                            }
+                            MouseArea {
+                                id: activateMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: activateProvider(modelData.type, provCard.selectedModel)
                             }
                         }
                     }
