@@ -93,7 +93,10 @@ Rectangle {
         xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                try { agentList = JSON.parse(xhr.responseText); } catch(e) {}
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    agentList = resp.agents || resp || [];
+                } catch(e) {}
             }
         };
         xhr.send();

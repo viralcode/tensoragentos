@@ -31,9 +31,12 @@ Rectangle {
             if (xhr.readyState === 4) {
                 loading = false;
                 if (xhr.status === 200) {
-                    try { agentList = JSON.parse(xhr.responseText); } catch(e) { agentList = []; }
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        agentList = resp.agents || resp || [];
+                    } catch(e) { agentList = []; }
                 }
-                if (agentList.length === 0) {
+                if (!agentList || agentList.length === 0) {
                     agentList = [{
                         id: "main", name: "OpenWhale", description: "Default general-purpose AI assistant",
                         model: "default", isDefault: true, enabled: true,
@@ -56,7 +59,9 @@ Rectangle {
                 if (xhr.status === 200 || xhr.status === 201) {
                     root.showToast("Agent '" + newName + "' created successfully", "success");
                 } else {
-                    root.showToast("Failed to create agent (HTTP " + xhr.status + ")", "error");
+                    var errMsg = "";
+                    try { errMsg = JSON.parse(xhr.responseText).error || ""; } catch(e) {}
+                    root.showToast("Failed to create agent: " + (errMsg || "HTTP " + xhr.status), "error");
                 }
                 showNewAgent = false;
                 newName = ""; newRole = ""; newDescription = "";
@@ -65,9 +70,11 @@ Rectangle {
                 loadAgents();
             }
         };
+        // Generate ID from name: lowercase, replace spaces/special with hyphens
+        var agentId = newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
         var caps = newCapabilities.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
         xhr.send(JSON.stringify({
-            name: newName, description: newDescription || newRole,
+            id: agentId, name: newName, description: newDescription || newRole,
             model: newModel || undefined, systemPrompt: newSystemPrompt || undefined,
             workspace: newWorkspace || undefined, capabilities: caps, enabled: true
         }));
