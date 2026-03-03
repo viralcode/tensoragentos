@@ -21,8 +21,10 @@ class SystemManager : public QObject {
 public:
     explicit SystemManager(QObject *parent = nullptr) : QObject(parent), m_mainWindow(nullptr) {}
 
-
     void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
+
+private:
+    QQuickWindow *m_mainWindow;
 
     // ── List real Linux system users (UID >= 1000, excluding nobody/nogroup) ──
     Q_INVOKABLE QString listUsers() {
@@ -141,20 +143,32 @@ public:
         return true;
     }
 
-    // ── Authenticate user against Linux PAM/shadow ──
+    // ── Authenticate user against /etc/shadow ──
     Q_INVOKABLE bool authenticate(const QString &username, const QString &password) {
         if (username.isEmpty() || password.isEmpty()) return false;
 
-        // Use 'su' to verify credentials
+        // Use python3 crypt to verify password hash from /etc/shadow
+        // (su fails under systemd without a tty)
         QProcess proc;
-        proc.start("su", QStringList() << "-c" << "echo AUTH_OK" << username);
-        proc.waitForStarted(3000);
-        proc.write(QString("%1\n").arg(password).toUtf8());
+        proc.start("python3", QStringList() << "-c" <<
+            "import crypt,sys\n"
+            "u=sys.stdin.readline().strip()\n"
+            "p=sys.stdin.readline().strip()\n"
+            "for line in open('/etc/shadow'):\n"
+            "  parts=line.strip().split(':')\n"
+            "  if parts[0]==u:\n"
+            "    h=parts[1]\n"
+            "    if h and crypt.crypt(p,h)==h:\n"
+            "      print('AUTH_OK')\n"
+            "      sys.exit(0)\n"
+            "print('FAIL')");
+        if (!proc.waitForStarted(3000)) return false;
+        proc.write((username + "\n" + password + "\n").toUtf8());
         proc.closeWriteChannel();
         proc.waitForFinished(5000);
 
-        QString output = proc.readAllStandardOutput().trimmed();
-        bool ok = (proc.exitCode() == 0 && output.contains("AUTH_OK"));
+        QString output = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+        bool ok = output.contains("AUTH_OK");
 
         qDebug() << "SystemManager: Auth for" << username << ":" << (ok ? "SUCCESS" : "FAILED");
         return ok;
@@ -474,9 +488,6 @@ public:
         result["cwd"] = newCwd;
         return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
     }
-
-private:
-    QQuickWindow *m_mainWindow;
 };
 
 #endif // SYSTEMMANAGER_H
