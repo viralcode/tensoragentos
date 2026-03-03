@@ -261,37 +261,6 @@ Rectangle {
                         RowLayout {
                             width: parent.width; spacing: Math.round(10 * root.sf)
 
-                            // Robot icon (drawn)
-                            Rectangle {
-                                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 8
-                                color: Qt.rgba(0.23, 0.51, 0.96, 0.1)
-
-                                Canvas {
-                                    anchors.centerIn: parent; width: Math.round(20 * root.sf); height: Math.round(20 * root.sf)
-                                    onPaint: {
-                                        var ctx = getContext("2d");
-                                        ctx.clearRect(0, 0, width, height);
-                                        ctx.fillStyle = "#3b82f6";
-                                        // Head
-                                        ctx.beginPath();
-                                        ctx.roundRect(3, 4, 14, 12, [3]);
-                                        ctx.fill();
-                                        // Eyes
-                                        ctx.fillStyle = "#0a0a0a";
-                                        ctx.beginPath(); ctx.arc(7.5, 9, 1.8, 0, Math.PI * 2); ctx.fill();
-                                        ctx.beginPath(); ctx.arc(12.5, 9, 1.8, 0, Math.PI * 2); ctx.fill();
-                                        // Antenna
-                                        ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1.5;
-                                        ctx.beginPath(); ctx.moveTo(10, 4); ctx.lineTo(10, 1); ctx.stroke();
-                                        ctx.fillStyle = "#3b82f6";
-                                        ctx.beginPath(); ctx.arc(10, 0.5, 1.5, 0, Math.PI * 2); ctx.fill();
-                                        // Mouth
-                                        ctx.strokeStyle = "#0a0a0a"; ctx.lineWidth = 1;
-                                        ctx.beginPath(); ctx.moveTo(7, 13); ctx.lineTo(13, 13); ctx.stroke();
-                                    }
-                                }
-                            }
-
                             Column {
                                 Layout.fillWidth: true; spacing: Math.round(1 * root.sf)
 
