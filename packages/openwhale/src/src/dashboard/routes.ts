@@ -29,7 +29,7 @@ import {
 import { registry } from "../providers/index.js";
 import { getAllServers, startServer, stopServer, configureServer, getAllMCPTools } from "../mcp/mcp-registry.js";
 import { createAnthropicProvider } from "../providers/anthropic.js";
-import { createOpenAIProvider, createDeepSeekProvider } from "../providers/openai-compatible.js";
+import { createOpenAIProvider, createDeepSeekProvider, createOllamaProvider } from "../providers/openai-compatible.js";
 import { createGoogleProvider } from "../providers/google.js";
 import { getCanvasHTML, injectCanvasScripts, canvasPush, canvasReset, canvasEval } from "../canvas/index.js";
 
@@ -1721,6 +1721,29 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
                 console.log(`✓ ${type} provider registered dynamically`);
             } else {
                 console.error(`[Dashboard] Failed to create ${type} provider - API key may be invalid`);
+            }
+        }
+
+        // Handle Ollama separately — no API key needed, just needs to be registered
+        if (type === "ollama") {
+            const ollamaHost = (providerConfigs.get("ollama") as Record<string, unknown>)?.host as string || "http://127.0.0.1:11434/v1";
+            process.env.OLLAMA_HOST = ollamaHost;
+            const ollamaProvider = createOllamaProvider();
+            if (ollamaProvider) {
+                registry.register("ollama", ollamaProvider);
+                console.log(`✓ Ollama provider registered (host: ${ollamaHost})`);
+            }
+        }
+
+        // Switch active model when a selectedModel is provided
+        if (selectedModel) {
+            setModel(selectedModel);
+            // Also persist to global config
+            try {
+                db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('defaultModel', ?)").run(selectedModel);
+                console.log(`[Dashboard] Active model switched to: ${selectedModel}`);
+            } catch (e) {
+                console.error(`[Dashboard] Failed to persist defaultModel:`, e);
             }
         }
 

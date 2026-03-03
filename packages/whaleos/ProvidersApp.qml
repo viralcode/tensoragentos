@@ -116,27 +116,56 @@ Rectangle {
         xhr.send();
     }
 
+    property real ollamaPullProgress: 0
+    property string ollamaPullStatus: ""
+
     function pullOllamaModel(modelName) {
         if (!modelName) { root.showToast("Enter a model name to pull", "error"); return; }
         ollamaPulling = true;
-        root.showToast("Pulling " + modelName + "... This may take several minutes.", "info");
+        ollamaPullProgress = 0;
+        ollamaPullStatus = "Downloading " + modelName + "...";
+        root.showToast("Pulling " + modelName + "... Download will run in background.", "info");
 
-        // Use sysManager to run ollama pull (non-blocking notification)
-        var result = sysManager.runCommand("ollama pull " + modelName + " 2>&1 | tail -5", "/home/ainux");
-        ollamaPulling = false;
+        // Use Ollama HTTP API directly (non-blocking, async)
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:11434/api/pull");
+        xhr.setRequestHeader("Content-Type", "application/json");
 
-        try {
-            var data = JSON.parse(result);
-            if (data.exitCode === 0) {
-                root.showToast(modelName + " downloaded successfully!", "success");
-                checkOllama(); // Refresh model list
-            } else {
-                root.showToast("Pull failed: " + (data.stderr || data.stdout || "Unknown error"), "error");
+        // Track progress via periodic reads of partial response
+        var lastLen = 0;
+        xhr.onreadystatechange = function() {
+            // Parse streaming NDJSON for progress
+            if (xhr.readyState >= 3 && xhr.responseText.length > lastLen) {
+                var newData = xhr.responseText.substring(lastLen);
+                lastLen = xhr.responseText.length;
+                var lines = newData.split("\n");
+                for (var i = 0; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    try {
+                        var ev = JSON.parse(lines[i]);
+                        if (ev.total && ev.completed) {
+                            ollamaPullProgress = ev.completed / ev.total;
+                            ollamaPullStatus = modelName + ": " + Math.round(ollamaPullProgress * 100) + "%";
+                        } else if (ev.status) {
+                            ollamaPullStatus = ev.status;
+                        }
+                    } catch(e) {}
+                }
             }
-        } catch(e) {
-            root.showToast("Pull completed. Refreshing...", "info");
-            checkOllama();
-        }
+            if (xhr.readyState === 4) {
+                ollamaPulling = false;
+                ollamaPullProgress = 0;
+                ollamaPullStatus = "";
+                if (xhr.status === 200) {
+                    root.showToast(modelName + " downloaded successfully!", "success");
+                    checkOllama();
+                } else {
+                    root.showToast("Pull failed (HTTP " + xhr.status + ")", "error");
+                    checkOllama();
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ name: modelName }));
     }
 
     function deleteOllamaModel(modelName) {
@@ -492,6 +521,36 @@ Rectangle {
                                 MouseArea {
                                     id: pullBtnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                     onClicked: { pullOllamaModel(pullInput.text.trim()); pullInput.text = ""; }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Download Progress Bar ──
+                    Rectangle {
+                        width: parent.width; height: Math.round(40 * root.sf)
+                        radius: Math.round(8 * root.sf)
+                        color: Qt.rgba(0.13, 0.77, 0.37, 0.08)
+                        border.color: Qt.rgba(0.13, 0.77, 0.37, 0.2)
+                        visible: ollamaPulling
+
+                        Column {
+                            anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+                            spacing: Math.round(4 * root.sf)
+
+                            Text {
+                                text: ollamaPullStatus
+                                font.pixelSize: Math.round(10 * root.sf); color: "#22c55e"
+                                width: parent.width; elide: Text.ElideRight
+                            }
+                            Rectangle {
+                                width: parent.width; height: Math.round(6 * root.sf)
+                                radius: Math.round(3 * root.sf); color: Qt.rgba(1,1,1,0.08)
+                                Rectangle {
+                                    width: parent.width * ollamaPullProgress
+                                    height: parent.height; radius: parent.radius
+                                    color: "#22c55e"
+                                    Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                                 }
                             }
                         }
