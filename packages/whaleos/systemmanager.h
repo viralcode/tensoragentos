@@ -21,10 +21,8 @@ class SystemManager : public QObject {
 public:
     explicit SystemManager(QObject *parent = nullptr) : QObject(parent), m_mainWindow(nullptr) {}
 
-    void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
-private:
-    QQuickWindow *m_mainWindow;
+    void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
     // ── List real Linux system users (UID >= 1000, excluding nobody/nogroup) ──
     Q_INVOKABLE QString listUsers() {
@@ -476,6 +474,9 @@ private:
         result["cwd"] = newCwd;
         return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
     }
+
+private:
+    QQuickWindow *m_mainWindow;
 };
 
 #endif // SYSTEMMANAGER_H
