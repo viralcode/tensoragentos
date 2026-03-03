@@ -351,11 +351,32 @@ Rectangle {
 
         // Authenticate against Linux kernel (PAM/shadow)
         var ok = sysManager.authenticate(userField.text, passField.text);
-        loginBusy = false;
-        if (ok) {
-            root.onLoginSuccess(userField.text, "system");
-        } else {
+        if (!ok) {
+            loginBusy = false;
             errorText.text = "Invalid username or password";
+            return;
         }
+
+        // Now get a real API session token from OpenWhale
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/auth/login");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                loginBusy = false;
+                if (xhr.status === 200) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        if (resp.ok && resp.sessionId) {
+                            root.onLoginSuccess(userField.text, resp.sessionId);
+                            return;
+                        }
+                    } catch(e) {}
+                }
+                // API login failed — fall back to "system" session (local mode)
+                root.onLoginSuccess(userField.text, "system");
+            }
+        };
+        xhr.send(JSON.stringify({ username: "admin", password: "admin" }));
     }
 }

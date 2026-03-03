@@ -189,7 +189,7 @@ Rectangle {
             Rectangle {
                 width: agentSelectorRow.width + Math.round(12 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(4 * root.sf)
                 color: agentPickerMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(0.35, 0.55, 1.0, 0.1)
-                visible: agentList.length > 1
+                visible: true
 
                 Row { id: agentSelectorRow; anchors.centerIn: parent; spacing: Math.round(3 * root.sf)
                     Text { text: "▾"; font.pixelSize: Math.round(8 * root.sf); color: "#60a5fa"; anchors.verticalCenter: parent.verticalCenter }

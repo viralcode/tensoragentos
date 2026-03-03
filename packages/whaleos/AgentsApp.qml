@@ -231,136 +231,7 @@ Rectangle {
                 }
             }
 
-            // ════════════════════════════════════
-            // ── New Agent Dialog ──
-            // ════════════════════════════════════
-            Rectangle {
-                width: parent.width; height: formCol.height + 24; radius: root.radiusMd
-                color: Qt.rgba(0.13, 0.77, 0.37, 0.06)
-                border.color: Qt.rgba(0.13, 0.77, 0.37, 0.2); border.width: 1
-                visible: showNewAgent
-
-                Column {
-                    id: formCol; anchors.left: parent.left; anchors.right: parent.right
-                    anchors.top: parent.top; anchors.margins: Math.round(14 * root.sf); spacing: Math.round(12 * root.sf)
-
-                    Text { text: "Create New Agent"; font.pixelSize: Math.round(15 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-
-                    // Name field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "Name *"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(34 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
-                                onTextChanged: newName = text
-                                Text { anchors.fill: parent; text: "Agent name..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
-                            }
-                        }
-                    }
-
-                    // Role field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "Role"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(34 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
-                                onTextChanged: newRole = text
-                                Text { anchors.fill: parent; text: "e.g. coder, researcher, writer..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
-                            }
-                        }
-                    }
-
-                    // Description field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "Description"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(60 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); verticalAlignment: TextInput.AlignTop
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; wrapMode: TextInput.WrapAnywhere
-                                onTextChanged: newDescription = text
-                                Text { anchors.fill: parent; text: "What does this agent do?"; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
-                            }
-                        }
-                    }
-
-                    // Model field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "Model (optional)"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(34 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
-                                onTextChanged: newModel = text
-                                Text { anchors.fill: parent; text: "Override model for this agent..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
-                            }
-                        }
-                    }
-
-                    // System Prompt field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "System Prompt (optional)"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(72 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            Flickable {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); clip: true
-                                contentHeight: sysPromptInput.contentHeight
-                                TextEdit {
-                                    id: sysPromptInput; width: parent.width
-                                    color: "#fff"; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextEdit.WrapAnywhere
-                                    onTextChanged: newSystemPrompt = text
-                                    Text { text: "Custom system prompt for this agent..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
-                                }
-                            }
-                        }
-                    }
-
-                    // Capabilities field
-                    Column { width: parent.width; spacing: Math.round(4 * root.sf)
-                        Text { text: "Capabilities (comma separated)"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                        Rectangle {
-                            width: parent.width; height: Math.round(34 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; text: "general, code, tools"
-                                onTextChanged: newCapabilities = text
-                            }
-                        }
-                    }
-
-                    // Buttons
-                    RowLayout {
-                        width: parent.width; spacing: Math.round(8 * root.sf)
-                        Item { Layout.fillWidth: true }
-
-                        Rectangle {
-                            width: Math.round(70 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm
-                            color: cancelMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                            border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
-                            Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
-                            MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showNewAgent = false }
-                        }
-
-                        Rectangle {
-                            width: Math.round(90 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm
-                            color: createMa.containsMouse ? Qt.darker(root.accentGreen, 1.2) : root.accentGreen
-                            Text { anchors.centerIn: parent; text: "Create"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                            MouseArea { id: createMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: createAgent() }
-                        }
-                    }
-                }
-            }
+            // ── Agent list starts here (no inline form — dialog below) ──
 
             // ════════════════════════════════════
             // ── Agent List ──
@@ -578,6 +449,132 @@ Rectangle {
             }
 
             Item { width: Math.round(1 * root.sf); height: Math.round(20 * root.sf) }
+        }
+    }
+
+    // ════════════════════════════════════
+    // ── New Agent Dialog Overlay ──
+    // ════════════════════════════════════
+    Rectangle {
+        anchors.fill: parent; z: 1000
+        color: Qt.rgba(0, 0, 0, 0.6)
+        visible: showNewAgent
+
+        MouseArea { anchors.fill: parent; onClicked: showNewAgent = false }
+
+        Rectangle {
+            id: dialogCard
+            anchors.centerIn: parent
+            width: Math.min(parent.width - Math.round(48 * root.sf), Math.round(400 * root.sf))
+            height: dlgCol.height + Math.round(40 * root.sf)
+            radius: root.radiusLg
+            color: Qt.rgba(0.08, 0.08, 0.13, 0.98)
+            border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+
+            MouseArea { anchors.fill: parent } // prevent click-through
+
+            Column {
+                id: dlgCol; anchors.left: parent.left; anchors.right: parent.right
+                anchors.top: parent.top; anchors.margins: Math.round(20 * root.sf); spacing: Math.round(12 * root.sf)
+
+                // Header
+                RowLayout {
+                    width: parent.width
+                    Text { text: "Create New Agent"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
+                    Rectangle {
+                        width: Math.round(24 * root.sf); height: Math.round(24 * root.sf); radius: 12
+                        color: closeDlgMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+                        Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
+                        MouseArea { id: closeDlgMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showNewAgent = false }
+                    }
+                }
+
+                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
+
+                // Name *
+                Column { width: parent.width; spacing: Math.round(4 * root.sf)
+                    Text { text: "Name *"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
+                    Rectangle {
+                        width: parent.width; height: Math.round(36 * root.sf); radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.3); border.color: dlgNameInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.4) : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        TextInput {
+                            id: dlgNameInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignVCenter
+                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
+                            onTextChanged: newName = text
+                            Text { anchors.fill: parent; text: "Agent name..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
+                        }
+                    }
+                }
+
+                // Description
+                Column { width: parent.width; spacing: Math.round(4 * root.sf)
+                    Text { text: "Description"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
+                    Rectangle {
+                        width: parent.width; height: Math.round(60 * root.sf); radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.3); border.color: dlgDescInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.4) : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        TextInput {
+                            id: dlgDescInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignTop
+                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; wrapMode: TextInput.WrapAnywhere
+                            onTextChanged: newDescription = text
+                            Text { anchors.fill: parent; text: "What does this agent do?"; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                        }
+                    }
+                }
+
+                // System Prompt
+                Column { width: parent.width; spacing: Math.round(4 * root.sf)
+                    Text { text: "System Prompt (optional)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
+                    Rectangle {
+                        width: parent.width; height: Math.round(72 * root.sf); radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        Flickable {
+                            anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); clip: true
+                            contentHeight: sysPromptInput.contentHeight
+                            TextEdit {
+                                id: sysPromptInput; width: parent.width
+                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextEdit.WrapAnywhere
+                                onTextChanged: newSystemPrompt = text
+                                Text { text: "Custom system prompt..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                            }
+                        }
+                    }
+                }
+
+                // Capabilities
+                Column { width: parent.width; spacing: Math.round(4 * root.sf)
+                    Text { text: "Capabilities"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
+                    Rectangle {
+                        width: parent.width; height: Math.round(36 * root.sf); radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        TextInput {
+                            anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignVCenter
+                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; text: "general, code, tools"
+                            onTextChanged: newCapabilities = text
+                        }
+                    }
+                }
+
+                // Buttons
+                RowLayout {
+                    width: parent.width; spacing: Math.round(8 * root.sf)
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        width: Math.round(80 * root.sf); height: Math.round(34 * root.sf); radius: root.radiusSm
+                        color: cancelMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                        border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
+                        MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showNewAgent = false }
+                    }
+
+                    Rectangle {
+                        width: Math.round(100 * root.sf); height: Math.round(34 * root.sf); radius: root.radiusSm
+                        color: createMa.containsMouse ? Qt.darker(root.accentBlue, 1.2) : root.accentBlue
+                        Text { anchors.centerIn: parent; text: "Create Agent"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                        MouseArea { id: createMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: createAgent() }
+                    }
+                }
+            }
         }
     }
 }
