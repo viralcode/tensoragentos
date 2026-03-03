@@ -334,6 +334,20 @@ public:
     }
 
     // ════════════════════════════════════════════════
+    // ── Launch External Application (fire-and-forget) ──
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE bool launchApp(const QString &command) {
+        if (command.isEmpty()) return false;
+        QProcess *proc = new QProcess();
+        proc->setProgram("/bin/bash");
+        proc->setArguments(QStringList() << "-c" << command + " &");
+        proc->startDetached();
+        qDebug() << "SystemManager: Launching app:" << command;
+        return true;
+    }
+
+    // ════════════════════════════════════════════════
     // ── Shell Command Execution (for Terminal) ──
     // ════════════════════════════════════════════════
 

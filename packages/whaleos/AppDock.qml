@@ -18,6 +18,88 @@ Rectangle {
     Row {
         id: dockRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
 
+        // ── Native Apps ──
+        Repeater {
+            model: [
+                { appId: "chromium",    label: "Chrome",     native: true, cmd: "chromium --no-sandbox" },
+                { appId: "mousepad",    label: "Editor",     native: true, cmd: "mousepad" },
+                { appId: "galculator",  label: "Calculator", native: true, cmd: "galculator" }
+            ]
+
+            delegate: Rectangle {
+                width: Math.round(64 * root.sf); height: Math.round(60 * root.sf); radius: root.radiusMd
+                color: nativeMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+
+                Column {
+                    anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
+
+                    Canvas {
+                        width: Math.round(22 * root.sf); height: Math.round(22 * root.sf)
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        property string appId: modelData.appId
+                        property bool hovered: nativeMa.containsMouse
+                        property real s: root.sf
+                        onHoveredChanged: requestPaint()
+                        onSChanged: requestPaint()
+                        Component.onCompleted: requestPaint()
+
+                        onPaint: {
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+                            ctx.strokeStyle = hovered ? "#93c5fd" : "#94a3b8";
+                            ctx.fillStyle = hovered ? "#93c5fd" : "#94a3b8";
+                            ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+
+                            if (appId === "chromium") {
+                                // Globe/browser icon
+                                ctx.beginPath(); ctx.arc(11, 11, 9, 0, Math.PI * 2); ctx.stroke();
+                                ctx.beginPath(); ctx.ellipse(5, 2, 12, 18); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(2, 11); ctx.lineTo(20, 11); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(11, 2); ctx.lineTo(11, 20); ctx.stroke();
+                            } else if (appId === "mousepad") {
+                                // Notepad/text editor icon
+                                ctx.strokeRect(3, 1, 16, 20);
+                                ctx.beginPath(); ctx.moveTo(7, 6); ctx.lineTo(15, 6); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(7, 9); ctx.lineTo(15, 9); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(7, 12); ctx.lineTo(13, 12); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(7, 15); ctx.lineTo(11, 15); ctx.stroke();
+                            } else if (appId === "galculator") {
+                                // Calculator icon
+                                ctx.strokeRect(3, 1, 16, 20);
+                                ctx.fillRect(5, 3, 12, 5);
+                                ctx.strokeRect(5, 10, 4, 3);
+                                ctx.strokeRect(11, 10, 4, 3);
+                                ctx.strokeRect(5, 15, 4, 3);
+                                ctx.strokeRect(11, 15, 4, 3);
+                            }
+                            ctx.restore();
+                        }
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: modelData.label; font.pixelSize: Math.round(10 * root.sf)
+                        color: nativeMa.containsMouse ? "#93c5fd" : root.textSecondary
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                }
+
+                MouseArea {
+                    id: nativeMa; anchors.fill: parent; hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: sysManager.launchApp(modelData.cmd)
+                }
+            }
+        }
+
+        // ── Separator ──
+        Rectangle {
+            width: 1; height: Math.round(40 * root.sf); color: Qt.rgba(1, 1, 1, 0.1)
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        // ── System Apps ──
         Repeater {
             model: [
                 { appId: "settings",   label: "Settings" },
