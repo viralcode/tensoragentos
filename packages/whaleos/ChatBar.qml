@@ -409,7 +409,26 @@ Rectangle {
 
                 RowLayout {
                     anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
-                    Text { text: "⑂"; font.pixelSize: Math.round(12 * root.sf); color: "#a78bfa" }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                        property real s: root.sf
+                        onPaint: {
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+                            ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+                            // Fork icon: line down from top, splits into two branches
+                            ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(7, 6); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(7, 6); ctx.lineTo(3, 12); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(7, 6); ctx.lineTo(11, 12); ctx.stroke();
+                            // Dots at ends
+                            ctx.fillStyle = "#a78bfa";
+                            ctx.beginPath(); ctx.arc(7, 1, 1.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.beginPath(); ctx.arc(3, 12, 1.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.beginPath(); ctx.arc(11, 12, 1.5, 0, Math.PI * 2); ctx.fill();
+                            ctx.restore();
+                        }
+                        onSChanged: requestPaint()
+                    }
                     Text { text: "Fan-Out (Multi-Agent)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#a78bfa"; Layout.fillWidth: true }
                 }
 
@@ -1331,7 +1350,7 @@ Rectangle {
                 // Header
                 RowLayout {
                     width: parent.width
-                    Text { text: "⑂ Multi-Agent Task"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
+                    Text { text: "Multi-Agent Task"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
                     Rectangle {
                         width: Math.round(24 * root.sf); height: Math.round(24 * root.sf); radius: 12; color: closeFoMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                         Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
