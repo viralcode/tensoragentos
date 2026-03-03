@@ -728,7 +728,7 @@ Rectangle {
         id: appDock
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: chatBarItem.top
-        anchors.bottomMargin: Math.round(10 * root.sf)
+        anchors.bottomMargin: Math.round(14 * root.sf)
     }
 
     // ── Chat Bar (absolute positioned, expands upward) ──
@@ -736,7 +736,7 @@ Rectangle {
         id: chatBarItem
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(16 * root.sf)
+        anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(24 * root.sf)
         width: chatBarItem.chatFullScreen ? parent.width : Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
     }
 }
