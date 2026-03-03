@@ -119,7 +119,26 @@ Rectangle {
         for (var i = 0; i < agentList.length; i++) {
             if (agentList[i].id === selectedAgent) return agentList[i].name;
         }
-        return "AI";
+        return "TensorAgent AI";
+    }
+
+    function getWorkingStatus() {
+        // Dynamic status like dashboard: Running tool, Generating, Thinking (round N)
+        for (var i = streamingSteps.length - 1; i >= 0; i--) {
+            if (streamingSteps[i].type === "tool" && streamingSteps[i].status === "running") {
+                var label = streamingSteps[i].name || "tool";
+                return "Running: " + label;
+            }
+        }
+        if (streamingContent.length > 0) return "Generating...";
+        for (var j = 0; j < streamingSteps.length; j++) {
+            if (streamingSteps[j].type === "thinking" && !streamingSteps[j].done) {
+                if (streamingSteps[j].iteration > 1) return "Thinking (round " + streamingSteps[j].iteration + ")...";
+                return "Thinking...";
+            }
+        }
+        if (streamingSteps.length > 0) return "Processing results...";
+        return "Thinking...";
     }
 
     // ── Glass background (only when expanded) ──
@@ -638,32 +657,53 @@ Rectangle {
                     }
                     } // close streaming Row
 
-                    // Thinking dots (when no content yet)
-                    Rectangle {
-                        visible: isSending && streamingContent.length === 0 && streamingSteps.length === 0
-                        width: streamRow2.width + Math.round(20 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
-                        color: Qt.rgba(1, 1, 1, 0.03)
-                        border.color: Qt.rgba(0.2, 0.83, 0.6, 0.15); border.width: 1
-                        x: Math.round(8 * root.sf)
+                    // Working status bar (matches dashboard agent-working-bar)
+                    Row {
+                        visible: isSending && streamingContent.length === 0
+                        spacing: Math.round(8 * root.sf)
 
-                        Row {
-                            id: streamRow2; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
-                            Repeater {
-                                model: 3
-                                Rectangle {
-                                    width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#34d399"
-                                    SequentialAnimation on opacity {
-                                        running: isSending; loops: Animation.Infinite
-                                        PauseAnimation { duration: index * 200 }
-                                        NumberAnimation { to: 0.2; duration: 400 }
-                                        NumberAnimation { to: 1.0; duration: 400 }
-                                        PauseAnimation { duration: (2 - index) * 200 }
+                        Rectangle {
+                            width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
+                            radius: Math.round(8 * root.sf)
+                            color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
+                            Image {
+                                anchors.centerIn: parent
+                                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                                source: "assets/whale_logo.png"
+                                fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
+                            }
+                        }
+
+                        Column {
+                            spacing: Math.round(4 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Text {
+                                text: getAgentName()
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#a3e635"
+                            }
+
+                            Row {
+                                id: streamRow2; spacing: Math.round(5 * root.sf)
+                                Repeater {
+                                    model: 3
+                                    Rectangle {
+                                        width: Math.round(4 * root.sf); height: Math.round(4 * root.sf); radius: width / 2; color: "#34d399"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        SequentialAnimation on opacity {
+                                            running: isSending; loops: Animation.Infinite
+                                            PauseAnimation { duration: index * 200 }
+                                            NumberAnimation { to: 0.2; duration: 400 }
+                                            NumberAnimation { to: 1.0; duration: 400 }
+                                            PauseAnimation { duration: (2 - index) * 200 }
+                                        }
                                     }
                                 }
-                            }
-                            Text {
-                                text: "Thinking..."
-                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                Text {
+                                    text: getWorkingStatus()
+                                    font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
                         }
                     }
@@ -837,7 +877,7 @@ Rectangle {
             }
 
             Rectangle {
-                visible: chatExpanded
+                visible: true
                 width: agentPillText.width + Math.round(18 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(13 * root.sf)
                 color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
                 border.color: Qt.rgba(0.2, 0.83, 0.6, 0.2); border.width: 1
