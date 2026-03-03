@@ -12,12 +12,19 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QQuickWindow>
+#include <QThread>
 
 class SystemManager : public QObject {
     Q_OBJECT
 
 public:
-    explicit SystemManager(QObject *parent = nullptr) : QObject(parent) {}
+    explicit SystemManager(QObject *parent = nullptr) : QObject(parent), m_mainWindow(nullptr) {}
+
+    void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
+
+private:
+    QQuickWindow *m_mainWindow;
 
     // ── List real Linux system users (UID >= 1000, excluding nobody/nogroup) ──
     Q_INVOKABLE QString listUsers() {
@@ -334,8 +341,84 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── Launch External Application (fire-and-forget) ──
+    // ── Native App Window Management (via xdotool) ──
     // ════════════════════════════════════════════════
+
+    Q_INVOKABLE QString getMainWindowId() {
+        if (m_mainWindow) return QString::number(m_mainWindow->winId());
+        return "";
+    }
+
+    Q_INVOKABLE QString launchNativeApp(const QString &command, const QString &searchName) {
+        if (command.isEmpty()) return "";
+
+        // Launch the app detached
+        QProcess::startDetached("/bin/bash", QStringList() << "-c" << command);
+        qDebug() << "SystemManager: Launching native app:" << command;
+
+        // Poll xdotool to find the window (up to 10 seconds)
+        for (int i = 0; i < 20; i++) {
+            QThread::msleep(500);
+            QProcess search;
+            search.start("xdotool", QStringList() << "search" << "--name" << searchName);
+            search.waitForFinished(3000);
+            QString output = search.readAllStandardOutput().trimmed();
+            if (!output.isEmpty()) {
+                QStringList ids = output.split('\n');
+                QString winId = ids.last();
+                qDebug() << "SystemManager: Found native window:" << winId;
+                return winId;
+            }
+        }
+        qWarning() << "SystemManager: Timeout finding window for:" << searchName;
+        return "";
+    }
+
+    Q_INVOKABLE bool embedWindow(const QString &childWinId, const QString &parentWinId, int x, int y, int w, int h) {
+        if (childWinId.isEmpty() || parentWinId.isEmpty()) return false;
+
+        QProcess reparent;
+        reparent.start("xdotool", QStringList() << "windowreparent" << childWinId << parentWinId);
+        reparent.waitForFinished(3000);
+
+        QProcess resize;
+        resize.start("xdotool", QStringList() << "windowsize" << childWinId << QString::number(w) << QString::number(h));
+        resize.waitForFinished(3000);
+
+        QProcess move;
+        move.start("xdotool", QStringList() << "windowmove" << "--relative" << childWinId << QString::number(x) << QString::number(y));
+        move.waitForFinished(3000);
+
+        QProcess activate;
+        activate.start("xdotool", QStringList() << "windowactivate" << childWinId);
+        activate.waitForFinished(3000);
+
+        qDebug() << "SystemManager: Embedded window" << childWinId << "into" << parentWinId << "at" << x << y << w << h;
+        return true;
+    }
+
+    Q_INVOKABLE bool moveEmbeddedWindow(const QString &winId, int x, int y, int w, int h) {
+        if (winId.isEmpty()) return false;
+
+        QProcess move;
+        move.start("xdotool", QStringList() << "windowmove" << winId << QString::number(x) << QString::number(y));
+        move.waitForFinished(1000);
+
+        QProcess resize;
+        resize.start("xdotool", QStringList() << "windowsize" << winId << QString::number(w) << QString::number(h));
+        resize.waitForFinished(1000);
+        return true;
+    }
+
+    Q_INVOKABLE bool closeNativeWindow(const QString &winId) {
+        if (winId.isEmpty()) return false;
+
+        QProcess proc;
+        proc.start("xdotool", QStringList() << "windowclose" << winId);
+        proc.waitForFinished(3000);
+        qDebug() << "SystemManager: Closed native window:" << winId;
+        return true;
+    }
 
     Q_INVOKABLE bool launchApp(const QString &command) {
         if (command.isEmpty()) return false;

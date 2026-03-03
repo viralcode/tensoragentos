@@ -548,6 +548,8 @@ Rectangle {
             windowIcon: modelData.icon
             appId: modelData.appId
             windowArea: windowArea
+            nativeCmd: modelData.cmd || ""
+            nativeSearchName: modelData.searchName || ""
             initialX: parent.width / 2 - Math.round(350 * root.sf) + index * Math.round(30 * root.sf)
             initialY: Math.round(80 * root.sf) + index * Math.round(30 * root.sf)
         }

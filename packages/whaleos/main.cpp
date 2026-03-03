@@ -38,6 +38,13 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Pass main window to SystemManager for X11 window operations
+    QQuickWindow *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    if (mainWindow) {
+        sysManager.setMainWindow(mainWindow);
+        qDebug() << "TensorAgent OS: Main window WId:" << mainWindow->winId();
+    }
+
     qDebug() << "TensorAgent OS: Desktop shell loaded successfully";
     return app.exec();
 }
