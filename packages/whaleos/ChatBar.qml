@@ -29,6 +29,15 @@ Rectangle {
     property var chatHistory: []
     property int historyIndex: -1
 
+    // Real-time active model (polled from /api/providers)
+    property string activeModel: ""
+    property string activeProvider: ""
+
+    // Multi-agent state
+    property var liveAgentRuns: ({})
+    property bool showFanOutModal: false
+    property var fanOutChecked: ({})
+
     // Per-conversation work folder
     property string currentWorkFolder: ""
 
@@ -85,7 +94,37 @@ Rectangle {
         return s;
     }
 
-    Component.onCompleted: { loadAgents(); loadHistory(); }
+    Component.onCompleted: { loadAgents(); loadHistory(); loadActiveModel(); }
+
+    // Poll active model every 10s
+    Timer {
+        interval: 10000; running: true; repeat: true
+        onTriggered: loadActiveModel()
+    }
+
+    function loadActiveModel() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.apiBase + "/providers");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    var provs = resp.providers || [];
+                    for (var i = 0; i < provs.length; i++) {
+                        if (provs[i].enabled && provs[i].hasKey) {
+                            activeProvider = provs[i].name || provs[i].type;
+                            activeModel = provs[i].selectedModel || provs[i].models[0] || "";
+                            return;
+                        }
+                    }
+                    activeModel = "";
+                    activeProvider = "";
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
 
     function loadAgents() {
         var xhr = new XMLHttpRequest();
@@ -187,6 +226,18 @@ Rectangle {
             Text {
                 text: getAgentName()
                 font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+            }
+
+            // Active model badge
+            Rectangle {
+                visible: activeModel.length > 0
+                width: modelBadgeText.width + Math.round(12 * root.sf); height: Math.round(18 * root.sf); radius: Math.round(9 * root.sf)
+                color: Qt.rgba(0.35, 0.55, 1.0, 0.12)
+                Text {
+                    id: modelBadgeText; anchors.centerIn: parent
+                    text: activeModel
+                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium; color: "#60a5fa"
+                }
             }
 
             Rectangle {
@@ -347,12 +398,95 @@ Rectangle {
                     }
                 }
             }
+
+            // Divider
+            Rectangle { width: parent.width - Math.round(12 * root.sf); height: 1; color: Qt.rgba(1,1,1,0.06); anchors.horizontalCenter: parent.horizontalCenter }
+
+            // Fan-Out (Multi-Agent) option
+            Rectangle {
+                width: apCol.width; height: Math.round(32 * root.sf); radius: Math.round(4 * root.sf)
+                color: fanoutMa.containsMouse ? Qt.rgba(0.6, 0.3, 1.0, 0.12) : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                    Text { text: "⑂"; font.pixelSize: Math.round(12 * root.sf); color: "#a78bfa" }
+                    Text { text: "Fan-Out (Multi-Agent)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#a78bfa"; Layout.fillWidth: true }
+                }
+
+                MouseArea {
+                    id: fanoutMa; anchors.fill: parent; hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { showAgentPicker = false; showFanOutModal = true; }
+                }
+            }
+        }
+    }
+
+    // ── Multi-Agent Activity Panel ──
+    Rectangle {
+        id: multiAgentPanel
+        anchors.top: chatHeader.bottom; anchors.topMargin: 1
+        anchors.left: parent.left; anchors.right: parent.right
+        anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
+        height: maPanel.height + Math.round(12 * root.sf)
+        radius: Math.round(8 * root.sf)
+        color: Qt.rgba(0.08, 0.10, 0.16, 0.9)
+        border.color: Qt.rgba(0.4, 0.5, 1.0, 0.15); border.width: 1
+        visible: chatExpanded && Object.keys(liveAgentRuns).length > 0
+
+        Column {
+            id: maPanel; anchors.left: parent.left; anchors.right: parent.right
+            anchors.top: parent.top; anchors.margins: Math.round(6 * root.sf); spacing: Math.round(4 * root.sf)
+
+            Row {
+                spacing: Math.round(6 * root.sf)
+                Text { text: "🤖"; font.pixelSize: Math.round(11 * root.sf) }
+                Text { text: "Agent Activity"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#e4e4e7" }
+                Rectangle {
+                    width: maBadge.width + Math.round(8 * root.sf); height: Math.round(16 * root.sf); radius: 8
+                    color: Qt.rgba(0.35, 0.55, 1.0, 0.2)
+                    Text { id: maBadge; anchors.centerIn: parent; text: Object.keys(liveAgentRuns).length.toString(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#60a5fa" }
+                }
+            }
+
+            Repeater {
+                model: Object.keys(liveAgentRuns)
+
+                Rectangle {
+                    property var run: liveAgentRuns[modelData]
+                    width: maPanel.width; height: maRunRow.height + Math.round(10 * root.sf); radius: Math.round(6 * root.sf)
+                    color: Qt.rgba(0.06, 0.06, 0.10, 0.8)
+                    border.color: run.status === "running" ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(1,1,1,0.06); border.width: 1
+
+                    Row {
+                        id: maRunRow; anchors.left: parent.left; anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+
+                        Rectangle {
+                            width: Math.round(6 * root.sf); height: Math.round(6 * root.sf); radius: width / 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: run.status === "running" ? "#3b82f6" : run.status === "completed" ? "#34d399" : run.status === "error" ? "#ef4444" : root.textMuted
+                        }
+                        Column {
+                            spacing: 1; width: parent.width - Math.round(80 * root.sf)
+                            Text { text: run.agentId || "Agent"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#e4e4e7" }
+                            Text { text: (run.task || "...").substring(0, 60); font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; elide: Text.ElideRight; width: parent.width }
+                        }
+                        Text {
+                            text: run.status || "pending"
+                            font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter
+                            color: run.status === "running" ? "#3b82f6" : run.status === "completed" ? "#34d399" : run.status === "error" ? "#ef4444" : root.textMuted
+                        }
+                    }
+                }
+            }
         }
     }
 
     // ── Messages Area ──
     Item {
-        anchors.top: chatHeader.bottom; anchors.left: parent.left
+        anchors.top: multiAgentPanel.visible ? multiAgentPanel.bottom : chatHeader.bottom; anchors.left: parent.left
         anchors.right: parent.right; anchors.bottom: inputArea.top
         anchors.margins: 1; visible: chatExpanded; clip: true
 
@@ -660,11 +794,12 @@ Rectangle {
                     }
                     } // close streaming Row
 
-                    // Working status bar (matches dashboard agent-working-bar)
+                    // Working status bar — styled as message bubble
                     Row {
                         visible: isSending && streamingContent.length === 0
-                        spacing: Math.round(8 * root.sf)
+                        spacing: Math.round(12 * root.sf)
 
+                        // Whale avatar
                         Rectangle {
                             width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
                             radius: Math.round(8 * root.sf)
@@ -677,35 +812,53 @@ Rectangle {
                             }
                         }
 
-                        Column {
-                            spacing: Math.round(4 * root.sf)
-                            anchors.verticalCenter: parent.verticalCenter
+                        // Message-style bubble with thinking
+                        Rectangle {
+                            width: streamCol.width - Math.round(48 * root.sf)
+                            height: thinkingBubbleCol.height + Math.round(20 * root.sf)
+                            radius: Math.round(14 * root.sf)
+                            color: Qt.rgba(0.08, 0.10, 0.14, 0.6)
+                            border.color: Qt.rgba(0.35, 0.55, 1.0, 0.1); border.width: 1
 
-                            Text {
-                                text: getAgentName()
-                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#a3e635"
-                            }
+                            Column {
+                                id: thinkingBubbleCol; anchors.left: parent.left; anchors.right: parent.right
+                                anchors.top: parent.top; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
 
-                            Row {
-                                id: streamRow2; spacing: Math.round(5 * root.sf)
-                                Repeater {
-                                    model: 3
-                                    Rectangle {
-                                        width: Math.round(4 * root.sf); height: Math.round(4 * root.sf); radius: width / 2; color: "#34d399"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        SequentialAnimation on opacity {
-                                            running: isSending; loops: Animation.Infinite
-                                            PauseAnimation { duration: index * 200 }
-                                            NumberAnimation { to: 0.2; duration: 400 }
-                                            NumberAnimation { to: 1.0; duration: 400 }
-                                            PauseAnimation { duration: (2 - index) * 200 }
+                                Row {
+                                    spacing: Math.round(6 * root.sf)
+                                    Text {
+                                        text: getAgentName()
+                                        font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#a3e635"
+                                    }
+                                    Text {
+                                        visible: activeModel.length > 0
+                                        text: activeModel
+                                        font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
+                                    }
+                                }
+
+                                Row {
+                                    id: streamRow2; spacing: Math.round(5 * root.sf)
+                                    Repeater {
+                                        model: 3
+                                        Rectangle {
+                                            width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#34d399"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            SequentialAnimation on opacity {
+                                                running: isSending; loops: Animation.Infinite
+                                                PauseAnimation { duration: index * 200 }
+                                                NumberAnimation { to: 0.2; duration: 400 }
+                                                NumberAnimation { to: 1.0; duration: 400 }
+                                                PauseAnimation { duration: (2 - index) * 200 }
+                                            }
                                         }
                                     }
                                 }
+
                                 Text {
                                     text: getWorkingStatus()
                                     font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    topPadding: Math.round(2 * root.sf)
                                 }
                             }
                         }
@@ -1123,8 +1276,160 @@ Rectangle {
                 isStreaming = false;
                 break;
             }
+            case "agent_start": {
+                var runs = JSON.parse(JSON.stringify(liveAgentRuns));
+                runs[data.runId] = { runId: data.runId, agentId: data.agentId, task: data.task, status: "running", steps: [] };
+                liveAgentRuns = runs;
+                break;
+            }
+            case "agent_update": {
+                var runs2 = JSON.parse(JSON.stringify(liveAgentRuns));
+                if (runs2[data.runId]) {
+                    runs2[data.runId].status = data.status || runs2[data.runId].status;
+                    if (data.step) { runs2[data.runId].steps = (runs2[data.runId].steps || []).concat([data.step]); }
+                }
+                liveAgentRuns = runs2;
+                break;
+            }
+            case "agent_done": {
+                var runs3 = JSON.parse(JSON.stringify(liveAgentRuns));
+                if (runs3[data.runId]) {
+                    runs3[data.runId].status = data.status || "completed";
+                    if (data.result) runs3[data.runId].result = data.result;
+                }
+                liveAgentRuns = runs3;
+                break;
+            }
         }
         // Auto-scroll
         Qt.callLater(function() { messageList.positionViewAtEnd(); });
+    }
+
+    // ── Fan-Out Multi-Agent Modal ──
+    Rectangle {
+        id: fanOutOverlay
+        anchors.fill: parent; z: 200
+        visible: showFanOutModal
+        color: Qt.rgba(0, 0, 0, 0.6)
+
+        MouseArea { anchors.fill: parent; onClicked: showFanOutModal = false }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(Math.round(400 * root.sf), parent.width - Math.round(40 * root.sf))
+            height: fanOutCol.height + Math.round(32 * root.sf)
+            radius: root.radiusLg
+            color: Qt.rgba(0.06, 0.06, 0.10, 0.98)
+            border.color: Qt.rgba(0.4, 0.5, 1.0, 0.2); border.width: 1
+
+            MouseArea { anchors.fill: parent } // prevent close on card click
+
+            Column {
+                id: fanOutCol; anchors.left: parent.left; anchors.right: parent.right
+                anchors.top: parent.top; anchors.margins: Math.round(16 * root.sf); spacing: Math.round(12 * root.sf)
+
+                // Header
+                RowLayout {
+                    width: parent.width
+                    Text { text: "⑂ Multi-Agent Task"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
+                    Rectangle {
+                        width: Math.round(24 * root.sf); height: Math.round(24 * root.sf); radius: 12; color: closeFoMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+                        Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
+                        MouseArea { id: closeFoMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showFanOutModal = false }
+                    }
+                }
+
+                Text {
+                    text: "Spawn agents to work on a task in parallel."
+                    font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; width: parent.width; wrapMode: Text.Wrap
+                }
+
+                // Task input
+                Text { text: "Task Description"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textSecondary }
+                Rectangle {
+                    width: parent.width; height: Math.round(60 * root.sf); radius: root.radiusMd
+                    color: Qt.rgba(0.08, 0.08, 0.14, 0.9); border.color: fanOutTaskInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.3) : Qt.rgba(1,1,1,0.1); border.width: 1
+                    TextInput {
+                        id: fanOutTaskInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf)
+                        color: "#e4e4e7"; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextInput.Wrap
+                        Text { visible: !parent.text; text: "Describe the task..."; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(12 * root.sf) }
+                    }
+                }
+
+                // Agent checklist
+                Text { text: "Select Agents"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textSecondary }
+
+                Column {
+                    width: parent.width; spacing: Math.round(4 * root.sf)
+                    Repeater {
+                        model: agentList
+                        Rectangle {
+                            width: parent.width; height: Math.round(32 * root.sf); radius: Math.round(6 * root.sf)
+                            color: foAgentMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+                                Rectangle {
+                                    width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); radius: Math.round(3 * root.sf)
+                                    border.color: fanOutChecked[modelData.id] ? "#3b82f6" : Qt.rgba(1,1,1,0.2); border.width: 1
+                                    color: fanOutChecked[modelData.id] ? Qt.rgba(0.23, 0.51, 0.96, 0.2) : "transparent"
+                                    Text { anchors.centerIn: parent; text: fanOutChecked[modelData.id] ? "✓" : ""; font.pixelSize: Math.round(10 * root.sf); color: "#3b82f6" }
+                                }
+                                Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); color: "#e4e4e7"; Layout.fillWidth: true }
+                            }
+
+                            MouseArea {
+                                id: foAgentMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    var c = JSON.parse(JSON.stringify(fanOutChecked));
+                                    c[modelData.id] = !c[modelData.id];
+                                    fanOutChecked = c;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Run button
+                Rectangle {
+                    width: parent.width; height: Math.round(36 * root.sf); radius: Math.round(10 * root.sf)
+                    color: runFoMa.containsMouse ? "#2563eb" : "#3b82f6"
+
+                    Text { anchors.centerIn: parent; text: "⚡ Run Multi-Agent Task"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Bold; color: "#fff" }
+
+                    MouseArea {
+                        id: runFoMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            var task = fanOutTaskInput.text.trim();
+                            if (!task) { root.showToast("Enter a task description", "error"); return; }
+                            var agents = [];
+                            var keys = Object.keys(fanOutChecked);
+                            for (var i = 0; i < keys.length; i++) {
+                                if (fanOutChecked[keys[i]]) agents.push(keys[i]);
+                            }
+                            if (agents.length === 0) { root.showToast("Select at least one agent", "error"); return; }
+
+                            var xhr = new XMLHttpRequest();
+                            xhr.open("POST", root.apiBase + "/agents/fan-out");
+                            xhr.setRequestHeader("Content-Type", "application/json");
+                            xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+                            xhr.onreadystatechange = function() {
+                                if (xhr.readyState === 4) {
+                                    if (xhr.status === 200) {
+                                        root.showToast("Multi-agent task dispatched!", "success");
+                                    } else {
+                                        root.showToast("Fan-out failed (HTTP " + xhr.status + ")", "error");
+                                    }
+                                }
+                            };
+                            xhr.send(JSON.stringify({ task: task, agents: agents }));
+                            showFanOutModal = false;
+                            fanOutTaskInput.text = "";
+                            fanOutChecked = ({});
+                        }
+                    }
+                }
+            }
+        }
     }
 }
