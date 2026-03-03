@@ -99,9 +99,14 @@ Rectangle {
                         var models = data.models || [];
                         var names = [];
                         for (var i = 0; i < models.length; i++) {
+                            var diskGB = models[i].size ? (models[i].size / (1024*1024*1024)).toFixed(1) : "?";
+                            var paramSize = models[i].details && models[i].details.parameter_size ? models[i].details.parameter_size : "";
+                            var ramGB = estimateRam(paramSize, diskGB);
                             names.push({
                                 name: models[i].name,
-                                size: models[i].size ? (models[i].size / (1024*1024*1024)).toFixed(1) + " GB" : "",
+                                size: diskGB + " GB",
+                                ram: ramGB,
+                                paramSize: paramSize,
                                 modified: models[i].modified_at || ""
                             });
                         }
@@ -114,6 +119,29 @@ Rectangle {
             }
         };
         xhr.send();
+    }
+
+    // Estimate RAM needed — roughly 1.2x the disk size for q4 quantized models
+    function estimateRam(paramSize, diskGB) {
+        // If we have parameter size like "7B", "3B", "0.5B"
+        if (paramSize) {
+            var match = paramSize.match(/([\d.]+)/);
+            if (match) {
+                var params = parseFloat(match[1]);
+                if (params <= 1) return "~1 GB RAM";
+                if (params <= 3) return "~2.5 GB RAM";
+                if (params <= 4) return "~3.5 GB RAM";
+                if (params <= 8) return "~5 GB RAM";
+                if (params <= 14) return "~9 GB RAM";
+                if (params <= 34) return "~20 GB RAM";
+                if (params <= 70) return "~40 GB RAM";
+                return "~" + Math.round(params * 0.6) + " GB RAM";
+            }
+        }
+        // Fallback: estimate from disk size (RAM ≈ 1.2x disk)
+        var d = parseFloat(diskGB);
+        if (!isNaN(d) && d > 0) return "~" + (d * 1.2).toFixed(1) + " GB RAM";
+        return "";
     }
 
     property real ollamaPullProgress: 0
@@ -422,12 +450,32 @@ Rectangle {
                                             Layout.fillWidth: true
                                         }
 
-                                        // Size
-                                        Text {
-                                            text: modelData.size
-                                            font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
-                                            Layout.preferredWidth: Math.round(50 * root.sf)
-                                            horizontalAlignment: Text.AlignRight
+                                        // Size + RAM
+                                        Column {
+                                            Layout.preferredWidth: Math.round(100 * root.sf)
+                                            spacing: 1
+                                            Text {
+                                                text: modelData.size
+                                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                                anchors.right: parent.right
+                                            }
+                                            Text {
+                                                text: modelData.ram || ""
+                                                font.pixelSize: Math.round(9 * root.sf)
+                                                color: {
+                                                    var ram = modelData.ram || "";
+                                                    var m = ram.match(/[\d.]+/);
+                                                    if (m) {
+                                                        var gb = parseFloat(m[0]);
+                                                        if (gb <= 3) return "#22c55e";   // green — fits easy
+                                                        if (gb <= 5) return "#f59e0b";   // amber — tight
+                                                        return "#ef4444";                 // red — may not fit
+                                                    }
+                                                    return root.textMuted;
+                                                }
+                                                anchors.right: parent.right
+                                                visible: text !== ""
+                                            }
                                         }
 
                                         // Use button
@@ -571,12 +619,13 @@ Rectangle {
 
                             Repeater {
                                 model: [
-                                    { name: "llama3.2", desc: "Meta 3B" },
-                                    { name: "mistral", desc: "7B" },
-                                    { name: "codellama", desc: "Code 7B" },
-                                    { name: "phi3", desc: "Microsoft 3.8B" },
-                                    { name: "gemma2", desc: "Google 2B" },
-                                    { name: "qwen2.5", desc: "Alibaba 7B" }
+                                    { name: "qwen2.5:0.5b", desc: "Alibaba 0.5B", ram: "~1 GB" },
+                                    { name: "gemma2:2b", desc: "Google 2B", ram: "~2.5 GB" },
+                                    { name: "llama3.2", desc: "Meta 3B", ram: "~2.5 GB" },
+                                    { name: "phi3", desc: "Microsoft 3.8B", ram: "~3.5 GB" },
+                                    { name: "mistral", desc: "7B", ram: "~5 GB" },
+                                    { name: "codellama", desc: "Code 7B", ram: "~5 GB" },
+                                    { name: "qwen2.5", desc: "Alibaba 7B", ram: "~5 GB" }
                                 ]
 
                                 Rectangle {
@@ -600,6 +649,16 @@ Rectangle {
                                             font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
+                                        Text {
+                                            text: modelData.ram || ""
+                                            font.pixelSize: Math.round(8 * root.sf)
+                                            color: {
+                                                var m = (modelData.ram || "").match(/[\d.]+/);
+                                                if (m) { var g = parseFloat(m[0]); return g <= 3 ? "#22c55e" : g <= 5 ? "#f59e0b" : "#ef4444"; }
+                                                return root.textMuted;
+                                            }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
                                     }
 
                                     MouseArea {
@@ -619,7 +678,7 @@ Rectangle {
             Text { text: "Cloud Providers"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; topPadding: Math.round(4 * root.sf) }
 
             Repeater {
-                model: providerData
+                model: providerData.filter(function(p) { return p.type !== "ollama"; })
 
                 Rectangle {
                     id: provCard; width: mainCol.width; height: provCol.height + 28
