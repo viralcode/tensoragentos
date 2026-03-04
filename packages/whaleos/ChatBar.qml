@@ -459,7 +459,7 @@ Rectangle {
 
             Row {
                 spacing: Math.round(6 * root.sf)
-                Text { text: "🤖"; font.pixelSize: Math.round(11 * root.sf) }
+                Text { text: "▸"; font.pixelSize: Math.round(11 * root.sf); color: root.accentBlue }
                 Text { text: "Agent Activity"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#e4e4e7" }
                 Rectangle {
                     width: maBadge.width + Math.round(8 * root.sf); height: Math.round(16 * root.sf); radius: 8
@@ -542,125 +542,132 @@ Rectangle {
 
             delegate: Item {
                 width: messageList.width
-                height: msgRow.height + (modelData.toolCalls ? toolCol.height + Math.round(8 * root.sf) : 0)
+                height: delegateCol.childrenRect.height
 
-                // Tool calls display (above the message if present)
                 Column {
-                    id: toolCol
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.leftMargin: modelData.role !== "user" ? Math.round(36 * root.sf) : 0
-                    anchors.rightMargin: modelData.role === "user" ? parent.width * 0.15 : parent.width * 0.05
-                    visible: modelData.toolCalls && modelData.toolCalls.length > 0
-                    spacing: Math.round(6 * root.sf)
-                    bottomPadding: visible ? Math.round(8 * root.sf) : 0
+                    id: delegateCol
+                    width: parent.width
+                    spacing: Math.round(4 * root.sf)
 
-                    Repeater {
-                        model: (modelData.toolCalls || [])
-                        Rectangle {
-                            width: toolCol.width; height: toolRow.height + Math.round(8 * root.sf)
-                            radius: Math.round(6 * root.sf)
-                            color: Qt.rgba(0.1, 0.14, 0.1, 0.6)
-                            border.color: Qt.rgba(0.2, 0.7, 0.4, 0.15); border.width: 1
+                    // Tool calls display (above the message if present)
+                    Column {
+                        id: toolCol
+                        width: parent.width - (modelData.role !== "user" ? Math.round(36 * root.sf) : 0) - parent.width * 0.05
+                        x: modelData.role !== "user" ? Math.round(36 * root.sf) : 0
+                        visible: modelData.toolCalls && modelData.toolCalls.length > 0
+                        spacing: Math.round(6 * root.sf)
 
-                            Row {
-                                id: toolRow; anchors.left: parent.left; anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                        Repeater {
+                            model: (modelData.toolCalls || [])
+                            Rectangle {
+                                width: toolCol.width; height: toolRow.height + Math.round(8 * root.sf)
+                                radius: Math.round(6 * root.sf)
+                                color: Qt.rgba(0.1, 0.14, 0.1, 0.6)
+                                border.color: Qt.rgba(0.2, 0.7, 0.4, 0.15); border.width: 1
 
-                                Text { text: "⚡"; font.pixelSize: Math.round(9 * root.sf) }
-                                Text {
-                                    text: modelData.name || "tool"
-                                    font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium; color: "#34d399"
-                                }
-                                Text {
-                                    text: modelData.status === "success" ? "✓" : (modelData.status === "error" ? "✗" : "⋯")
-                                    font.pixelSize: Math.round(10 * root.sf)
-                                    color: modelData.status === "success" ? "#34d399" : (modelData.status === "error" ? root.accentRed : root.textMuted)
+                                Row {
+                                    id: toolRow; anchors.left: parent.left; anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+
+                                    Text { text: "⚡"; font.pixelSize: Math.round(9 * root.sf) }
+                                    Text {
+                                        text: modelData.name || "tool"
+                                        font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium; color: "#34d399"
+                                    }
+                                    Text {
+                                        text: modelData.status === "success" ? "✓" : (modelData.status === "error" ? "✗" : "⋯")
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: modelData.status === "success" ? "#34d399" : (modelData.status === "error" ? root.accentRed : root.textMuted)
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // Message row: avatar + bubble for assistant, right-aligned bubble for user
-                Row {
-                    id: msgRow
-                    anchors.top: toolCol.visible ? toolCol.bottom : parent.top
-                    anchors.right: modelData.role === "user" ? parent.right : undefined
-                    anchors.left: modelData.role !== "user" ? parent.left : undefined
-                    spacing: Math.round(12 * root.sf)
-                    layoutDirection: modelData.role === "user" ? Qt.RightToLeft : Qt.LeftToRight
+                    // Message row wrapper
+                    Item {
+                        width: parent.width
+                        height: msgRow.height
 
-                    // Avatar for assistant
-                    Rectangle {
-                        visible: modelData.role !== "user"
-                        width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
-                        radius: Math.round(8 * root.sf)
-                        color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
+                        Row {
+                            id: msgRow
+                            x: modelData.role === "user" ? (parent.width - msgRow.implicitWidth) : 0
+                            spacing: Math.round(12 * root.sf)
+                            layoutDirection: modelData.role === "user" ? Qt.RightToLeft : Qt.LeftToRight
 
-                        Image {
-                            anchors.centerIn: parent
-                            width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
-                            source: "assets/whale_logo.png"
-                            fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
-                        }
-                    }
+                            // Avatar for assistant
+                            Rectangle {
+                                visible: modelData.role !== "user"
+                                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
+                                radius: Math.round(8 * root.sf)
+                                color: Qt.rgba(0.2, 0.83, 0.6, 0.1)
 
-                    Rectangle {
-                        id: msgBubble
-                        width: modelData.role === "user"
-                            ? Math.min(messageList.width * 0.68, userMsgMetrics.width + Math.round(36 * root.sf))
-                            : messageList.width - Math.round(48 * root.sf)
-                        height: msgContentCol.height + Math.round(24 * root.sf)
-                        radius: Math.round(14 * root.sf)
-
-                        color: modelData.role === "user"
-                            ? Qt.rgba(0.24, 0.45, 0.95, 0.18)
-                            : "transparent"
-                        border.color: modelData.role === "user"
-                            ? Qt.rgba(0.35, 0.55, 1.0, 0.15)
-                            : "transparent"
-                        border.width: modelData.role === "user" ? 1 : 0
-
-                        TextMetrics {
-                            id: userMsgMetrics
-                            text: modelData.content || ""
-                            font.pixelSize: Math.round(13 * root.sf)
-                        }
-
-                        Column {
-                            id: msgContentCol
-                            anchors.left: parent.left; anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: modelData.role === "user" ? Math.round(14 * root.sf) : Math.round(12 * root.sf)
-                            spacing: Math.round(6 * root.sf)
-
-                            Row {
-                                spacing: Math.round(6 * root.sf)
-                                Text {
-                                    text: modelData.role === "user" ? "" : (modelData.agent || getAgentName())
-                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
-                                    color: "#a3e635"
-                                    visible: modelData.role !== "user"
-                                }
-                                Text {
-                                    visible: modelData.model && modelData.role !== "user"
-                                    text: modelData.model || ""
-                                    font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                                    source: "assets/whale_logo.png"
+                                    fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
                                 }
                             }
 
-                            Text {
-                                width: parent.width
-                                text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
-                                font.pixelSize: Math.round(13.5 * root.sf)
-                                color: modelData.role === "user" ? "#e0e7ff" : "#e4e4e7"
-                                wrapMode: Text.Wrap; lineHeight: 1.6
-                                textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
+                            Rectangle {
+                                id: msgBubble
+                                width: modelData.role === "user"
+                                    ? Math.min(messageList.width * 0.68, userMsgMetrics.width + Math.round(36 * root.sf))
+                                    : messageList.width - Math.round(48 * root.sf)
+                                height: msgContentCol.height + Math.round(24 * root.sf)
+                                radius: Math.round(14 * root.sf)
+
+                                color: modelData.role === "user"
+                                    ? Qt.rgba(0.24, 0.45, 0.95, 0.18)
+                                    : "transparent"
+                                border.color: modelData.role === "user"
+                                    ? Qt.rgba(0.35, 0.55, 1.0, 0.15)
+                                    : "transparent"
+                                border.width: modelData.role === "user" ? 1 : 0
+
+                                TextMetrics {
+                                    id: userMsgMetrics
+                                    text: modelData.content || ""
+                                    font.pixelSize: Math.round(13 * root.sf)
+                                }
+
+                                Column {
+                                    id: msgContentCol
+                                    anchors.left: parent.left; anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: modelData.role === "user" ? Math.round(14 * root.sf) : Math.round(12 * root.sf)
+                                    spacing: Math.round(6 * root.sf)
+
+                                    Row {
+                                        spacing: Math.round(6 * root.sf)
+                                        Text {
+                                            text: modelData.role === "user" ? "" : (modelData.agent || getAgentName())
+                                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
+                                            color: "#a3e635"
+                                            visible: modelData.role !== "user"
+                                        }
+                                        Text {
+                                            visible: modelData.model && modelData.role !== "user"
+                                            text: modelData.model || ""
+                                            font.pixelSize: Math.round(9 * root.sf); color: root.textMuted
+                                        }
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
+                                        font.pixelSize: Math.round(13.5 * root.sf)
+                                        color: modelData.role === "user" ? "#e0e7ff" : "#e4e4e7"
+                                        wrapMode: Text.Wrap; lineHeight: 1.6
+                                        textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                } // end delegateCol
             }
 
             // ── Live streaming footer ──
@@ -731,7 +738,7 @@ Rectangle {
                                 anchors.margins: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
 
                                 Text {
-                                    text: modelData.type === "thinking" ? "💭" :
+                                    text: modelData.type === "thinking" ? "⊙" :
                                           modelData.type === "tool" ? "⚡" :
                                           modelData.type === "error" ? "✗" : "•"
                                     font.pixelSize: Math.round(11 * root.sf)
