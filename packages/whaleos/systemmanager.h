@@ -293,7 +293,8 @@ public:
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         proc.setProcessEnvironment(env);
         proc.start("wl-copy", QStringList());
         proc.waitForStarted(3000);
@@ -307,7 +308,8 @@ public:
     Q_INVOKABLE QString pasteFromClipboard() {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         proc.setProcessEnvironment(env);
         proc.start("wl-paste", QStringList() << "--no-newline");
         proc.waitForFinished(3000);
@@ -318,15 +320,17 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── Display Settings (via wlr-randr) ──
+    // ── Display Settings (via xrandr — works under XWayland on Cage) ──
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE QString getDisplayInfo() {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         proc.setProcessEnvironment(env);
-        proc.start("wlr-randr", QStringList());
+        proc.start("xrandr", QStringList());
         proc.waitForFinished(3000);
         return proc.readAllStandardOutput().trimmed();
     }
@@ -334,21 +338,31 @@ public:
     Q_INVOKABLE bool setDisplayResolution(int w, int h) {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         proc.setProcessEnvironment(env);
-        QString mode = QString("%1x%2").arg(w).arg(h);
-        proc.start("wlr-randr", QStringList() << "--output" << "Virtual-1" << "--mode" << mode);
+        // xrandr custom modes use WxH_60.00 naming
+        QString mode = QString("%1x%2_60.00").arg(w).arg(h);
+        // For the default 1280x800, use the native mode name
+        if (w == 1280 && h == 800) mode = "1280x800";
+        proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--mode" << mode);
         proc.waitForFinished(5000);
         qDebug() << "SystemManager: setDisplayResolution" << mode << "exit:" << proc.exitCode();
         return proc.exitCode() == 0;
     }
 
     Q_INVOKABLE bool setDisplayScale(double scale) {
+        // Use xrandr transform for scaling
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         proc.setProcessEnvironment(env);
-        proc.start("wlr-randr", QStringList() << "--output" << "Virtual-1" << "--scale" << QString::number(scale));
+        // xrandr scale uses inverse: 2x scale = --scale 0.5x0.5
+        QString scaleStr = QString("%1x%1").arg(1.0 / scale);
+        proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--scale" << scaleStr);
         proc.waitForFinished(5000);
         qDebug() << "SystemManager: setDisplayScale" << scale << "exit:" << proc.exitCode();
         return proc.exitCode() == 0;
