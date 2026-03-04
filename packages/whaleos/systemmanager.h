@@ -287,22 +287,29 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── Clipboard Operations (via xclip) ──
+    // ── Clipboard Operations (via wl-copy/wl-paste — Wayland-native) ──
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
         QProcess proc;
-        proc.start("xclip", QStringList() << "-selection" << "clipboard");
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        proc.setProcessEnvironment(env);
+        proc.start("wl-copy", QStringList());
         proc.waitForStarted(3000);
         proc.write(text.toUtf8());
         proc.closeWriteChannel();
         proc.waitForFinished(3000);
+        qDebug() << "SystemManager: copyToClipboard result:" << proc.exitCode();
         return proc.exitCode() == 0;
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
         QProcess proc;
-        proc.start("xclip", QStringList() << "-selection" << "clipboard" << "-o");
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        proc.setProcessEnvironment(env);
+        proc.start("wl-paste", QStringList() << "--no-newline");
         proc.waitForFinished(3000);
         if (proc.exitCode() == 0) {
             return proc.readAllStandardOutput().trimmed();
@@ -311,8 +318,42 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── File Launching (via xdg-open / app-specific) ──
+    // ── Display Settings (via wlr-randr) ──
     // ════════════════════════════════════════════════
+
+    Q_INVOKABLE QString getDisplayInfo() {
+        QProcess proc;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        proc.setProcessEnvironment(env);
+        proc.start("wlr-randr", QStringList());
+        proc.waitForFinished(3000);
+        return proc.readAllStandardOutput().trimmed();
+    }
+
+    Q_INVOKABLE bool setDisplayResolution(int w, int h) {
+        QProcess proc;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        proc.setProcessEnvironment(env);
+        QString mode = QString("%1x%2").arg(w).arg(h);
+        proc.start("wlr-randr", QStringList() << "--output" << "Virtual-1" << "--mode" << mode);
+        proc.waitForFinished(5000);
+        qDebug() << "SystemManager: setDisplayResolution" << mode << "exit:" << proc.exitCode();
+        return proc.exitCode() == 0;
+    }
+
+    Q_INVOKABLE bool setDisplayScale(double scale) {
+        QProcess proc;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        proc.setProcessEnvironment(env);
+        proc.start("wlr-randr", QStringList() << "--output" << "Virtual-1" << "--scale" << QString::number(scale));
+        proc.waitForFinished(5000);
+        qDebug() << "SystemManager: setDisplayScale" << scale << "exit:" << proc.exitCode();
+        return proc.exitCode() == 0;
+    }
+
 
     Q_INVOKABLE bool openFile(const QString &path) {
         QFileInfo info(path);

@@ -4,6 +4,7 @@ import QtQuick.Controls
 import QtWayland.Compositor
 import QtWayland.Compositor.XdgShell
 import QtWayland.Compositor.WlShell
+import "api.js" as API
 
 WaylandCompositor {
     id: comp
@@ -156,6 +157,7 @@ WaylandCompositor {
             function onLoginSuccess(user, session) {
                 currentUser = user;
                 sessionId = session;
+                API.setSession(session);
                 loggedIn = true;
             }
 

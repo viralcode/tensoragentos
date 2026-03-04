@@ -9,7 +9,7 @@ Rectangle {
     property var filteredServers: []
     property bool loading: true
     property string searchText: ""
-    property string activeFilter: "all"  // "all", "running", "1", "2", "3"
+    property string activeFilter: "all"
     property var configServerId: ""
     property var configEnvVars: []
     property var configValues: ({})
@@ -21,13 +21,19 @@ Rectangle {
         loading = true;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/mcp/servers");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    var d = JSON.parse(xhr.responseText);
-                    allServers = d.servers || [];
-                } catch(e) {}
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
+                        allServers = d.servers || [];
+                    } catch(e) {
+                        console.log("MCP parse error:", e);
+                    }
+                } else {
+                    console.log("MCP API error:", xhr.status, xhr.responseText);
+                }
                 filterServers();
                 loading = false;
             }
@@ -53,18 +59,23 @@ Rectangle {
     function startServer(serverId) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/start");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
-                try {
-                    var d = JSON.parse(xhr.responseText);
-                    if (d.success) {
+                if (xhr.status === 200) {
+                    try {
+                        var d = JSON.parse(xhr.responseText);
                         root.showToast(serverId + " started with " + (d.tools ? d.tools.length : 0) + " tools", "success");
-                    } else {
-                        root.showToast(d.error || "Failed to start " + serverId, "error");
+                    } catch(e) {}
+                } else {
+                    try {
+                        var err = JSON.parse(xhr.responseText);
+                        root.showToast("Error: " + (err.error || "Failed to start"), "error");
+                    } catch(e) {
+                        root.showToast("Failed to start " + serverId, "error");
                     }
-                } catch(e) {}
+                }
                 loadServers();
             }
         };
@@ -74,7 +85,7 @@ Rectangle {
     function stopServer(serverId) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/stop");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -88,11 +99,13 @@ Rectangle {
     function configureServer(serverId, envObj) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/mcp/servers/" + serverId + "/configure");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
-                root.showToast("Configuration saved for " + serverId, "success");
+                if (xhr.status === 200) {
+                    root.showToast("Configuration saved for " + serverId, "success");
+                }
                 loadServers();
             }
         };
@@ -140,7 +153,10 @@ Rectangle {
                 Column {
                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                     Text { text: "MCP Apps"; font.pixelSize: Math.round(20 * root.sf); font.bold: true; color: root.textPrimary }
-                    Text { text: allServers.length + " servers available · " + allServers.filter(function(s){return s.running}).length + " running"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
+                    Text {
+                        text: loading ? "Loading..." : allServers.length + " servers available · " + allServers.filter(function(s){return s.running}).length + " running"
+                        font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary
+                    }
                 }
                 Rectangle {
                     width: Math.round(220 * root.sf); height: Math.round(32 * root.sf)
@@ -153,12 +169,6 @@ Rectangle {
                         onTextChanged: { searchText = text; filterServers() }
                         Text { anchors.fill: parent; text: "Search apps..."; color: Qt.rgba(1,1,1,0.25); visible: !parent.text; font.pixelSize: Math.round(12 * root.sf) }
                     }
-                }
-                Rectangle {
-                    width: Math.round(90 * root.sf); height: Math.round(32 * root.sf)
-                    radius: Math.round(8 * root.sf); color: "#6366f1"
-                    Text { anchors.centerIn: parent; text: "↻ Refresh"; font.pixelSize: Math.round(11 * root.sf); color: "white" }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: loadServers() }
                 }
             }
 
@@ -191,20 +201,12 @@ Rectangle {
                 }
             }
 
-            // ─── Loading Indicator ───
-            Text {
-                visible: loading
-                text: "Loading MCP servers..."
-                font.pixelSize: Math.round(13 * root.sf); color: root.textSecondary
-            }
-
             // ─── Server Cards Grid ───
             Grid {
                 width: parent.width
                 columns: Math.max(1, Math.floor(parent.width / Math.round(320 * root.sf)))
                 rowSpacing: Math.round(14 * root.sf)
                 columnSpacing: Math.round(14 * root.sf)
-                visible: !loading
 
                 Repeater {
                     model: filteredServers
@@ -215,7 +217,6 @@ Rectangle {
                         border.color: modelData.running ? Qt.rgba(0.39, 0.82, 0.38, 0.4) : Qt.rgba(1,1,1,0.08)
                         border.width: modelData.running ? 2 : 1
 
-                        // Subtle glow for running servers
                         Rectangle {
                             anchors.fill: parent; radius: parent.radius
                             visible: modelData.running
@@ -228,7 +229,6 @@ Rectangle {
                             anchors.fill: parent; anchors.margins: Math.round(14 * root.sf)
                             spacing: Math.round(8 * root.sf)
 
-                            // Top row: name + tier badge + status
                             RowLayout {
                                 width: parent.width
                                 Text {
@@ -237,7 +237,6 @@ Rectangle {
                                     color: root.textPrimary; Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
-                                // Tier badge
                                 Rectangle {
                                     width: Math.round(42 * root.sf); height: Math.round(18 * root.sf)
                                     radius: Math.round(4 * root.sf)
@@ -248,7 +247,6 @@ Rectangle {
                                         color: getTierColor(modelData.tier)
                                     }
                                 }
-                                // Status dot
                                 Rectangle {
                                     width: Math.round(10 * root.sf); height: Math.round(10 * root.sf)
                                     radius: width / 2
@@ -256,7 +254,6 @@ Rectangle {
                                 }
                             }
 
-                            // Category pill
                             Rectangle {
                                 width: catLabel.width + Math.round(12 * root.sf); height: Math.round(18 * root.sf)
                                 radius: Math.round(9 * root.sf)
@@ -268,30 +265,26 @@ Rectangle {
                                 }
                             }
 
-                            // Description
                             Text {
                                 width: parent.width; text: modelData.description
                                 font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
                                 wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
                             }
 
-                            // Tool count when running
                             Text {
                                 visible: modelData.running
                                 text: modelData.toolCount + " tools active"
                                 font.pixelSize: Math.round(10 * root.sf); color: "#22c55e"
                             }
 
-                            // Bottom row: action buttons
                             RowLayout {
                                 width: parent.width; spacing: Math.round(8 * root.sf)
 
-                                // Configure button (if needs env vars)
                                 Rectangle {
-                                    visible: modelData.needsConfig
+                                    visible: modelData.envVars.length > 0
                                     width: Math.round(80 * root.sf); height: Math.round(26 * root.sf)
                                     radius: Math.round(6 * root.sf)
-                                    color: configMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
+                                    color: cfgMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
                                     border.color: Qt.rgba(1,1,1,0.15)
                                     Behavior on color { ColorAnimation { duration: 150 } }
                                     Text {
@@ -299,7 +292,7 @@ Rectangle {
                                         font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8"
                                     }
                                     MouseArea {
-                                        id: configMouse; anchors.fill: parent
+                                        id: cfgMouse; anchors.fill: parent
                                         hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         onClicked: openConfig(modelData.id, modelData.envVars)
                                     }
@@ -307,13 +300,12 @@ Rectangle {
 
                                 Item { Layout.fillWidth: true }
 
-                                // Start/Stop button
                                 Rectangle {
                                     width: Math.round(80 * root.sf); height: Math.round(26 * root.sf)
                                     radius: Math.round(6 * root.sf)
                                     color: modelData.running
-                                        ? (stopMouse.containsMouse ? Qt.rgba(0.94,0.27,0.22,0.2) : Qt.rgba(0.94,0.27,0.22,0.1))
-                                        : (startMouse.containsMouse ? Qt.rgba(0.13,0.78,0.27,0.2) : Qt.rgba(0.13,0.78,0.27,0.1))
+                                        ? (stopBtnMa.containsMouse ? Qt.rgba(0.94,0.27,0.22,0.2) : Qt.rgba(0.94,0.27,0.22,0.1))
+                                        : (startBtnMa.containsMouse ? Qt.rgba(0.13,0.78,0.27,0.2) : Qt.rgba(0.13,0.78,0.27,0.1))
                                     border.color: modelData.running ? "#ef4444" : "#22c55e"
                                     Behavior on color { ColorAnimation { duration: 150 } }
                                     Text {
@@ -323,11 +315,11 @@ Rectangle {
                                         color: modelData.running ? "#ef4444" : "#22c55e"
                                     }
                                     MouseArea {
-                                        id: startMouse; anchors.fill: parent
+                                        id: startBtnMa; anchors.fill: parent
                                         hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         visible: !modelData.running
                                         onClicked: {
-                                            if (modelData.needsConfig && !modelData.configured) {
+                                            if (modelData.envVars.length > 0 && !modelData.configured) {
                                                 openConfig(modelData.id, modelData.envVars);
                                             } else {
                                                 startServer(modelData.id);
@@ -335,7 +327,7 @@ Rectangle {
                                         }
                                     }
                                     MouseArea {
-                                        id: stopMouse; anchors.fill: parent
+                                        id: stopBtnMa; anchors.fill: parent
                                         hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         visible: modelData.running
                                         onClicked: stopServer(modelData.id)
@@ -347,7 +339,6 @@ Rectangle {
                 }
             }
 
-            // ─── Empty State ───
             Text {
                 visible: !loading && filteredServers.length === 0
                 text: "No servers found matching your search"
@@ -374,7 +365,7 @@ Rectangle {
             color: Qt.rgba(0.1, 0.1, 0.14, 0.95)
             border.color: Qt.rgba(1,1,1,0.15)
 
-            MouseArea { anchors.fill: parent } // Prevent click-through
+            MouseArea { anchors.fill: parent }
 
             Column {
                 id: configDialogCol
@@ -441,7 +432,6 @@ Rectangle {
                             onClicked: {
                                 configureServer(configServerId, configValues);
                                 showConfigDialog = false;
-                                // Auto-start after configuring
                                 Qt.callLater(function() { startServer(configServerId) });
                             }
                         }

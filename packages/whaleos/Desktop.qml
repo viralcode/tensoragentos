@@ -19,6 +19,7 @@ Rectangle {
     // ── Wallpaper State ──
     property string currentWallpaper: "default"
     property bool wpExpanded: false
+    property bool displayExpanded: false
     property var wallpaperList: [
         { id: "default",        name: "Default Aurora",    file: "" },
         { id: "nebula",         name: "🌌 Nebula",         file: "assets/wallpapers/nebula.png" },
@@ -411,6 +412,95 @@ Rectangle {
                 color: Qt.rgba(1, 1, 1, 0.06)
             }
 
+            // ── Display Settings Section (expandable) ──
+            Rectangle {
+                width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
+                color: dispHeaderMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
+                    anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                    Text { text: desktop.displayExpanded ? "▾" : "▸"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; anchors.verticalCenter: parent.verticalCenter }
+                    Canvas {
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
+                        property real s: root.sf
+                        onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
+                            ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
+                            ctx.strokeRect(1, 2, 20, 14);
+                            ctx.beginPath(); ctx.moveTo(8, 16); ctx.lineTo(14, 16); ctx.lineTo(14, 19); ctx.lineTo(8, 19); ctx.closePath(); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(6, 19); ctx.lineTo(16, 19); ctx.stroke();
+                            ctx.restore(); }
+                        onSChanged: requestPaint()
+                    }
+                    Text { text: "Display Settings"; font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary; anchors.verticalCenter: parent.verticalCenter }
+                }
+                MouseArea { id: dispHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.displayExpanded = !desktop.displayExpanded }
+            }
+
+            // Display resolution list (shown when expanded)
+            Repeater {
+                model: desktop.displayExpanded ? [
+                    { label: "1024 × 768", w: 1024, h: 768 },
+                    { label: "1280 × 800", w: 1280, h: 800 },
+                    { label: "1280 × 1024", w: 1280, h: 1024 },
+                    { label: "1920 × 1080", w: 1920, h: 1080 }
+                ] : []
+
+                delegate: Rectangle {
+                    width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
+                    color: resMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
+                        anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
+                        Text { text: "🖥"; font.pixelSize: Math.round(10 * root.sf) }
+                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                    }
+                    MouseArea {
+                        id: resMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            sysManager.setDisplayResolution(modelData.w, modelData.h);
+                            root.showToast("Resolution: " + modelData.label, "success");
+                            contextMenu.visible = false;
+                        }
+                    }
+                }
+            }
+
+            // Scale options (shown when expanded)
+            Repeater {
+                model: desktop.displayExpanded ? [
+                    { label: "Scale 1×", scale: 1.0 },
+                    { label: "Scale 1.25×", scale: 1.25 },
+                    { label: "Scale 1.5×", scale: 1.5 },
+                    { label: "Scale 2×", scale: 2.0 }
+                ] : []
+
+                delegate: Rectangle {
+                    width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
+                    color: scaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
+                        anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
+                        Text { text: "🔍"; font.pixelSize: Math.round(10 * root.sf) }
+                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                    }
+                    MouseArea {
+                        id: scaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            sysManager.setDisplayScale(modelData.scale);
+                            root.showToast(modelData.label, "success");
+                            contextMenu.visible = false;
+                        }
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.06)
+            }
+
             // Close option
             Rectangle {
                 width: parent.width
@@ -533,11 +623,11 @@ Rectangle {
 
     // ── Window Area ──
     Item {
-        id: windowArea
+        id: winArea
         anchors.top: topBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: dockArea.top
+        anchors.bottom: appDock.top
     }
 
     // ── App Windows ──
@@ -547,7 +637,7 @@ Rectangle {
             windowTitle: modelData.title
             windowIcon: modelData.icon
             appId: modelData.appId
-            windowArea: windowArea
+            windowArea: winArea
             nativeCmd: modelData.cmd || ""
             nativeSearchName: modelData.searchName || ""
             shellSurface: modelData.surface || null

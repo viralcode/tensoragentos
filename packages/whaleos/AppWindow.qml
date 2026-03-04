@@ -22,6 +22,28 @@ Rectangle {
     property int initialX: 100
     property int initialY: Math.round(80 * root.sf)
 
+    // Maximize state
+    property bool maximized: false
+    property real savedX: 0
+    property real savedY: 0
+    property real savedW: 0
+    property real savedH: 0
+
+    function toggleMaximize() {
+        if (maximized) {
+            appWindow.x = savedX; appWindow.y = savedY;
+            appWindow.width = savedW; appWindow.height = savedH;
+            maximized = false;
+        } else {
+            savedX = appWindow.x; savedY = appWindow.y;
+            savedW = appWindow.width; savedH = appWindow.height;
+            appWindow.x = 0; appWindow.y = 0;
+            appWindow.width = windowArea ? windowArea.width : appWindow.width;
+            appWindow.height = windowArea ? windowArea.height : appWindow.height;
+            maximized = true;
+        }
+    }
+
     // Native app properties
     property bool isNative: appId.indexOf("native-") === 0 || appId.indexOf("wayland-") === 0
     property string nativeCmd: ""
@@ -47,7 +69,7 @@ Rectangle {
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: root.borderColor }
 
         MouseArea {
-            id: dragArea; anchors.fill: parent; drag.target: appWindow
+            id: dragArea; anchors.fill: parent; drag.target: maximized ? null : appWindow
             drag.minimumX: -appWindow.width + Math.round(100 * root.sf); drag.minimumY: 0
             drag.maximumX: windowArea ? windowArea.width - Math.round(100 * root.sf) : 800
             drag.maximumY: windowArea ? windowArea.height - Math.round(40 * root.sf) : 600
@@ -55,6 +77,7 @@ Rectangle {
             onPressed: function(mouse) {
                 root.bringToFront(appWindow);
             }
+            onDoubleClicked: toggleMaximize()
         }
 
         RowLayout {
@@ -70,6 +93,20 @@ Rectangle {
                 text: appWindow.windowTitle
                 font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold
                 color: root.textPrimary; Layout.fillWidth: true
+            }
+
+            // ── Maximize Button ──
+            Item {
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
+                Layout.alignment: Qt.AlignVCenter
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
+                    color: maxHover.containsMouse ? "#22c55e" : Qt.darker("#22c55e", 1.5)
+                    border.color: Qt.darker("#22c55e", 1.3); border.width: 0.5
+                }
+                MouseArea { id: maxHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: toggleMaximize() }
             }
 
             // ── Close Button ──
@@ -109,10 +146,11 @@ Rectangle {
             visible: !isNative
             source: {
                 if (isNative) return "";
+                if (appId === "nativeapps") return "NativeAppsLauncher.qml";
                 if (appId === "settings") return "SettingsApp.qml";
                 if (appId === "providers") return "ProvidersApp.qml";
                 if (appId === "skills") return "SkillsApp.qml";
-                if (appId === "apps") return "AppsApp.qml";
+                if (appId === "extensions") return "AppsApp.qml";
                 if (appId === "terminal") return "TerminalApp.qml";
                 if (appId === "mcp") return "McpApp.qml";
                 if (appId === "agents") return "AgentsApp.qml";

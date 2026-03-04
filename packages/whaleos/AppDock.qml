@@ -20,18 +20,11 @@ Rectangle {
 
         Repeater {
             model: [
-                // Native apps (launch X11 processes, embed in window)
-                { appId: "native-chromium",    label: "Chrome",      cmd: "chromium --no-sandbox", searchName: "Chromium" },
-                { appId: "native-mousepad",    label: "Editor",      cmd: "mousepad",              searchName: "Mousepad" },
-                { appId: "native-galculator",  label: "Calculator",  cmd: "galculator",            searchName: "galculator" },
-
-                // Separator marker
-                { appId: "__sep__" },
-
                 // System apps (QML-based)
+                { appId: "nativeapps", label: "Apps" },
                 { appId: "settings",   label: "Settings" },
                 { appId: "skills",     label: "Skills" },
-                { appId: "apps",       label: "Extensions" },
+                { appId: "extensions", label: "Extensions" },
                 { appId: "providers",  label: "Providers" },
                 { appId: "mcp",        label: "MCP Apps" },
                 { appId: "agents",     label: "Agents" },
@@ -39,20 +32,12 @@ Rectangle {
             ]
 
             delegate: Item {
-                width: modelData.appId === "__sep__" ? Math.round(9 * root.sf) : Math.round(64 * root.sf)
+                width: Math.round(64 * root.sf)
                 height: Math.round(60 * root.sf)
                 visible: true
 
-                // Separator
-                Rectangle {
-                    visible: modelData.appId === "__sep__"
-                    width: 1; height: Math.round(40 * root.sf); color: Qt.rgba(1, 1, 1, 0.1)
-                    anchors.centerIn: parent
-                }
-
                 // Dock item
                 Rectangle {
-                    visible: modelData.appId !== "__sep__"
                     anchors.fill: parent; radius: root.radiusMd
                     color: dockItemMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                     Behavior on color { ColorAnimation { duration: 150 } }
@@ -77,25 +62,14 @@ Rectangle {
                                 ctx.fillStyle = hovered ? "#93c5fd" : "#94a3b8";
                                 ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
 
-                                // ── Native app icons ──
-                                if (appId === "native-chromium") {
-                                    ctx.beginPath(); ctx.arc(11, 11, 9, 0, Math.PI * 2); ctx.stroke();
-                                    ctx.beginPath(); ctx.ellipse(5, 2, 12, 18); ctx.stroke();
-                                    ctx.beginPath(); ctx.moveTo(2, 11); ctx.lineTo(20, 11); ctx.stroke();
-                                    ctx.beginPath(); ctx.moveTo(11, 2); ctx.lineTo(11, 20); ctx.stroke();
-                                } else if (appId === "native-mousepad") {
-                                    ctx.strokeRect(3, 1, 16, 20);
-                                    ctx.beginPath(); ctx.moveTo(7, 6); ctx.lineTo(15, 6); ctx.stroke();
-                                    ctx.beginPath(); ctx.moveTo(7, 9); ctx.lineTo(15, 9); ctx.stroke();
-                                    ctx.beginPath(); ctx.moveTo(7, 12); ctx.lineTo(13, 12); ctx.stroke();
-                                    ctx.beginPath(); ctx.moveTo(7, 15); ctx.lineTo(11, 15); ctx.stroke();
-                                } else if (appId === "native-galculator") {
-                                    ctx.strokeRect(3, 1, 16, 20);
-                                    ctx.fillRect(5, 3, 12, 5);
-                                    ctx.strokeRect(5, 10, 4, 3);
-                                    ctx.strokeRect(11, 10, 4, 3);
-                                    ctx.strokeRect(5, 15, 4, 3);
-                                    ctx.strokeRect(11, 15, 4, 3);
+                                // ── App icons ──
+                                if (appId === "nativeapps") {
+                                    // 2x2 grid icon for app launcher
+                                    ctx.lineWidth = 1.4;
+                                    ctx.strokeRect(3, 3, 7, 7);
+                                    ctx.strokeRect(12, 3, 7, 7);
+                                    ctx.strokeRect(3, 12, 7, 7);
+                                    ctx.strokeRect(12, 12, 7, 7);
                                 }
                                 // ── System app icons ──
                                 else if (appId === "settings") {
@@ -113,7 +87,7 @@ Rectangle {
                                     ctx.moveTo(13,1); ctx.lineTo(5,12); ctx.lineTo(11,12);
                                     ctx.lineTo(9,21); ctx.lineTo(17,10); ctx.lineTo(11,10);
                                     ctx.lineTo(13,1); ctx.closePath(); ctx.fill();
-                                } else if (appId === "apps") {
+                                } else if (appId === "extensions") {
                                     ctx.lineWidth = 1.6;
                                     ctx.beginPath();
                                     ctx.moveTo(3,8); ctx.lineTo(7,8);

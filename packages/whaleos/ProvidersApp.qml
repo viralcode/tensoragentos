@@ -21,7 +21,7 @@ Rectangle {
         loading = true;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/providers");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 loading = false;
@@ -47,7 +47,7 @@ Rectangle {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/providers/" + providerType + "/config");
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -67,7 +67,7 @@ Rectangle {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/setup/test-ai");
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -89,7 +89,7 @@ Rectangle {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/providers/" + providerType + "/config");
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -234,7 +234,7 @@ Rectangle {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/providers/ollama/config");
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -715,8 +715,41 @@ Rectangle {
                         RowLayout {
                             width: parent.width; spacing: Math.round(10 * root.sf)
                             Rectangle {
-                                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: Qt.rgba(1,1,1,0.06)
-                                Image { anchors.fill: parent; anchors.margins: Math.round(5 * root.sf); source: "icons/" + modelData.type + ".png"; fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true }
+                                width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10
+                                color: Qt.rgba(1,1,1,0.06)
+
+                                property string pType: modelData.type
+                                property color brandColor: pType === "anthropic" ? "#d97706" :
+                                                           pType === "openai" ? "#10a37f" :
+                                                           pType === "google" ? "#4285f4" :
+                                                           pType === "deepseek" ? "#3b82f6" :
+                                                           pType === "groq" ? "#f4722b" : "#64748b"
+
+                                Canvas {
+                                    anchors.fill: parent
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        var w = width, h = height;
+                                        ctx.clearRect(0, 0, w, h);
+
+                                        var t = parent.pType;
+                                        var c = parent.brandColor;
+
+                                        // Draw brand letter
+                                        ctx.fillStyle = c;
+                                        ctx.font = "bold " + Math.round(18 * root.sf) + "px sans-serif";
+                                        ctx.textAlign = "center";
+                                        ctx.textBaseline = "middle";
+
+                                        var letter = t === "anthropic" ? "A" :
+                                                     t === "openai" ? "⬡" :
+                                                     t === "google" ? "G" :
+                                                     t === "deepseek" ? "D" :
+                                                     t === "groq" ? "G" : "?";
+                                        ctx.fillText(letter, w/2, h/2 + 1);
+                                    }
+                                    Component.onCompleted: requestPaint()
+                                }
                             }
                             Column {
                                 Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
