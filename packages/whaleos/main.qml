@@ -25,6 +25,44 @@ WaylandCompositor {
             title: "TensorAgent OS"
             color: "#0d0d0d"
 
+            // ── Clipboard: poll Wayland clipboard + keep Qt clipboard synced ──
+            property string lastClipboard: ""
+            Timer {
+                interval: 1000
+                running: true
+                repeat: true
+                onTriggered: {
+                    var text = sysManager.pasteFromClipboard();
+                    if (text.length > 0 && text !== root.lastClipboard) {
+                        root.lastClipboard = text;
+                        sysManager.copyToClipboard(text);  // Syncs to Qt clipboard
+                    }
+                }
+            }
+            Shortcut {
+                sequence: "Ctrl+V"
+                context: Qt.ApplicationShortcut
+                onActivated: {
+                    var text = sysManager.pasteFromClipboard();
+                    if (text.length > 0 && root.activeFocusItem) {
+                        if (typeof root.activeFocusItem.insert === "function") {
+                            root.activeFocusItem.insert(root.activeFocusItem.cursorPosition, text);
+                        } else if (root.activeFocusItem.text !== undefined) {
+                            root.activeFocusItem.text += text;
+                        }
+                    }
+                }
+            }
+            Shortcut {
+                sequence: "Ctrl+C"
+                context: Qt.ApplicationShortcut
+                onActivated: {
+                    if (root.activeFocusItem && root.activeFocusItem.selectedText) {
+                        sysManager.copyToClipboard(root.activeFocusItem.selectedText);
+                    }
+                }
+            }
+
             // ── Display Scale ──
             property real userScale: 1.0
             readonly property real sf: userScale * Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
