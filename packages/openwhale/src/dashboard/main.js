@@ -377,6 +377,11 @@ function showPrompt(message, defaultValue = '', title = 'Input') {
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if user is authenticated
   const isAuth = await checkAuth();
+    // AInux: redirect to OS login if not authenticated
+    if (!isAuth && !localStorage.getItem('owSessionId')) {
+      window.location.href = '/';
+      return;
+    }
 
   if (isAuth) {
     await checkSetupStatus();

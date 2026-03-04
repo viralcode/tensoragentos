@@ -168,15 +168,8 @@ export class OpenAICompatibleProvider implements AIProvider {
             const requestId = error?.headers?.get?.('x-request-id') || 'unknown';
 
             logger.error("provider", `${this.name} API ERROR`, { status, type: errorType, code: errorCode, message: errorMessage.slice(0, 500), model: request.model, requestId, baseURL: this.client.baseURL });
-            logger.error("provider", `${this.name} FAILED after ${Date.now() - Date.now()}ms`, { model: request.model, status, code: errorCode, error: `${status} ${errorMessage}` });
 
-            // Return user-friendly error as content instead of throwing
-            // This ensures the chat always shows something instead of empty messages
-            let userError = `⚠️ **${this.name} Error**: ${errorMessage}`;
-            if (String(errorMessage).includes("system memory")) {
-                userError += `\n\n💡 **Tip:** This model needs more RAM than available. Try a smaller model like \`qwen2.5:0.5b\` (~1 GB) or \`gemma2:2b\` (~2.5 GB) from the Providers panel.`;
-            }
-            return { content: userError, model: request.model };
+            throw error;
         }
     }
 

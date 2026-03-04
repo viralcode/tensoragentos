@@ -99,6 +99,17 @@ async function main() {
     // Dashboard routes (admin only in production)
     app.route("/dashboard", createDashboardRoutes(db, config));
 
+    // AInux login page at root
+    app.get("/", async (c) => {
+        const { readFileSync } = await import("node:fs");
+        const { join, dirname } = await import("node:path");
+        const { fileURLToPath } = await import("node:url");
+        const __dir = dirname(fileURLToPath(import.meta.url));
+        const html = readFileSync(join(__dir, "dashboard/ainux-login.html"), "utf-8");
+        return c.html(html);
+    });
+
+
     // Serve dashboard static files
     app.use("/dashboard/assets/*", serveStatic({ root: "./src/dashboard" }));
 

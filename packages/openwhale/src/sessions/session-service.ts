@@ -39,7 +39,6 @@ import {
 } from "./session-manager.js";
 import { getMemoryContext } from "../memory/memory-files.js";
 import { compactIfNeeded } from "./compaction.js";
-import { getAllMCPTools, callMCPTool } from "../mcp/mcp-registry.js";
 
 // ============== TYPES ==============
 
@@ -598,11 +597,9 @@ export async function processMessageStream(
         maxIterations?: number;
         emit: (event: string, data: unknown) => void;
         abortSignal?: AbortSignal;
-        workDir?: string;
     }
 ): Promise<ChatMessage> {
-    const { model = currentModel, maxIterations = 25, emit, abortSignal, workDir } = options;
-    const effectiveWorkDir = workDir || process.cwd();
+    const { model = currentModel, maxIterations = 25, emit, abortSignal } = options;
 
     const provider = registry.getProvider(model);
     if (!provider) {
@@ -660,16 +657,6 @@ export async function processMessageStream(
         },
     });
 
-    // Add MCP server tools (from running MCP servers)
-    const mcpTools = getAllMCPTools();
-    for (const mt of mcpTools) {
-        tools.push({
-            name: mt.prefixedName,
-            description: mt.description,
-            parameters: mt.parameters,
-        });
-    }
-
     const skillTools = skillRegistry.getAllTools();
     for (const skillTool of skillTools) {
         tools.push({
@@ -689,7 +676,7 @@ export async function processMessageStream(
         }));
 
     const now = new Date();
-    const runtimeInfo = `OS: ${process.platform} ${process.arch} | Host: ${hostname()} | Node: ${process.version} | Time: ${now.toISOString()} | CWD: ${effectiveWorkDir}`;
+    const runtimeInfo = `OS: ${process.platform} ${process.arch} | Host: ${hostname()} | Node: ${process.version} | Time: ${now.toISOString()} | CWD: ${process.cwd()}`;
     const baseToolNames = allTools.map(t => t.name);
     const skillToolNames = skillTools.map(t => t.name);
 
@@ -754,10 +741,10 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
         ? systemPrompt + "\n\n" + memoryContext
         : systemPrompt;
 
-    const sandboxConfig = createSandboxConfig(effectiveWorkDir, false);
+    const sandboxConfig = createSandboxConfig(process.cwd(), false);
     const context: ToolCallContext = {
         sessionId,
-        workspaceDir: effectiveWorkDir,
+        workspaceDir: process.cwd(),
         sandboxed: sandboxConfig.enabled,
     };
 
@@ -859,30 +846,22 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
                         toolInfo.result = "WhatsApp image sending is available via WhatsApp channel directly";
                         toolInfo.status = "completed";
                     } else {
-                        // Try MCP tools first (prefixed with mcp_)
-                        if (tc.name.startsWith("mcp_")) {
-                            const result = await callMCPTool(tc.name, tc.arguments as Record<string, unknown>);
+                        const tool = toolRegistry.get(tc.name);
+                        if (tool) {
+                            const result = await toolRegistry.execute(tc.name, tc.arguments, context);
                             toolInfo.result = result.content || result.error;
-                            toolInfo.metadata = result.metadata as Record<string, unknown>;
+                            toolInfo.metadata = result.metadata;
                             toolInfo.status = result.success ? "completed" : "error";
                         } else {
-                            const tool = toolRegistry.get(tc.name);
-                            if (tool) {
-                                const result = await toolRegistry.execute(tc.name, tc.arguments, context);
+                            const skillTool = skillTools.find(st => st.name === tc.name);
+                            if (skillTool) {
+                                const result = await skillTool.execute(tc.arguments, context);
                                 toolInfo.result = result.content || result.error;
                                 toolInfo.metadata = result.metadata;
                                 toolInfo.status = result.success ? "completed" : "error";
                             } else {
-                                const skillTool = skillTools.find(st => st.name === tc.name);
-                                if (skillTool) {
-                                    const result = await skillTool.execute(tc.arguments, context);
-                                    toolInfo.result = result.content || result.error;
-                                    toolInfo.metadata = result.metadata;
-                                    toolInfo.status = result.success ? "completed" : "error";
-                                } else {
-                                    toolInfo.result = `Unknown tool: ${tc.name}`;
-                                    toolInfo.status = "error";
-                                }
+                                toolInfo.result = `Unknown tool: ${tc.name}`;
+                                toolInfo.status = "error";
                             }
                         }
                     }

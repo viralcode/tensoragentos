@@ -136,16 +136,6 @@ const BrowserActionRawSchema = z.discriminatedUnion("action", [
         value: z.string().optional(),
     }),
 
-    // ── WebMCP (Chrome 146+ navigator.modelContext) ──
-    z.object({
-        action: z.literal("webmcp_discover"),
-    }).describe("Discover WebMCP tools exposed by the current page via navigator.modelContext"),
-    z.object({
-        action: z.literal("webmcp_invoke"),
-        toolName: z.string().describe("Name of the WebMCP tool to invoke"),
-        toolArgs: z.record(z.string(), z.unknown()).optional().describe("Arguments to pass to the WebMCP tool"),
-    }).describe("Invoke a WebMCP tool on the current page"),
-
     // Legacy aliases for backwards compatibility
     z.object({
         action: z.literal("click"),
@@ -787,7 +777,7 @@ const browserManager = new BrowserManager();
 // ============================================================================
 
 // Get configured browser backend from settings
-async function getBrowserBackend(): Promise<"playwright" | "browseros" | "chrome-mcp" | "webmcp"> {
+async function getBrowserBackend(): Promise<"playwright" | "browseros"> {
     try {
         // Try to get setting from raw SQLite database
         const { db } = await import("../db/index.js");
@@ -796,38 +786,6 @@ async function getBrowserBackend(): Promise<"playwright" | "browseros" | "chrome
 
         if (row?.settings) {
             const settings = typeof row.settings === "string" ? JSON.parse(row.settings) : row.settings;
-
-            // WebMCP backend (Chrome 146+ with navigator.modelContext)
-            if (settings.backend === "webmcp") {
-                try {
-                    const { isWebMCPAvailable } = await import("./webmcp.js");
-                    const status = await isWebMCPAvailable();
-                    if (status.available) {
-                        console.log(`[Browser] WebMCP available: ${status.chromeVersion}`);
-                        return "webmcp";
-                    }
-                    console.log(`[Browser] WebMCP not available: ${status.error}, falling back`);
-                } catch { /* WebMCP not available */ }
-            }
-
-            if (settings.backend === "chrome-mcp") {
-                // Try to ensure Chrome MCP is available
-                const { isChromeMCPAvailable, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
-                const status = await isChromeMCPAvailable();
-                if (status.available) {
-                    return "chrome-mcp";
-                }
-
-                // Not ready, try to launch
-                console.log("[Browser] Chrome MCP not ready, attempting to launch...");
-                const launchResult = await ensureChromeMCPRunning();
-                if (launchResult.success) {
-                    console.log(`[Browser] Chrome MCP launched with ${launchResult.tools.length} tools`);
-                    return "chrome-mcp";
-                }
-
-                console.log(`[Browser] Chrome MCP launch failed: ${launchResult.error}, falling back to Playwright`);
-            }
 
             if (settings.backend === "browseros") {
                 // Try to ensure BrowserOS is running
@@ -847,35 +805,6 @@ async function getBrowserBackend(): Promise<"playwright" | "browseros" | "chrome
 
                 console.log(`[Browser] BrowserOS launch failed: ${launchResult.error}, falling back to Playwright`);
             }
-        }
-
-        // On TensorAgent OS (Linux), auto-detect WebMCP first, then Chrome MCP
-        if (process.platform === "linux" && process.env.AINUX_MODE === "true") {
-            // Try WebMCP first (preferred on TensorAgent OS)
-            try {
-                const { isWebMCPAvailable, ensureWebMCPRunning } = await import("./webmcp.js");
-                const webmcpStatus = await isWebMCPAvailable();
-                if (webmcpStatus.available) {
-                    const result = await ensureWebMCPRunning();
-                    if (result.success) {
-                        console.log(`[Browser] Auto-detected WebMCP on TensorAgent OS (${webmcpStatus.chromeVersion})`);
-                        return "webmcp";
-                    }
-                }
-            } catch { /* WebMCP not available */ }
-
-            // Fall back to Chrome MCP
-            try {
-                const { isChromiumAvailable, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
-                const chrome = await isChromiumAvailable();
-                if (chrome.available) {
-                    const result = await ensureChromeMCPRunning();
-                    if (result.success) {
-                        console.log(`[Browser] Auto-detected Chrome MCP on TensorAgent OS (${result.tools.length} tools)`);
-                        return "chrome-mcp";
-                    }
-                }
-            } catch { /* Chrome MCP not available, use Playwright */ }
         }
 
         return "playwright";
@@ -900,136 +829,16 @@ export const browserTool: AgentTool<BrowserAction> = {
 - console: Get console logs
 - upload: Handle file inputs
 - cookies/storage: State management
-- webmcp_discover: Discover WebMCP tools exposed by the current page (Chrome 146+ navigator.modelContext)
-- webmcp_invoke: Invoke a WebMCP tool by name with arguments
 
-For interactions, first take a snapshot to get refs, then use act with ref parameter.
-For WebMCP-enabled sites, use webmcp_discover to find tools, then webmcp_invoke to call them.`,
+For interactions, first take a snapshot to get refs, then use act with ref parameter.`,
     category: "browser",
     parameters: BrowserActionSchema,
 
     async execute(params: BrowserAction, _context: ToolCallContext): Promise<ToolResult> {
         try {
+            // Check for BrowserOS backend
             const backend = await getBrowserBackend();
 
-            // ── WebMCP Backend (Chrome 146+ navigator.modelContext) ──
-            if (backend === "webmcp") {
-                const { getWebMCPBackend } = await import("./webmcp.js");
-                const webmcp = getWebMCPBackend();
-                console.log(`[Browser] Using WebMCP backend for action: ${params.action}`);
-
-                switch (params.action) {
-                    case "start":
-                        await webmcp.start();
-                        return { success: true, content: "WebMCP browser started with navigator.modelContext enabled" };
-                    case "stop":
-                        await webmcp.stop();
-                        return { success: true, content: "WebMCP browser stopped" };
-                    case "navigate":
-                        return await webmcp.navigate(params.url);
-                    case "open":
-                        return await webmcp.navigate(params.url);
-                    case "snapshot":
-                        return await webmcp.snapshot();
-                    case "screenshot":
-                        return await webmcp.screenshot(params.fullPage);
-                    case "click":
-                        return await webmcp.click(params.selector);
-                    case "type":
-                        return await webmcp.type(params.selector, params.text);
-                    case "press":
-                        return await webmcp.press(params.key);
-                    case "evaluate":
-                        return await webmcp.evaluate(params.script);
-                    case "webmcp_discover": {
-                        const discovery = await webmcp.discoverTools();
-                        let content = `WebMCP Discovery on: ${discovery.url}\n`;
-                        content += `Title: ${discovery.title}\n`;
-                        content += `WebMCP Available: ${discovery.hasWebMCP}\n`;
-                        content += `Tools Found: ${discovery.tools.length}\n`;
-                        if (discovery.tools.length > 0) {
-                            content += `\nTools:\n`;
-                            for (const tool of discovery.tools) {
-                                content += `  • ${tool.name}: ${tool.description}`;
-                                if (tool.inputSchema) {
-                                    const props = (tool.inputSchema as any).properties;
-                                    if (props) {
-                                        content += ` (params: ${Object.keys(props).join(", ")})`;
-                                    }
-                                }
-                                content += `\n`;
-                            }
-                        }
-                        return {
-                            success: true,
-                            content,
-                            metadata: { ...discovery, backend: "webmcp" }
-                        };
-                    }
-                    case "webmcp_invoke":
-                        return await webmcp.invokeTool(
-                            params.toolName,
-                            (params.toolArgs as Record<string, unknown>) || {}
-                        );
-                    case "status": {
-                        const status = await webmcp.getStatus();
-                        return {
-                            success: true,
-                            content: JSON.stringify(status, null, 2),
-                            metadata: status,
-                        };
-                    }
-                    default:
-                        console.log(`[Browser] Action '${params.action}' not natively supported by WebMCP, using Playwright fallback`);
-                }
-            }
-
-            // ── Chrome MCP backend ──
-            if (backend === "chrome-mcp") {
-                const { ChromeMCPBackend, ensureChromeMCPRunning } = await import("./chrome-mcp.js");
-                console.log("[Browser] Chrome MCP backend configured, checking/launching...");
-                const launchResult = await ensureChromeMCPRunning();
-                if (launchResult.success) {
-                    const chromeMCP = new ChromeMCPBackend();
-
-                    switch (params.action) {
-                        case "start":
-                            return { success: true, content: `Chrome MCP is ready (${launchResult.tools.length} tools available)` };
-                        case "stop":
-                            chromeMCP.stop();
-                            return { success: true, content: "Chrome MCP stopped" };
-                        case "navigate":
-                            return await chromeMCP.navigate(params.url);
-                        case "open":
-                            return await chromeMCP.navigate(params.url);
-                        case "snapshot":
-                            return await chromeMCP.snapshot();
-                        case "screenshot":
-                            return await chromeMCP.screenshot();
-                        case "click":
-                            return await chromeMCP.click(params.selector);
-                        case "type":
-                            return await chromeMCP.type(params.selector, params.text);
-                        case "evaluate":
-                            return await chromeMCP.evaluate(params.script);
-                        case "console":
-                            return await chromeMCP.getConsole();
-                        case "status":
-                            const chromeMCPStatus = await chromeMCP.getStatus();
-                            return {
-                                success: true,
-                                content: JSON.stringify(chromeMCPStatus, null, 2),
-                                metadata: chromeMCPStatus,
-                            };
-                        default:
-                            console.log(`[Browser] Action '${params.action}' not supported by Chrome MCP, using Playwright`);
-                    }
-                } else {
-                    console.log(`[Browser] Chrome MCP failed: ${launchResult.error}, falling back to Playwright`);
-                }
-            }
-
-            // Check for BrowserOS backend
             if (backend === "browseros") {
                 // Auto-launch BrowserOS if not running
                 const { ensureBrowserOSRunning, BrowserOSBackend } = await import("./browser-os.js");
