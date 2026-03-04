@@ -436,60 +436,30 @@ Rectangle {
                 MouseArea { id: dispHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.displayExpanded = !desktop.displayExpanded }
             }
 
-            // Display resolution list (shown when expanded)
+            // Display scaling options (shown when expanded)
             Repeater {
                 model: desktop.displayExpanded ? [
-                    { label: "1024 × 768", w: 1024, h: 768 },
-                    { label: "1280 × 800", w: 1280, h: 800 },
-                    { label: "1366 × 768", w: 1366, h: 768 },
-                    { label: "1440 × 900", w: 1440, h: 900 },
-                    { label: "1600 × 900", w: 1600, h: 900 },
-                    { label: "1920 × 1080", w: 1920, h: 1080 }
+                    { label: "Compact (Small UI)", scale: 0.75 },
+                    { label: "Default", scale: 1.0 },
+                    { label: "Comfortable", scale: 1.15 },
+                    { label: "Large", scale: 1.35 },
+                    { label: "Extra Large", scale: 1.6 }
                 ] : []
 
                 delegate: Rectangle {
                     width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
-                    color: resMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    color: dscaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
                     Row {
                         anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
                         anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
-                        Text { text: "🖥"; font.pixelSize: Math.round(10 * root.sf) }
-                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                        Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textMuted }
+                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
                     }
                     MouseArea {
-                        id: resMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        id: dscaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            sysManager.setDisplayResolution(modelData.w, modelData.h);
-                            root.showToast("Resolution: " + modelData.label, "success");
-                            contextMenu.visible = false;
-                        }
-                    }
-                }
-            }
-
-            // Scale options (shown when expanded)
-            Repeater {
-                model: desktop.displayExpanded ? [
-                    { label: "Scale 1×", scale: 1.0 },
-                    { label: "Scale 1.25×", scale: 1.25 },
-                    { label: "Scale 1.5×", scale: 1.5 },
-                    { label: "Scale 2×", scale: 2.0 }
-                ] : []
-
-                delegate: Rectangle {
-                    width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
-                    color: scaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
-                        anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
-                        Text { text: "🔍"; font.pixelSize: Math.round(10 * root.sf) }
-                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
-                    }
-                    MouseArea {
-                        id: scaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            sysManager.setDisplayScale(modelData.scale);
-                            root.showToast(modelData.label, "success");
+                            root.userScale = modelData.scale;
+                            root.showToast("Display: " + modelData.label, "success");
                             contextMenu.visible = false;
                         }
                     }

@@ -25,8 +25,9 @@ WaylandCompositor {
             title: "TensorAgent OS"
             color: "#0d0d0d"
 
-            // ── Global Scale Factor ──
-            readonly property real sf: Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
+            // ── Display Scale ──
+            property real userScale: 1.0
+            readonly property real sf: userScale * Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
 
             // ── Global State ──
             property bool loggedIn: false
