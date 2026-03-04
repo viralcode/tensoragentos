@@ -467,20 +467,22 @@ public:
     Q_INVOKABLE bool launchNativeApp(const QString &command) {
         if (command.isEmpty()) return false;
 
-        QProcess *proc = new QProcess();
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("DISPLAY", ":0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
-        env.insert("HOME", "/home/ainux");
-        proc->setProcessEnvironment(env);
+        // Bake env vars directly into the shell command to guarantee they're set
+        QString fullCmd = QString(
+            "export DISPLAY=:0; "
+            "export XDG_RUNTIME_DIR=/run/user/1000; "
+            "export HOME=/home/ainux; "
+            "export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; "
+            "exec %1"
+        ).arg(command);
+
+        QProcess *proc = new QProcess(this);
         proc->setProgram("/bin/bash");
-        proc->setArguments(QStringList() << "-c" << command);
+        proc->setArguments(QStringList() << "-c" << fullCmd);
+        proc->start();
         
-        qint64 pid = 0;
-        bool ok = proc->startDetached(&pid);
-        qDebug() << "SystemManager: launchNativeApp" << command << "pid:" << pid << "ok:" << ok;
-        delete proc;
-        return ok;
+        qDebug() << "SystemManager: launchNativeApp" << command << "started:" << proc->processId();
+        return true;
     }
 
     // Non-blocking single attempt to find an XWayland window by name
