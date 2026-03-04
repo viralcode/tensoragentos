@@ -319,27 +319,31 @@ public:
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
-        // Primary: Use Qt's native clipboard
+        // Primary: Read from Wayland clipboard (clipboard-sync daemon pushes X11→Wayland)
+        {
+            QProcess proc;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("WAYLAND_DISPLAY", "wayland-0");
+            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+            proc.setProcessEnvironment(env);
+            proc.start("wl-paste", QStringList() << "--no-newline");
+            proc.waitForFinished(2000);
+            if (proc.exitCode() == 0) {
+                QString result = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+                if (!result.isEmpty() && result != "No selection") {
+                    qDebug() << "SystemManager: pasteFromClipboard via wl-paste:" << result.left(50);
+                    return result;
+                }
+            }
+        }
+
+        // Fallback: Qt's native clipboard
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             QString text = clipboard->text();
             if (!text.isEmpty()) {
                 qDebug() << "SystemManager: pasteFromClipboard via Qt";
                 return text;
-            }
-        }
-
-        // Fallback: Read from X11 clipboard (for content from XWayland apps)
-        {
-            QProcess proc;
-            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("DISPLAY", ":0");
-            proc.setProcessEnvironment(env);
-            proc.start("xsel", QStringList() << "--clipboard" << "--output");
-            proc.waitForFinished(2000);
-            if (proc.exitCode() == 0) {
-                QString result = proc.readAllStandardOutput().trimmed();
-                if (!result.isEmpty()) return result;
             }
         }
 
