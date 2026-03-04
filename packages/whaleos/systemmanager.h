@@ -287,35 +287,74 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── Clipboard Operations (via wl-copy/wl-paste — Wayland-native) ──
+    // ── Clipboard Operations (X11 + Wayland bridge) ──
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
-        QProcess proc;
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
-        proc.setProcessEnvironment(env);
-        proc.start("wl-copy", QStringList());
-        proc.waitForStarted(3000);
-        proc.write(text.toUtf8());
-        proc.closeWriteChannel();
-        proc.waitForFinished(3000);
-        qDebug() << "SystemManager: copyToClipboard result:" << proc.exitCode();
-        return proc.exitCode() == 0;
+        bool ok = false;
+
+        // Write to X11 clipboard (for XWayland apps: Chrome, Mousepad, etc.)
+        {
+            QProcess proc;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("DISPLAY", ":0");
+            proc.setProcessEnvironment(env);
+            proc.start("xclip", QStringList() << "-selection" << "clipboard");
+            proc.waitForStarted(2000);
+            proc.write(text.toUtf8());
+            proc.closeWriteChannel();
+            proc.waitForFinished(2000);
+            if (proc.exitCode() == 0) ok = true;
+        }
+
+        // Also write to Wayland clipboard (for QML shell context menu)
+        {
+            QProcess proc;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("WAYLAND_DISPLAY", "wayland-0");
+            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+            proc.setProcessEnvironment(env);
+            proc.start("wl-copy", QStringList());
+            proc.waitForStarted(2000);
+            proc.write(text.toUtf8());
+            proc.closeWriteChannel();
+            proc.waitForFinished(2000);
+            if (proc.exitCode() == 0) ok = true;
+        }
+
+        qDebug() << "SystemManager: copyToClipboard:" << (ok ? "OK" : "FAIL");
+        return ok;
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
-        QProcess proc;
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
-        proc.setProcessEnvironment(env);
-        proc.start("wl-paste", QStringList() << "--no-newline");
-        proc.waitForFinished(3000);
-        if (proc.exitCode() == 0) {
-            return proc.readAllStandardOutput().trimmed();
+        // Try X11 clipboard first (most apps run on XWayland)
+        {
+            QProcess proc;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("DISPLAY", ":0");
+            proc.setProcessEnvironment(env);
+            proc.start("xclip", QStringList() << "-selection" << "clipboard" << "-o");
+            proc.waitForFinished(2000);
+            if (proc.exitCode() == 0) {
+                QString result = proc.readAllStandardOutput().trimmed();
+                if (!result.isEmpty()) return result;
+            }
         }
+
+        // Fallback to Wayland clipboard
+        {
+            QProcess proc;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("WAYLAND_DISPLAY", "wayland-0");
+            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+            proc.setProcessEnvironment(env);
+            proc.start("wl-paste", QStringList() << "--no-newline");
+            proc.waitForFinished(2000);
+            if (proc.exitCode() == 0) {
+                return proc.readAllStandardOutput().trimmed();
+            }
+        }
+
         return "";
     }
 
