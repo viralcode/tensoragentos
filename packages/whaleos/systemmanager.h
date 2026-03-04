@@ -464,20 +464,23 @@ public:
     }
 
     // Launch a native app via XWayland (Cage manages display)
-    // Note: QML WaylandCompositor embedding doesn't work under Cage+pixman (no EGL)
     Q_INVOKABLE bool launchNativeApp(const QString &command) {
         if (command.isEmpty()) return false;
 
+        QProcess *proc = new QProcess();
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
         env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
         env.insert("HOME", "/home/ainux");
-
-        QProcess *proc = new QProcess();
         proc->setProcessEnvironment(env);
-        proc->startDetached("/bin/bash", QStringList() << "-c" << command);
-        qDebug() << "SystemManager: Launched native app via XWayland:" << command;
-        return true;
+        proc->setProgram("/bin/bash");
+        proc->setArguments(QStringList() << "-c" << command);
+        
+        qint64 pid = 0;
+        bool ok = proc->startDetached(&pid);
+        qDebug() << "SystemManager: launchNativeApp" << command << "pid:" << pid << "ok:" << ok;
+        delete proc;
+        return ok;
     }
 
     // Non-blocking single attempt to find an XWayland window by name
