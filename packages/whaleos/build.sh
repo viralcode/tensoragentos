@@ -6,8 +6,8 @@ cd /opt/ainux/whaleos
 # Run Qt6 MOC on SystemManager (Q_OBJECT requires it)
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) systemmanager.h -o moc_systemmanager.cpp
 
-# Compile with MOC output
+# Compile with MOC output + Wayland Compositor support
 g++ -o whaleos main.cpp moc_systemmanager.cpp \
-    $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Core Qt6Gui) \
+    $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Core Qt6Gui Qt6WaylandCompositor) \
     -fPIC
 echo "WhaleOS built successfully"

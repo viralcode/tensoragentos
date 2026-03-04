@@ -1,139 +1,238 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
+import QtWayland.Compositor
+import QtWayland.Compositor.XdgShell
+import QtWayland.Compositor.WlShell
 
-Window {
-    id: root
-    visible: true
-    visibility: Window.FullScreen
-    flags: Qt.FramelessWindowHint | Qt.Window
-    title: "TensorAgent OS"
-    color: "#0d0d0d"
+WaylandCompositor {
+    id: comp
 
-    // ── Global Scale Factor ──
-    // Reference design: 1024×768. sf scales proportionally to actual window size.
-    readonly property real sf: Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
+    // Our custom Wayland socket — native apps connect here
+    socketName: "whaleos-0"
 
-    // ── Global State ──
-    property bool loggedIn: false
-    property string currentUser: ""
-    property string sessionId: ""
-    property var openWindows: []
+    WaylandOutput {
+        sizeFollowsWindow: true
+        scaleFactor: 1
+        manufacturer: "TensorAgent"
+        model: "Virtual Display"
+        window: Window {
+            id: root
+            visible: true
+            visibility: Window.FullScreen
+            flags: Qt.FramelessWindowHint | Qt.Window
+            title: "TensorAgent OS"
+            color: "#0d0d0d"
 
-    // ── API ──
-    property string apiBase: "http://127.0.0.1:7777/dashboard/api"
+            // ── Global Scale Factor ──
+            readonly property real sf: Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
 
-    // ── Theme Constants ──
-    readonly property color bgVoid: "#0d0d0d"
-    readonly property color bgSurface: "#141414"
-    readonly property color bgElevated: "#1c1c1c"
-    readonly property color bgCard: "#1f1f1f"
-    readonly property color borderColor: "#2a2a2a"
-    readonly property color borderLight: "#333333"
-    readonly property color textPrimary: "#ffffff"
-    readonly property color textSecondary: "#999999"
-    readonly property color textMuted: "#666666"
-    readonly property color accentBlue: "#3b82f6"
-    readonly property color accentGreen: "#22c55e"
-    readonly property color accentRed: "#ef4444"
-    readonly property color accentOrange: "#f97316"
-    readonly property int radiusSm: Math.round(6 * sf)
-    readonly property int radiusMd: Math.round(10 * sf)
-    readonly property int radiusLg: Math.round(14 * sf)
+            // ── Global State ──
+            property bool loggedIn: false
+            property string currentUser: ""
+            property string sessionId: ""
+            property var openWindows: []
 
-    // ── Icon Fonts (Font Awesome) ──
-    property string iconFont: faLoader.name
-    property string iconFontBrands: faBrandsLoader.name
+            // ── Wayland Surface Tracking ──
+            property var pendingSurfaces: []   // Surfaces waiting to be assigned to AppWindows
 
-    FontLoader { id: faLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2" }
-    FontLoader { id: faBrandsLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2" }
-    FontLoader { id: systemFont; source: "" }
+            // ── API ──
+            property string apiBase: "http://127.0.0.1:7777/dashboard/api"
 
-    // ── Window Management ──
-    property int nextZ: 100
+            // ── Theme Constants ──
+            readonly property color bgVoid: "#0d0d0d"
+            readonly property color bgSurface: "#141414"
+            readonly property color bgElevated: "#1c1c1c"
+            readonly property color bgCard: "#1f1f1f"
+            readonly property color borderColor: "#2a2a2a"
+            readonly property color borderLight: "#333333"
+            readonly property color textPrimary: "#ffffff"
+            readonly property color textSecondary: "#999999"
+            readonly property color textMuted: "#666666"
+            readonly property color accentBlue: "#3b82f6"
+            readonly property color accentGreen: "#22c55e"
+            readonly property color accentRed: "#ef4444"
+            readonly property color accentOrange: "#f97316"
+            readonly property int radiusSm: Math.round(6 * sf)
+            readonly property int radiusMd: Math.round(10 * sf)
+            readonly property int radiusLg: Math.round(14 * sf)
 
-    function bringToFront(win) {
-        nextZ++;
-        win.z = nextZ;
-    }
+            // ── Icon Fonts ──
+            property string iconFont: faLoader.name
+            property string iconFontBrands: faBrandsLoader.name
 
-    // ── Login Screen ──
-    Loader {
-        id: loginLoader
-        anchors.fill: parent
-        active: !root.loggedIn
-        source: "LoginScreen.qml"
-    }
+            FontLoader { id: faLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2" }
+            FontLoader { id: faBrandsLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2" }
+            FontLoader { id: systemFont; source: "" }
 
-    // ── Desktop ──
-    Loader {
-        id: desktopLoader
-        anchors.fill: parent
-        active: root.loggedIn
-        source: "Desktop.qml"
-    }
+            // ── Window Management ──
+            property int nextZ: 100
 
-    function onLoginSuccess(user, session) {
-        currentUser = user;
-        sessionId = session;
-        loggedIn = true;
-    }
+            function bringToFront(win) {
+                nextZ++;
+                win.z = nextZ;
+            }
 
-    function doLogout() {
-        loggedIn = false;
-        currentUser = "";
-        sessionId = "";
-        openWindows = [];
-    }
+            // ── Assign a Wayland surface to an AppWindow ──
+            function assignSurface(toplevel, xdgSurface) {
+                // Try immediate match first
+                if (tryMatchSurface(toplevel, xdgSurface)) return;
 
-    // ── Toast Notification System ──
-    function showToast(message, type) {
-        toastText.text = message;
-        toastText.color = "#fff";
-        if (type === "success") {
-            toastBg.color = Qt.rgba(0.13, 0.77, 0.37, 0.95);
-            toastIcon.text = "✓";
-            toastIcon.color = "#fff";
-        } else if (type === "error") {
-            toastBg.color = Qt.rgba(0.94, 0.27, 0.27, 0.95);
-            toastIcon.text = "✕";
-            toastIcon.color = "#fff";
-        } else {
-            toastBg.color = Qt.rgba(0.23, 0.51, 0.96, 0.95);
-            toastIcon.text = "ℹ";
-            toastIcon.color = "#fff";
-        }
-        toastContainer.opacity = 1.0;
-        toastContainer.y = 20;
-        toastTimer.restart();
-    }
+                // Title/appId may not be set yet — queue for deferred matching
+                var pending = pendingSurfaces.slice();
+                pending.push({ toplevel: toplevel, xdgSurface: xdgSurface, attempts: 0 });
+                pendingSurfaces = pending;
+                surfaceMatchTimer.start();
+            }
 
-    Item {
-        id: toastContainer
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: Math.round(-60 * sf); z: 99999
-        width: toastRow.width + Math.round(32 * sf); height: Math.round(44 * sf)
-        opacity: 0.0
+            function tryMatchSurface(toplevel, xdgSurface) {
+                var appTitle = toplevel.title || "";
+                var appId = toplevel.appId || "";
 
-        Behavior on opacity { NumberAnimation { duration: 300 } }
-        Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                if (appTitle.length === 0 && appId.length === 0) return false;
 
-        Rectangle {
-            id: toastBg
-            anchors.fill: parent; radius: Math.round(12 * sf)
-            color: Qt.rgba(0.13, 0.77, 0.37, 0.95)
+                for (var i = 0; i < openWindows.length; i++) {
+                    var win = openWindows[i];
+                    if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
+                        var searchName = win.searchName || "";
+                        if (searchName.length > 0 &&
+                            (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
+                             appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
+                            var wins = openWindows.slice();
+                            wins[i] = {
+                                appId: win.appId,
+                                title: win.title,
+                                icon: win.icon,
+                                cmd: win.cmd || "",
+                                searchName: win.searchName || "",
+                                surface: xdgSurface,
+                                toplevel: toplevel
+                            };
+                            openWindows = wins;
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
 
-            Row {
-                id: toastRow
-                anchors.centerIn: parent; spacing: Math.round(8 * sf)
-                Text { id: toastIcon; text: "✓"; font.pixelSize: Math.round(16 * sf); font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
-                Text { id: toastText; text: ""; font.pixelSize: Math.round(13 * sf); font.weight: Font.DemiBold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+            // Timer to retry matching pending surfaces
+            Timer {
+                id: surfaceMatchTimer
+                interval: 500; repeat: true; running: false
+                onTriggered: {
+                    var remaining = [];
+                    for (var i = 0; i < root.pendingSurfaces.length; i++) {
+                        var s = root.pendingSurfaces[i];
+                        if (root.tryMatchSurface(s.toplevel, s.xdgSurface)) {
+                            continue; // matched!
+                        }
+                        s.attempts++;
+                        if (s.attempts < 20) {
+                            remaining.push(s);
+                        }
+                    }
+                    root.pendingSurfaces = remaining;
+                    if (remaining.length === 0) surfaceMatchTimer.stop();
+                }
+            }
+
+            // ── Login Screen ──
+            Loader {
+                id: loginLoader
+                anchors.fill: parent
+                active: !root.loggedIn
+                source: "LoginScreen.qml"
+            }
+
+            // ── Desktop ──
+            Loader {
+                id: desktopLoader
+                anchors.fill: parent
+                active: root.loggedIn
+                source: "Desktop.qml"
+            }
+
+            function onLoginSuccess(user, session) {
+                currentUser = user;
+                sessionId = session;
+                loggedIn = true;
+            }
+
+            function doLogout() {
+                loggedIn = false;
+                currentUser = "";
+                sessionId = "";
+                openWindows = [];
+            }
+
+            // ── Toast Notification System ──
+            function showToast(message, type) {
+                toastText.text = message;
+                toastText.color = "#fff";
+                if (type === "success") {
+                    toastBg.color = Qt.rgba(0.13, 0.77, 0.37, 0.95);
+                    toastIcon.text = "✓";
+                    toastIcon.color = "#fff";
+                } else if (type === "error") {
+                    toastBg.color = Qt.rgba(0.94, 0.27, 0.27, 0.95);
+                    toastIcon.text = "✕";
+                    toastIcon.color = "#fff";
+                } else {
+                    toastBg.color = Qt.rgba(0.23, 0.51, 0.96, 0.95);
+                    toastIcon.text = "ℹ";
+                    toastIcon.color = "#fff";
+                }
+                toastContainer.opacity = 1.0;
+                toastContainer.y = 20;
+                toastTimer.restart();
+            }
+
+            Item {
+                id: toastContainer
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: Math.round(-60 * root.sf); z: 99999
+                width: toastRow.width + Math.round(32 * root.sf); height: Math.round(44 * root.sf)
+                opacity: 0.0
+
+                Behavior on opacity { NumberAnimation { duration: 300 } }
+                Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+                Rectangle {
+                    id: toastBg
+                    anchors.fill: parent; radius: Math.round(12 * root.sf)
+                    color: Qt.rgba(0.13, 0.77, 0.37, 0.95)
+
+                    Row {
+                        id: toastRow
+                        anchors.centerIn: parent; spacing: Math.round(8 * root.sf)
+                        Text { id: toastIcon; text: "✓"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                        Text { id: toastText; text: ""; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff"; anchors.verticalCenter: parent.verticalCenter }
+                    }
+                }
+
+                Timer {
+                    id: toastTimer; interval: 3000
+                    onTriggered: { toastContainer.opacity = 0.0; toastContainer.y = Math.round(-60 * root.sf); }
+                }
             }
         }
+    }
 
-        Timer {
-            id: toastTimer; interval: 3000
-            onTriggered: { toastContainer.opacity = 0.0; toastContainer.y = Math.round(-60 * sf); }
+    // ── XDG Shell — handles native app window surfaces ──
+    XdgShell {
+        onToplevelCreated: function(toplevel, xdgSurface) {
+            console.log("WhaleOS Compositor: XDG surface — title:" + toplevel.title + " appId:" + toplevel.appId);
+            root.assignSurface(toplevel, xdgSurface);
         }
     }
+
+    // ── WlShell — fallback for older/simpler clients ──
+    WlShell {
+        onWlShellSurfaceCreated: function(shellSurface) {
+            console.log("WhaleOS Compositor: WlShell surface — title:" + shellSurface.title + " className:" + shellSurface.className);
+            root.assignSurface(shellSurface, shellSurface);
+        }
+    }
+
 }

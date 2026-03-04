@@ -344,6 +344,20 @@ Rectangle {
         color: Qt.rgba(1, 1, 1, 0.15)
     }
 
+    // Timeout timer: if XHR never fires callback, fall back to system session
+    Timer {
+        id: xhrTimeout
+        interval: 5000; running: false; repeat: false
+        property string pendingUser: ""
+        onTriggered: {
+            if (loginBusy) {
+                console.log("LoginScreen: XHR timeout — falling back to system session");
+                loginBusy = false;
+                root.onLoginSuccess(pendingUser, "system");
+            }
+        }
+    }
+
     function doLogin() {
         if (loginBusy) return;
         loginBusy = true;
@@ -357,12 +371,17 @@ Rectangle {
             return;
         }
 
+        // Start timeout — if API never responds, we'll still log in
+        xhrTimeout.pendingUser = userField.text;
+        xhrTimeout.restart();
+
         // Now get a real API session token from OpenWhale
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/auth/login");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
+                xhrTimeout.stop();  // Cancel timeout — we got a response
                 loginBusy = false;
                 if (xhr.status === 200) {
                     try {

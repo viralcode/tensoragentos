@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtWayland.Compositor
 
 Rectangle {
     id: appWindow
@@ -22,10 +23,14 @@ Rectangle {
     property int initialY: Math.round(80 * root.sf)
 
     // Native app properties
-    property bool isNative: appId.indexOf("native-") === 0
+    property bool isNative: appId.indexOf("native-") === 0 || appId.indexOf("wayland-") === 0
     property string nativeCmd: ""
     property string nativeSearchName: ""
     property string nativeWinId: ""
+
+    // Wayland surface (assigned by compositor)
+    property var shellSurface: null
+    property var toplevelObj: null
 
     Rectangle {
         anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
@@ -116,11 +121,25 @@ Rectangle {
             }
         }
 
-        // Native app loading indicator
+        // Embedded Wayland surface (rendered by compositor)
+        ShellSurfaceItem {
+            id: surfaceItem
+            anchors.fill: parent
+            visible: shellSurface !== null
+            shellSurface: appWindow.shellSurface
+            autoCreatePopupItems: true
+
+            onSurfaceDestroyed: {
+                // Native app closed itself — close the AppWindow too
+                closeWindow();
+            }
+        }
+
+        // Native app loading indicator (shown until surface arrives)
         Column {
             anchors.centerIn: parent
             spacing: Math.round(12 * root.sf)
-            visible: isNative && nativeWinId === ""
+            visible: isNative && shellSurface === null
 
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -130,7 +149,7 @@ Rectangle {
                     Rectangle {
                         width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#3b82f6"
                         SequentialAnimation on opacity {
-                            running: isNative && nativeWinId === ""; loops: Animation.Infinite
+                            running: isNative && shellSurface === null; loops: Animation.Infinite
                             PauseAnimation { duration: index * 200 }
                             NumberAnimation { to: 0.2; duration: 400 }
                             NumberAnimation { to: 1.0; duration: 400 }
@@ -148,11 +167,15 @@ Rectangle {
         }
     }
 
-    // ── Native App Embedding ──
+    // ── Native App Launch ──
     Timer {
         id: nativeLauncher
-        interval: 100; running: false; repeat: false
-        onTriggered: launchNative()
+        interval: 200; running: false; repeat: false
+        onTriggered: {
+            if (!isNative || nativeCmd.length === 0) return;
+            sysManager.launchNativeApp(nativeCmd);
+            // Don't close — wait for compositor to assign the surface
+        }
     }
 
     Component.onCompleted: {
@@ -161,40 +184,10 @@ Rectangle {
         }
     }
 
-    function launchNative() {
-        if (!isNative || nativeCmd.length === 0) return;
-
-        var winId = sysManager.launchNativeApp(nativeCmd, nativeSearchName);
-        if (winId.length > 0) {
-            nativeWinId = winId;
-            var mainWinId = sysManager.getMainWindowId();
-            var globalPos = contentArea.mapToItem(null, 0, 0);
-            sysManager.embedWindow(winId, mainWinId,
-                Math.round(globalPos.x), Math.round(globalPos.y),
-                Math.round(contentArea.width), Math.round(contentArea.height));
-        } else {
-            root.showToast("Failed to launch " + windowTitle, "error");
-        }
-    }
-
-    // Track position/size changes for native windows
-    onXChanged: updateNativeGeometry()
-    onYChanged: updateNativeGeometry()
-    onWidthChanged: updateNativeGeometry()
-    onHeightChanged: updateNativeGeometry()
-
-    function updateNativeGeometry() {
-        if (!isNative || nativeWinId.length === 0) return;
-        var globalPos = contentArea.mapToItem(null, 0, 0);
-        sysManager.moveEmbeddedWindow(nativeWinId,
-            Math.round(globalPos.x), Math.round(globalPos.y),
-            Math.round(contentArea.width), Math.round(contentArea.height));
-    }
-
     function closeWindow() {
-        // Close native window if applicable
-        if (isNative && nativeWinId.length > 0) {
-            sysManager.closeNativeWindow(nativeWinId);
+        // Send close to Wayland surface if applicable
+        if (toplevelObj) {
+            toplevelObj.sendClose();
         }
 
         var wins = root.openWindows;

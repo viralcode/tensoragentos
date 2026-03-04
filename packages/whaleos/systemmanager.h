@@ -21,10 +21,8 @@ class SystemManager : public QObject {
 public:
     explicit SystemManager(QObject *parent = nullptr) : QObject(parent), m_mainWindow(nullptr) {}
 
-    void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
-private:
-    QQuickWindow *m_mainWindow;
+    void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
     // ── List real Linux system users (UID >= 1000, excluding nobody/nogroup) ──
     Q_INVOKABLE QString listUsers() {
@@ -150,7 +148,7 @@ private:
         // Use python3 crypt to verify password hash from /etc/shadow
         // (su fails under systemd without a tty)
         QProcess proc;
-        proc.start("python3", QStringList() << "-c" <<
+        proc.start("sudo", QStringList() << "python3" << "-c" <<
             "import crypt,sys\n"
             "u=sys.stdin.readline().strip()\n"
             "p=sys.stdin.readline().strip()\n"
@@ -162,10 +160,10 @@ private:
             "      print('AUTH_OK')\n"
             "      sys.exit(0)\n"
             "print('FAIL')");
-        if (!proc.waitForStarted(3000)) return false;
+        if (!proc.waitForStarted(2000)) return false;
         proc.write((username + "\n" + password + "\n").toUtf8());
         proc.closeWriteChannel();
-        proc.waitForFinished(5000);
+        proc.waitForFinished(3000);
 
         QString output = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
         bool ok = output.contains("AUTH_OK");
@@ -353,7 +351,10 @@ private:
     }
 
     // ════════════════════════════════════════════════
-    // ── Native App Window Management (via xdotool) ──
+    // ── Native App Window Management (XWayland + xdotool) ──
+    // Under Cage (Wayland), native apps must run on XWayland.
+    // We launch them with DISPLAY=:0 and use xdotool to
+    // position XWayland windows over QML content areas.
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE QString getMainWindowId() {
@@ -361,51 +362,75 @@ private:
         return "";
     }
 
-    Q_INVOKABLE QString launchNativeApp(const QString &command, const QString &searchName) {
-        if (command.isEmpty()) return "";
+    // Helper: set DISPLAY=:0 on a QProcess so xdotool targets XWayland
+    void setXWaylandEnv(QProcess &proc) {
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
+        proc.setProcessEnvironment(env);
+    }
 
-        // Launch the app detached
-        QProcess::startDetached("/bin/bash", QStringList() << "-c" << command);
-        qDebug() << "SystemManager: Launching native app:" << command;
+    // Launch a native app (connects to WhaleOS compositor via whaleos-0 socket)
+    Q_INVOKABLE bool launchNativeApp(const QString &command) {
+        if (command.isEmpty()) return false;
 
-        // Poll xdotool to find the window (up to 10 seconds)
-        for (int i = 0; i < 20; i++) {
-            QThread::msleep(500);
-            QProcess search;
-            search.start("xdotool", QStringList() << "search" << "--name" << searchName);
-            search.waitForFinished(3000);
-            QString output = search.readAllStandardOutput().trimmed();
-            if (!output.isEmpty()) {
-                QStringList ids = output.split('\n');
-                QString winId = ids.last();
-                qDebug() << "SystemManager: Found native window:" << winId;
-                return winId;
-            }
+        // Set WAYLAND_DISPLAY to our compositor socket so the app
+        // connects to WhaleOS instead of Cage, enabling embedding
+        QString compositorCmd = "WAYLAND_DISPLAY=whaleos-0 " + command;
+        QProcess::startDetached("/bin/bash", QStringList() << "-c" << compositorCmd);
+        qDebug() << "SystemManager: Launched native app on compositor:" << command;
+        return true;
+    }
+
+    // Non-blocking single attempt to find an XWayland window by name
+    // Called repeatedly from QML via a Timer for async polling
+    Q_INVOKABLE QString findNativeWindow(const QString &searchName) {
+        if (searchName.isEmpty()) return "";
+
+        QProcess search;
+        setXWaylandEnv(search);
+        search.start("xdotool", QStringList() << "search" << "--name" << searchName);
+        if (!search.waitForStarted(500)) return "";
+        search.waitForFinished(800);
+        QString output = search.readAllStandardOutput().trimmed();
+        if (!output.isEmpty()) {
+            QStringList ids = output.split('\n');
+            QString winId = ids.last();
+            qDebug() << "SystemManager: Found XWayland window:" << winId << "for" << searchName;
+            return winId;
         }
-        qWarning() << "SystemManager: Timeout finding window for:" << searchName;
         return "";
     }
 
+    // Position and resize an XWayland window to overlay a QML content area
     Q_INVOKABLE bool embedWindow(const QString &childWinId, const QString &parentWinId, int x, int y, int w, int h) {
-        if (childWinId.isEmpty() || parentWinId.isEmpty()) return false;
+        if (childWinId.isEmpty()) return false;
+        Q_UNUSED(parentWinId)  // Not used for XWayland overlay approach
 
-        QProcess reparent;
-        reparent.start("xdotool", QStringList() << "windowreparent" << childWinId << parentWinId);
-        reparent.waitForFinished(3000);
+        // Remove window decorations
+        QProcess undecorate;
+        setXWaylandEnv(undecorate);
+        undecorate.start("xdotool", QStringList() << "set_window" << "--overrideredirect" << "1" << childWinId);
+        undecorate.waitForFinished(800);
 
+        // Resize first (no --sync to avoid extra blocking)
         QProcess resize;
+        setXWaylandEnv(resize);
         resize.start("xdotool", QStringList() << "windowsize" << childWinId << QString::number(w) << QString::number(h));
-        resize.waitForFinished(3000);
+        resize.waitForFinished(800);
 
+        // Move to absolute position (no --sync to avoid extra blocking)
         QProcess move;
-        move.start("xdotool", QStringList() << "windowmove" << "--relative" << childWinId << QString::number(x) << QString::number(y));
-        move.waitForFinished(3000);
+        setXWaylandEnv(move);
+        move.start("xdotool", QStringList() << "windowmove" << childWinId << QString::number(x) << QString::number(y));
+        move.waitForFinished(800);
 
+        // Activate
         QProcess activate;
+        setXWaylandEnv(activate);
         activate.start("xdotool", QStringList() << "windowactivate" << childWinId);
-        activate.waitForFinished(3000);
+        activate.waitForFinished(800);
 
-        qDebug() << "SystemManager: Embedded window" << childWinId << "into" << parentWinId << "at" << x << y << w << h;
+        qDebug() << "SystemManager: Positioned XWayland window" << childWinId << "at" << x << y << w << "x" << h;
         return true;
     }
 
@@ -413,12 +438,14 @@ private:
         if (winId.isEmpty()) return false;
 
         QProcess move;
+        setXWaylandEnv(move);
         move.start("xdotool", QStringList() << "windowmove" << winId << QString::number(x) << QString::number(y));
-        move.waitForFinished(1000);
+        move.waitForFinished(500);
 
         QProcess resize;
+        setXWaylandEnv(resize);
         resize.start("xdotool", QStringList() << "windowsize" << winId << QString::number(w) << QString::number(h));
-        resize.waitForFinished(1000);
+        resize.waitForFinished(500);
         return true;
     }
 
@@ -426,9 +453,10 @@ private:
         if (winId.isEmpty()) return false;
 
         QProcess proc;
+        setXWaylandEnv(proc);
         proc.start("xdotool", QStringList() << "windowclose" << winId);
-        proc.waitForFinished(3000);
-        qDebug() << "SystemManager: Closed native window:" << winId;
+        proc.waitForFinished(1000);
+        qDebug() << "SystemManager: Closed XWayland window:" << winId;
         return true;
     }
 
@@ -488,6 +516,9 @@ private:
         result["cwd"] = newCwd;
         return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
     }
+
+private:
+    QQuickWindow *m_mainWindow;
 };
 
 #endif // SYSTEMMANAGER_H
