@@ -25,30 +25,6 @@ WaylandCompositor {
             title: "TensorAgent OS"
             color: "#0d0d0d"
 
-            // ── Global Clipboard Shortcuts (bypass broken Wayland clipboard) ──
-            Shortcut {
-                sequence: StandardKey.Paste
-                onActivated: {
-                    var text = sysManager.pasteFromClipboard();
-                    if (text.length > 0 && root.activeFocusItem) {
-                        // Insert text at cursor position of focused input
-                        if (root.activeFocusItem.insert) {
-                            root.activeFocusItem.insert(root.activeFocusItem.cursorPosition, text);
-                        } else if (root.activeFocusItem.text !== undefined) {
-                            root.activeFocusItem.text += text;
-                        }
-                    }
-                }
-            }
-            Shortcut {
-                sequence: StandardKey.Copy
-                onActivated: {
-                    if (root.activeFocusItem && root.activeFocusItem.selectedText) {
-                        sysManager.copyToClipboard(root.activeFocusItem.selectedText);
-                    }
-                }
-            }
-
             // ── Display Scale ──
             property real userScale: 1.0
             readonly property real sf: userScale * Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))

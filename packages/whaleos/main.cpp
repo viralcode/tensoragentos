@@ -3,11 +3,64 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QDebug>
+#include <QKeyEvent>
+#include <QQuickItem>
+#include <QInputMethodEvent>
 #include "systemmanager.h"
 
+// Global clipboard event filter — intercepts Ctrl+V and Ctrl+C
+// before Qt's broken Wayland clipboard handler processes them
+class ClipboardFilter : public QObject {
+    Q_OBJECT
+public:
+    explicit ClipboardFilter(SystemManager *mgr, QObject *parent = nullptr)
+        : QObject(parent), m_mgr(mgr) {}
+    
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *ke = static_cast<QKeyEvent *>(event);
+            
+            // Ctrl+V — Paste
+            if (ke->key() == Qt::Key_V && (ke->modifiers() & Qt::ControlModifier)) {
+                QString text = m_mgr->pasteFromClipboard();
+                if (!text.isEmpty()) {
+                    // Send as input method event to the focused item
+                    QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
+                    if (app && app->focusObject()) {
+                        QInputMethodEvent ime;
+                        ime.setCommitString(text);
+                        QCoreApplication::sendEvent(app->focusObject(), &ime);
+                        qDebug() << "ClipboardFilter: Pasted" << text.length() << "chars";
+                    }
+                    return true;  // Consume the event
+                }
+            }
+            
+            // Ctrl+C — Copy
+            if (ke->key() == Qt::Key_C && (ke->modifiers() & Qt::ControlModifier)) {
+                QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
+                if (app && app->focusObject()) {
+                    QQuickItem *item = qobject_cast<QQuickItem *>(app->focusObject());
+                    if (item) {
+                        QVariant sel = item->property("selectedText");
+                        if (sel.isValid() && !sel.toString().isEmpty()) {
+                            m_mgr->copyToClipboard(sel.toString());
+                            qDebug() << "ClipboardFilter: Copied" << sel.toString().length() << "chars";
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return QObject::eventFilter(obj, event);
+    }
+    
+private:
+    SystemManager *m_mgr;
+};
+
 int main(int argc, char *argv[]) {
-    // Don't hardcode platform - let Qt auto-detect from environment
-    // Cage sets WAYLAND_DISPLAY which Qt will pick up automatically
     QGuiApplication app(argc, argv);
     app.setApplicationName("TensorAgentOS");
     app.setOrganizationName("TensorAgentOS");
@@ -17,6 +70,11 @@ int main(int argc, char *argv[]) {
     // Register SystemManager for kernel-level OS operations
     SystemManager sysManager;
     engine.rootContext()->setContextProperty("sysManager", &sysManager);
+
+    // Install global clipboard event filter
+    ClipboardFilter *clipFilter = new ClipboardFilter(&sysManager, &app);
+    app.installEventFilter(clipFilter);
+    qDebug() << "TensorAgent OS: Clipboard event filter installed";
 
     // Log QML errors
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
@@ -48,3 +106,5 @@ int main(int argc, char *argv[]) {
     qDebug() << "TensorAgent OS: Desktop shell loaded successfully";
     return app.exec();
 }
+
+#include "main.moc"
