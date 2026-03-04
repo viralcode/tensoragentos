@@ -14,6 +14,9 @@
 #include <QDateTime>
 #include <QQuickWindow>
 #include <QThread>
+#include <QGuiApplication>
+#include <QClipboard>
+#include <QMimeData>
 
 class SystemManager : public QObject {
     Q_OBJECT
@@ -287,47 +290,46 @@ public:
     }
 
     // ════════════════════════════════════════════════
-    // ── Clipboard Operations (X11 + Wayland bridge) ──
+    // ── Clipboard Operations (Qt native + X11/Wayland sync) ──
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
-        bool ok = false;
+        // Primary: Use Qt's native clipboard (works within QML shell)
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        if (clipboard) {
+            clipboard->setText(text);
+            qDebug() << "SystemManager: copyToClipboard via Qt OK";
+        }
 
-        // Write to X11 clipboard (for XWayland apps: Chrome, Mousepad, etc.)
+        // Secondary: Also push to X11 clipboard for XWayland apps
         {
-            QProcess proc;
+            QProcess *proc = new QProcess(this);
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("DISPLAY", ":0");
-            proc.setProcessEnvironment(env);
-            proc.start("xsel", QStringList() << "--clipboard" << "--input");
-            proc.waitForStarted(2000);
-            proc.write(text.toUtf8());
-            proc.closeWriteChannel();
-            proc.waitForFinished(2000);
-            if (proc.exitCode() == 0) ok = true;
+            proc->setProcessEnvironment(env);
+            proc->start("xsel", QStringList() << "--clipboard" << "--input");
+            proc->waitForStarted(1000);
+            proc->write(text.toUtf8());
+            proc->closeWriteChannel();
+            connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                    proc, &QProcess::deleteLater);
         }
 
-        // Also write to Wayland clipboard (for QML shell context menu)
-        {
-            QProcess proc;
-            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("WAYLAND_DISPLAY", "wayland-0");
-            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
-            proc.setProcessEnvironment(env);
-            proc.start("wl-copy", QStringList());
-            proc.waitForStarted(2000);
-            proc.write(text.toUtf8());
-            proc.closeWriteChannel();
-            proc.waitForFinished(2000);
-            if (proc.exitCode() == 0) ok = true;
-        }
-
-        qDebug() << "SystemManager: copyToClipboard:" << (ok ? "OK" : "FAIL");
-        return ok;
+        return true;
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
-        // Try X11 clipboard first (most apps run on XWayland)
+        // Primary: Use Qt's native clipboard
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        if (clipboard) {
+            QString text = clipboard->text();
+            if (!text.isEmpty()) {
+                qDebug() << "SystemManager: pasteFromClipboard via Qt";
+                return text;
+            }
+        }
+
+        // Fallback: Read from X11 clipboard (for content from XWayland apps)
         {
             QProcess proc;
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -338,20 +340,6 @@ public:
             if (proc.exitCode() == 0) {
                 QString result = proc.readAllStandardOutput().trimmed();
                 if (!result.isEmpty()) return result;
-            }
-        }
-
-        // Fallback to Wayland clipboard
-        {
-            QProcess proc;
-            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("WAYLAND_DISPLAY", "wayland-0");
-            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
-            proc.setProcessEnvironment(env);
-            proc.start("wl-paste", QStringList() << "--no-newline");
-            proc.waitForFinished(2000);
-            if (proc.exitCode() == 0) {
-                return proc.readAllStandardOutput().trimmed();
             }
         }
 
