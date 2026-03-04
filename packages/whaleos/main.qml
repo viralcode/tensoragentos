@@ -101,8 +101,8 @@ WaylandCompositor {
             property string iconFont: faLoader.name
             property string iconFontBrands: faBrandsLoader.name
 
-            FontLoader { id: faLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2" }
-            FontLoader { id: faBrandsLoader; source: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2" }
+            FontLoader { id: faLoader; source: "fonts/fa-solid-900.woff2" }
+            FontLoader { id: faBrandsLoader; source: "fonts/fa-brands-400.woff2" }
             FontLoader { id: systemFont; source: "" }
 
             // ── Window Management ──
