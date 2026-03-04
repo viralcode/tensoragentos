@@ -149,20 +149,8 @@ Rectangle {
                         id: appMa; anchors.fill: parent; hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            var wins = root.openWindows.slice();
-                            for (var i = 0; i < wins.length; i++) {
-                                if (wins[i].appId === modelData.appId) return;
-                            }
-                            wins.push({
-                                appId: modelData.appId,
-                                title: modelData.label,
-                                icon: modelData.appId,
-                                cmd: modelData.cmd,
-                                searchName: modelData.searchName
-                            });
-                            root.openWindows = wins;
-                            // Actually launch the native app process
                             sysManager.launchNativeApp(modelData.cmd);
+                            root.showToast(modelData.label + " launched", "success");
                         }
                     }
                 }
