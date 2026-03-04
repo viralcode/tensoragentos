@@ -1013,9 +1013,8 @@ Rectangle {
                     visible: !parent.text && !parent.activeFocus
                 }
 
-                onActiveFocusChanged: {
-                    if (activeFocus && !chatExpanded) chatExpanded = true;
-                }
+                // Only expand on explicit click, not on focus change
+                // (Wayland focus-follows-pointer causes hover to trigger focus)
 
                 // Also expand on mouse click (in case focus doesn't change)
                 MouseArea {
