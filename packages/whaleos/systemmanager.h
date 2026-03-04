@@ -299,7 +299,7 @@ public:
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("DISPLAY", ":0");
             proc.setProcessEnvironment(env);
-            proc.start("xclip", QStringList() << "-selection" << "clipboard");
+            proc.start("xsel", QStringList() << "--clipboard" << "--input");
             proc.waitForStarted(2000);
             proc.write(text.toUtf8());
             proc.closeWriteChannel();
@@ -333,7 +333,7 @@ public:
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("DISPLAY", ":0");
             proc.setProcessEnvironment(env);
-            proc.start("xclip", QStringList() << "-selection" << "clipboard" << "-o");
+            proc.start("xsel", QStringList() << "--clipboard" << "--output");
             proc.waitForFinished(2000);
             if (proc.exitCode() == 0) {
                 QString result = proc.readAllStandardOutput().trimmed();
