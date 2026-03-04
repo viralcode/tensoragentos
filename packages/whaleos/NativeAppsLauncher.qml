@@ -161,6 +161,8 @@ Rectangle {
                                 searchName: modelData.searchName
                             });
                             root.openWindows = wins;
+                            // Actually launch the native app process
+                            sysManager.launchNativeApp(modelData.cmd);
                         }
                     }
                 }
