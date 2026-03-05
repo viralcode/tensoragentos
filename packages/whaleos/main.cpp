@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QQuickItem>
 #include <QInputMethodEvent>
+#include <QFontDatabase>
 #include "systemmanager.h"
 
 // Global clipboard event filter — intercepts Ctrl+V and Ctrl+C
@@ -64,6 +65,25 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setApplicationName("TensorAgentOS");
     app.setOrganizationName("TensorAgentOS");
+
+    // ── Register Font Awesome fonts BEFORE QML loads ──
+    // This is the only reliable approach: QFontDatabase makes fonts available
+    // by family name immediately, without needing FontLoader or file:// paths.
+    const QString fontDir = "/opt/ainux/whaleos/fonts";
+    QStringList fontFiles = {
+        fontDir + "/fa-solid-900.ttf",
+        fontDir + "/fa-brands-400.ttf",
+        fontDir + "/fa-regular-400.ttf"
+    };
+    for (const QString &fontPath : fontFiles) {
+        int id = QFontDatabase::addApplicationFont(fontPath);
+        if (id < 0) {
+            qWarning() << "TensorAgent OS: Failed to load font:" << fontPath;
+        } else {
+            QStringList families = QFontDatabase::applicationFontFamilies(id);
+            qDebug() << "TensorAgent OS: Loaded font:" << fontPath << "→" << families;
+        }
+    }
 
     QQmlApplicationEngine engine;
 

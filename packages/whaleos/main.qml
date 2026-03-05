@@ -109,23 +109,21 @@ WaylandCompositor {
             readonly property int radiusMd: Math.round(10 * sf)
             readonly property int radiusLg: Math.round(14 * sf)
 
-            // ── Icon Fonts (TTF — absolute paths work in QEMU / UTM / ISO) ──
-            property string iconFont: faLoader.status === FontLoader.Ready ? faLoader.name : "Font Awesome 6 Free"
-            property string iconFontBrands: faBrandsLoader.status === FontLoader.Ready ? faBrandsLoader.name : "Font Awesome 6 Brands"
-            property string iconFontRegular: faRegLoader.status === FontLoader.Ready ? faRegLoader.name : "Font Awesome 6 Free"
+            // ── Icon Fonts ──
+            // Registered via QFontDatabase in main.cpp before QML loads.
+            // Use exact family names from fc-query: "Font Awesome 6 Free" (solid/regular)
+            // and "Font Awesome 6 Brands" (brands). Solid style needs weight: Font.Black (900).
+            property string iconFont: "Font Awesome 6 Free"
+            property string iconFontBrands: "Font Awesome 6 Brands"
+            property string iconFontRegular: "Font Awesome 6 Free"
 
-            // Absolute path ensures fonts load in every environment: QEMU, UTM, ISO, bare metal
-            FontLoader { id: faLoader;       source: "file:///opt/ainux/whaleos/fonts/fa-solid-900.ttf" }
-            FontLoader { id: faBrandsLoader; source: "file:///opt/ainux/whaleos/fonts/fa-brands-400.ttf" }
-            FontLoader { id: faRegLoader;    source: "file:///opt/ainux/whaleos/fonts/fa-regular-400.ttf" }
+            // FontLoader as secondary registration path (file:// absolute path)
+            FontLoader { id: faLoader;       source: "file:///opt/ainux/whaleos/fonts/fa-solid-900.ttf";   onStatusChanged: if(status===FontLoader.Ready) console.log("FA Solid OK:", name) }
+            FontLoader { id: faBrandsLoader; source: "file:///opt/ainux/whaleos/fonts/fa-brands-400.ttf";  onStatusChanged: if(status===FontLoader.Ready) console.log("FA Brands OK:", name) }
+            FontLoader { id: faRegLoader;    source: "file:///opt/ainux/whaleos/fonts/fa-regular-400.ttf"; onStatusChanged: if(status===FontLoader.Ready) console.log("FA Regular OK:", name) }
             FontLoader { id: systemFont;     source: "" }
 
-            Component.onCompleted: {
-                if (faLoader.status !== FontLoader.Ready)
-                    console.warn("⚠ FA Solid not loaded:", faLoader.status);
-                else
-                    console.log("✓ FA Solid loaded:", faLoader.name);
-            }
+
 
             // ── Window Management ──
             property int nextZ: 100
