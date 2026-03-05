@@ -175,7 +175,10 @@ Rectangle {
                                 width: parent.width; spacing: Math.round(10 * root.sf)
                                 Rectangle {
                                     width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8; color: Qt.rgba(1,1,1,0.06)
-                                    Text { anchors.centerIn: parent; text: modelData.icon || "\uf0e7"; font.family: modelData.id === "github" || modelData.id === "spotify" ? root.iconFontBrands : root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: root.accentBlue }
+                                    Text { anchors.centerIn: parent; text: modelData.icon || "\uf0e7";
+                                        font.family: modelData.id === "github" || modelData.id === "spotify" ? root.iconFontBrands : root.iconFont;
+                                        font.weight: modelData.id === "github" || modelData.id === "spotify" ? Font.Normal : Font.Black;
+                                        font.pixelSize: Math.round(16 * root.sf); color: root.accentBlue }
                                 }
                                 Column {
                                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)

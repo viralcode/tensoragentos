@@ -15,13 +15,38 @@ Rectangle {
     property var configValues: ({})
     property bool showConfigDialog: false
 
+    // Built-in MCP server catalog — shown when backend returns no servers
+    readonly property var builtinServers: [
+        { id: "filesystem",  name: "Filesystem",     description: "Read, write and manage files on the local system", tier: 1, category: "dev",          running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "git",         name: "Git",             description: "Git repository operations: commit, branch, diff, log", tier: 1, category: "dev",      running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "github",      name: "GitHub",          description: "Manage repos, issues, PRs and code search via API", tier: 1, category: "dev",         running: false, toolCount: 0, configured: false, envVars: ["GITHUB_TOKEN"] },
+        { id: "memory",      name: "Memory",          description: "Persistent key-value memory store across sessions", tier: 1, category: "ai",           running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "brave-search",name: "Brave Search",    description: "Web and local search powered by Brave Search API", tier: 1, category: "search",       running: false, toolCount: 0, configured: false, envVars: ["BRAVE_API_KEY"] },
+        { id: "fetch",       name: "Fetch / HTTP",    description: "Fetch any URL and extract text or JSON from web pages", tier: 1, category: "search",  running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "sqlite",      name: "SQLite",          description: "Query and manage SQLite databases with SQL", tier: 1, category: "data",                running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "postgres",    name: "PostgreSQL",      description: "Connect and query PostgreSQL databases securely", tier: 2, category: "data",           running: false, toolCount: 0, configured: false, envVars: ["DATABASE_URL"] },
+        { id: "puppeteer",   name: "Puppeteer",       description: "Browser automation: screenshot, click, scrape websites", tier: 2, category: "dev",    running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "slack",       name: "Slack",           description: "Send messages and read channels in Slack workspaces", tier: 2, category: "productivity", running: false, toolCount: 0, configured: false, envVars: ["SLACK_BOT_TOKEN"] },
+        { id: "time",        name: "Time",            description: "Get current time and convert between timezones", tier: 1, category: "productivity",    running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "everything",  name: "Everything",      description: "Reference server with all MCP primitive types", tier: 1, category: "dev",              running: false, toolCount: 0, configured: true,  envVars: [] },
+        { id: "google-maps", name: "Google Maps",     description: "Maps, directions, place search and geocoding", tier: 2, category: "search",            running: false, toolCount: 0, configured: false, envVars: ["GOOGLE_MAPS_API_KEY"] },
+        { id: "aws-kb",      name: "AWS Knowledge Base", description: "Query AWS Bedrock knowledge bases for RAG", tier: 2, category: "ai",               running: false, toolCount: 0, configured: false, envVars: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"] },
+        { id: "redis",       name: "Redis",           description: "Read and write data in Redis key-value store", tier: 2, category: "data",              running: false, toolCount: 0, configured: false, envVars: ["REDIS_URL"] },
+        { id: "sentry",      name: "Sentry",          description: "Inspect error events and releases from Sentry.io", tier: 3, category: "dev",           running: false, toolCount: 0, configured: false, envVars: ["SENTRY_AUTH_TOKEN"] },
+        { id: "linear",      name: "Linear",          description: "Create and manage Linear issues, projects and teams", tier: 3, category: "productivity", running: false, toolCount: 0, configured: false, envVars: ["LINEAR_API_KEY"] },
+        { id: "stripe",      name: "Stripe",          description: "Access Stripe payments, customers and subscriptions", tier: 3, category: "data",        running: false, toolCount: 0, configured: false, envVars: ["STRIPE_SECRET_KEY"] },
+        { id: "openai",      name: "OpenAI Tools",    description: "Call OpenAI APIs — chat, embeddings, DALL·E", tier: 3, category: "ai",                 running: false, toolCount: 0, configured: false, envVars: ["OPENAI_API_KEY"] },
+        { id: "notion",      name: "Notion",          description: "Read and write Notion pages, databases and blocks", tier: 3, category: "productivity",  running: false, toolCount: 0, configured: false, envVars: ["NOTION_TOKEN"] },
+        { id: "jupyter",     name: "Jupyter",         description: "Execute Python code in Jupyter notebooks", tier: 3, category: "data",                  running: false, toolCount: 0, configured: true,  envVars: [] }
+    ]
+
     Component.onCompleted: loadServers()
 
     function loadServers() {
         loading = true;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/mcp/servers");
-        xhr.setRequestHeader("Cookie", "owSessionId=" + root.sessionId);
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -32,7 +57,11 @@ Rectangle {
                         console.log("MCP parse error:", e);
                     }
                 } else {
-                    console.log("MCP API error:", xhr.status, xhr.responseText);
+                    console.log("MCP API error:", xhr.status);
+                }
+                // Use built-in catalog if backend returned nothing
+                if (allServers.length === 0) {
+                    allServers = builtinServers;
                 }
                 filterServers();
                 loading = false;
@@ -48,9 +77,9 @@ Rectangle {
             var s = allServers[i];
             if (q && s.name.toLowerCase().indexOf(q) === -1 && s.description.toLowerCase().indexOf(q) === -1) continue;
             if (activeFilter === "running" && !s.running) continue;
-            if (activeFilter === "1" && s.tier !== 1) continue;
-            if (activeFilter === "2" && s.tier !== 2) continue;
-            if (activeFilter === "3" && s.tier !== 3) continue;
+            if (activeFilter === "core" && s.tier !== 1) continue;
+            if (activeFilter === "pro" && s.tier !== 2) continue;
+            if (activeFilter === "store" && s.tier !== 3) continue;
             result.push(s);
         }
         filteredServers = result;
@@ -177,11 +206,11 @@ Rectangle {
                 width: parent.width; spacing: Math.round(8 * root.sf)
                 Repeater {
                     model: [
-                        { key: "all", label: "All" },
+                        { key: "all",     label: "All" },
                         { key: "running", label: "Running" },
-                        { key: "1", label: "Core" },
-                        { key: "2", label: "Pro" },
-                        { key: "3", label: "Store" }
+                        { key: "core",    label: "Core" },
+                        { key: "pro",     label: "Pro" },
+                        { key: "store",   label: "Store" }
                     ]
                     Rectangle {
                         width: Math.round(70 * root.sf); height: Math.round(28 * root.sf)
