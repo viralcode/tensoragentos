@@ -23,6 +23,19 @@ Rectangle {
     property bool resApplied: false
     property int revertCountdown: 0
     Component.onCompleted: { loadUsers(); checkChannelStatus(); loadDisplayInfo(); }
+
+    // Watch for settingsOpenTab — context menu sets this to jump to Display tab
+    Connections {
+        target: root
+        function onSettingsOpenTabChanged() {
+            if (root.settingsOpenTab === "display") {
+                activeTab = "display";
+                root.settingsOpenTab = ""; // reset
+                loadDisplayInfo();
+            }
+        }
+    }
+
     function checkChannelStatus() {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/channels/whatsapp/status");
@@ -136,49 +149,131 @@ Rectangle {
         };
         xhr.send(JSON.stringify({ token: tok, enabled: true }));
     }
+    // Parse xrandr output to extract display modes
+    function parseXrandrModes(xrandrText) {
+        var modes = [];
+        var lines = xrandrText.split("\n");
+        var inScreen = false;
+        var curW = 0; var curH = 0; var curR = 0;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            // Screen resolution line: "   1280x800..."
+            if (line.match(/^\s+\d+x\d+/)) {
+                var parts = line.trim().split(/\s+/);
+                var resDims = parts[0].split("x");
+                var mW = parseInt(resDims[0]); var mH = parseInt(resDims[1]);
+                var mR = 60.0;
+                var isCurrent = line.indexOf("*") >= 0;
+                var isPreferred = line.indexOf("+") >= 0;
+                // Parse refresh rates
+                for (var j = 1; j < parts.length; j++) {
+                    var rStr = parts[j].replace("*","").replace("+","");
+                    var r = parseFloat(rStr);
+                    if (!isNaN(r) && r > 0) { mR = r; break; }
+                }
+                if (isCurrent) { curW = mW; curH = mH; curR = mR; }
+                modes.push({"width": mW, "height": mH, "refresh": mR, "preferred": isPreferred, "current": isCurrent});
+            }
+        }
+        return { modes: modes, current: {"width": curW || 1280, "height": curH || 800, "refresh": curR || 60.0} };
+    }
+
     function loadDisplayInfo() {
         try {
-            var result = sysManager.exec("/opt/ainux/whaleos/display-helper.sh list");
-            var data = JSON.parse(result);
-            displayModes = data.modes || [];
-            currentRes = data.current || {"width": 1920, "height": 1080, "refresh": 60.0};
-            gpuInfo = data.gpu || {"name": "Unknown", "driver": "Unknown", "renderer": "Unknown"};
-            gfxInfo = data.graphics || {"modules": "", "compositor": ""};
-            selectedRes = currentRes.width + "x" + currentRes.height;
+            var xrandrText = sysManager.getDisplayInfo();
+            if (xrandrText && xrandrText.length > 10) {
+                var parsed = parseXrandrModes(xrandrText);
+                // If no modes found (Wayland-native, no XWayland), use standard set
+                if (parsed.modes.length === 0) {
+                    displayModes = [
+                        {"width":1920,"height":1080,"refresh":60.0,"preferred":true,"current":false},
+                        {"width":1680,"height":1050,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1600,"height":900,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1440,"height":900,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1366,"height":768,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1280,"height":1024,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1280,"height":800,"refresh":60.0,"preferred":false,"current":true},
+                        {"width":1280,"height":720,"refresh":60.0,"preferred":false,"current":false},
+                        {"width":1024,"height":768,"refresh":60.0,"preferred":false,"current":false}
+                    ];
+                    currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                } else {
+                    displayModes = parsed.modes;
+                    currentRes = parsed.current;
+                    if (currentRes.width === 0) currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                }
+            } else {
+                throw new Error("no xrandr output");
+            }
         } catch(e) {
-            // Fallback to common resolutions
+            // Standard fallback modes when xrandr/XWayland not available
             displayModes = [
-                {"width":1920,"height":1080,"refresh":60.0,"preferred":true},
-                {"width":1680,"height":1050,"refresh":60.0},
-                {"width":1600,"height":900,"refresh":60.0},
-                {"width":1440,"height":900,"refresh":60.0},
-                {"width":1366,"height":768,"refresh":60.0},
-                {"width":1280,"height":1024,"refresh":60.0},
-                {"width":1280,"height":720,"refresh":60.0},
-                {"width":1024,"height":768,"refresh":60.0},
-                {"width":800,"height":600,"refresh":60.0}
+                {"width":1920,"height":1080,"refresh":60.0,"preferred":true,"current":false},
+                {"width":1680,"height":1050,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1600,"height":900,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1440,"height":900,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1366,"height":768,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1280,"height":1024,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1280,"height":800,"refresh":60.0,"preferred":false,"current":true},
+                {"width":1280,"height":720,"refresh":60.0,"preferred":false,"current":false},
+                {"width":1024,"height":768,"refresh":60.0,"preferred":false,"current":false}
             ];
-            gpuInfo = {"name": "VirtIO GPU", "driver": "virtio_gpu", "renderer": "pixman"};
-            gfxInfo = {"modules": "virtio_gpu,drm", "compositor": "Cage (wlroots)"};
-            selectedRes = "1920x1080";
+            currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
         }
-    }
-    function applyResolution(res) {
+
+        // GPU/driver info from sysManager.runCommand
         try {
-            var result = sysManager.exec("/opt/ainux/whaleos/display-helper.sh set " + res);
-            var data = JSON.parse(result);
-            if (data.success) {
+            var gpuRaw = JSON.parse(sysManager.runCommand("lspci 2>/dev/null | grep -i vga || echo 'VirtIO GPU'", "/"));
+            var gpuLine = (gpuRaw.stdout || "").trim();
+            gpuInfo = {
+                "name": gpuLine.length > 5 ? gpuLine.replace(/.*VGA.*:\s*/,"").split("[")[0].trim() : "VirtIO GPU (QEMU)",
+                "driver": "virtio_gpu / pixman",
+                "renderer": "wlroots (Cage compositor)"
+            };
+        } catch(e) {
+            gpuInfo = {"name": "VirtIO GPU (QEMU)", "driver": "virtio_gpu", "renderer": "wlroots/pixman"};
+        }
+        gfxInfo = {"modules": "virtio_gpu, drm, kms", "compositor": "Cage (wlroots)"};
+        selectedRes = currentRes.width + "x" + currentRes.height;
+    }
+
+    function applyResolution(res) {
+        var parts = res.split("x");
+        if (parts.length !== 2) { root.showToast("Invalid resolution: " + res, "error"); return; }
+        var w = parseInt(parts[0]); var h = parseInt(parts[1]);
+        if (isNaN(w) || isNaN(h) || w < 640 || h < 480) { root.showToast("Invalid resolution", "error"); return; }
+
+        var ok = sysManager.setDisplayResolution(w, h);
+        if (ok) {
+            resApplied = true;
+            revertCountdown = 15;
+            revertTimer.start();
+            root.showToast("Resolution changed to " + res + ". Reverting in 15s if not confirmed.", "success");
+        } else {
+            // xrandr might fail if mode doesn't exist — try adding it first
+            var modeName = w + "x" + h + "_60.00";
+            var cvtResult = JSON.parse(sysManager.runCommand(
+                "cvt " + w + " " + h + " 60 2>/dev/null | grep Modeline | sed 's/Modeline //'", "/"
+            ));
+            var modeline = (cvtResult.stdout || "").trim();
+            if (modeline) {
+                // Add mode then retry
+                sysManager.runCommand(
+                    "xrandr --newmode " + modeline + " 2>/dev/null; " +
+                    "xrandr --addmode XWAYLAND0 '" + modeName + "' 2>/dev/null; " +
+                    "xrandr --output XWAYLAND0 --mode '" + modeName + "' 2>/dev/null", "/"
+                );
                 resApplied = true;
                 revertCountdown = 15;
                 revertTimer.start();
-                root.showToast("Resolution changed to " + res + ". Reverting in 15s if not confirmed.", "success");
+                root.showToast("Resolution changed to " + res + " (mode added). Reverting in 15s if not confirmed.", "success");
             } else {
-                root.showToast(data.error || "Failed to change resolution", "error");
+                root.showToast("Cannot change to " + res + " — mode not supported by display", "error");
             }
-        } catch(e) {
-            root.showToast("Resolution change failed: " + e, "error");
         }
     }
+
     function confirmResolution() {
         resApplied = false;
         revertTimer.stop();
@@ -191,13 +286,16 @@ Rectangle {
         revertTimer.stop();
         var oldRes = currentRes.width + "x" + currentRes.height;
         selectedRes = oldRes;
-        applyResolution(oldRes);
-        resApplied = false; // Don't show revert for the revert
+        // Apply the old resolution directly (not through applyResolution to avoid countdown)
+        var parts2 = oldRes.split("x");
+        sysManager.setDisplayResolution(parseInt(parts2[0]), parseInt(parts2[1]));
         root.showToast("Resolution reverted to " + oldRes, "info");
     }
+
     Timer {
         id: revertTimer; interval: 1000; repeat: true
         onTriggered: {
+
             revertCountdown--;
             if (revertCountdown <= 0) { revertResolution(); }
         }

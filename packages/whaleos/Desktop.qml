@@ -469,8 +469,14 @@ Rectangle {
                         MouseArea {
                             id: resCtxMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                try { sysManager.exec("/opt/ainux/whaleos/display-helper.sh set " + modelData.res); } catch(e) {}
-                                root.showToast("Resolution: " + modelData.label, "success");
+                                var parts = modelData.res.split("x");
+                                var w = parseInt(parts[0]); var h = parseInt(parts[1]);
+                                var ok = sysManager.setDisplayResolution(w, h);
+                                if (ok) {
+                                    root.showToast("Resolution set to " + modelData.label, "success");
+                                } else {
+                                    root.showToast("Cannot change resolution (may need to add mode first)", "error");
+                                }
                                 contextMenu.visible = false;
                             }
                         }
@@ -528,7 +534,8 @@ Rectangle {
                     MouseArea {
                         id: openDispMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            desktop.openApp("settings", "Settings", "\uf013");
+                            root.settingsOpenTab = "display";
+                            root.openAppWindow("settings", "Settings", "\uf013");
                             contextMenu.visible = false;
                         }
                     }
