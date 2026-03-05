@@ -109,13 +109,23 @@ WaylandCompositor {
             readonly property int radiusMd: Math.round(10 * sf)
             readonly property int radiusLg: Math.round(14 * sf)
 
-            // ── Icon Fonts ──
-            property string iconFont: faLoader.name
-            property string iconFontBrands: faBrandsLoader.name
+            // ── Icon Fonts (TTF — absolute paths work in QEMU / UTM / ISO) ──
+            property string iconFont: faLoader.status === FontLoader.Ready ? faLoader.name : "Font Awesome 6 Free"
+            property string iconFontBrands: faBrandsLoader.status === FontLoader.Ready ? faBrandsLoader.name : "Font Awesome 6 Brands"
+            property string iconFontRegular: faRegLoader.status === FontLoader.Ready ? faRegLoader.name : "Font Awesome 6 Free"
 
-            FontLoader { id: faLoader; source: "fonts/fa-solid-900.woff2" }
-            FontLoader { id: faBrandsLoader; source: "fonts/fa-brands-400.woff2" }
-            FontLoader { id: systemFont; source: "" }
+            // Absolute path ensures fonts load in every environment: QEMU, UTM, ISO, bare metal
+            FontLoader { id: faLoader;       source: "file:///opt/ainux/whaleos/fonts/fa-solid-900.ttf" }
+            FontLoader { id: faBrandsLoader; source: "file:///opt/ainux/whaleos/fonts/fa-brands-400.ttf" }
+            FontLoader { id: faRegLoader;    source: "file:///opt/ainux/whaleos/fonts/fa-regular-400.ttf" }
+            FontLoader { id: systemFont;     source: "" }
+
+            Component.onCompleted: {
+                if (faLoader.status !== FontLoader.Ready)
+                    console.warn("⚠ FA Solid not loaded:", faLoader.status);
+                else
+                    console.log("✓ FA Solid loaded:", faLoader.name);
+            }
 
             // ── Window Management ──
             property int nextZ: 100
