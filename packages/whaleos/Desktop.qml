@@ -425,9 +425,9 @@ Rectangle {
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
                             ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
-                            ctx.strokeRect(1, 2, 20, 14);
-                            ctx.beginPath(); ctx.moveTo(8, 16); ctx.lineTo(14, 16); ctx.lineTo(14, 19); ctx.lineTo(8, 19); ctx.closePath(); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(6, 19); ctx.lineTo(16, 19); ctx.stroke();
+                            ctx.strokeRect(1, 2, 12, 8);
+                            ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(10, 10); ctx.lineTo(10, 12); ctx.lineTo(4, 12); ctx.closePath(); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(3, 12); ctx.lineTo(11, 12); ctx.stroke();
                             ctx.restore(); }
                         onSChanged: requestPaint()
                     }
@@ -436,30 +436,99 @@ Rectangle {
                 MouseArea { id: dispHeaderMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: desktop.displayExpanded = !desktop.displayExpanded }
             }
 
-            // Display scaling options (shown when expanded)
-            Repeater {
-                model: desktop.displayExpanded ? [
-                    { label: "Compact (Small UI)", scale: 0.75 },
-                    { label: "Default", scale: 1.0 },
-                    { label: "Comfortable", scale: 1.15 },
-                    { label: "Large", scale: 1.35 },
-                    { label: "Extra Large", scale: 1.6 }
-                ] : []
+            // Display options (shown when expanded)
+            Column {
+                width: parent.width; spacing: 1; visible: desktop.displayExpanded
 
-                delegate: Rectangle {
+                // Resolution label
+                Text { text: "Resolution"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; leftPadding: Math.round(30 * root.sf); topPadding: Math.round(4 * root.sf) }
+
+                // Resolution options
+                Repeater {
+                    model: [
+                        { label: "1920 × 1080", res: "1920x1080", tag: "Full HD" },
+                        { label: "1680 × 1050", res: "1680x1050", tag: "WSXGA+" },
+                        { label: "1600 × 900",  res: "1600x900",  tag: "HD+" },
+                        { label: "1440 × 900",  res: "1440x900",  tag: "WXGA+" },
+                        { label: "1366 × 768",  res: "1366x768",  tag: "WXGA" },
+                        { label: "1280 × 720",  res: "1280x720",  tag: "HD" },
+                        { label: "1024 × 768",  res: "1024x768",  tag: "XGA" }
+                    ]
+
+                    delegate: Rectangle {
+                        width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
+                        color: resCtxMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
+                            anchors.leftMargin: Math.round(30 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
+                            Text { text: "●"; font.pixelSize: Math.round(8 * root.sf); color: "#6366f1"; visible: false /* TODO: check current */ }
+                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                            Item { width: Math.round(4 * root.sf); height: 1 }
+                            Text { text: modelData.tag; font.pixelSize: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.25) }
+                        }
+                        MouseArea {
+                            id: resCtxMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                try { sysManager.exec("/opt/ainux/whaleos/display-helper.sh set " + modelData.res); } catch(e) {}
+                                root.showToast("Resolution: " + modelData.label, "success");
+                                contextMenu.visible = false;
+                            }
+                        }
+                    }
+                }
+
+                // Separator
+                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.04); visible: desktop.displayExpanded }
+
+                // Scaling label
+                Text { text: "UI Scaling"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; leftPadding: Math.round(30 * root.sf); topPadding: Math.round(4 * root.sf) }
+
+                // Scaling options
+                Repeater {
+                    model: [
+                        { label: "Compact", scale: 0.75 },
+                        { label: "Default", scale: 1.0 },
+                        { label: "Comfortable", scale: 1.15 },
+                        { label: "Large", scale: 1.35 },
+                        { label: "Extra Large", scale: 1.6 }
+                    ]
+
+                    delegate: Rectangle {
+                        width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
+                        color: dscaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
+                            anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
+                            Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textMuted }
+                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
+                        }
+                        MouseArea {
+                            id: dscaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.userScale = modelData.scale;
+                                root.showToast("Display: " + modelData.label, "success");
+                                contextMenu.visible = false;
+                            }
+                        }
+                    }
+                }
+
+                // Separator
+                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.04) }
+
+                // Open Display Settings (full)
+                Rectangle {
                     width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
-                    color: dscaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    color: openDispMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
                     Row {
                         anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
-                        anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
-                        Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textMuted }
-                        Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
+                        anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(6 * root.sf)
+                        Text { text: "Open Display Settings..."; font.pixelSize: Math.round(11 * root.sf); color: root.accentBlue }
                     }
                     MouseArea {
-                        id: dscaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        id: openDispMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.userScale = modelData.scale;
-                            root.showToast("Display: " + modelData.label, "success");
+                            desktop.openApp("settings", "Settings", "\uf013");
                             contextMenu.visible = false;
                         }
                     }

@@ -14,7 +14,15 @@ Rectangle {
     property bool waConnected: false
     property string tgToken: ""
     property string dcToken: ""
-    Component.onCompleted: { loadUsers(); checkChannelStatus(); }
+    // Display settings
+    property var displayModes: []
+    property var currentRes: ({"width": 1920, "height": 1080, "refresh": 60.0})
+    property var gpuInfo: ({"name": "Detecting...", "driver": "-", "renderer": "-"})
+    property var gfxInfo: ({"modules": "", "compositor": ""})
+    property string selectedRes: ""
+    property bool resApplied: false
+    property int revertCountdown: 0
+    Component.onCompleted: { loadUsers(); checkChannelStatus(); loadDisplayInfo(); }
     function checkChannelStatus() {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/channels/whatsapp/status");
@@ -128,6 +136,72 @@ Rectangle {
         };
         xhr.send(JSON.stringify({ token: tok, enabled: true }));
     }
+    function loadDisplayInfo() {
+        try {
+            var result = sysManager.exec("/opt/ainux/whaleos/display-helper.sh list");
+            var data = JSON.parse(result);
+            displayModes = data.modes || [];
+            currentRes = data.current || {"width": 1920, "height": 1080, "refresh": 60.0};
+            gpuInfo = data.gpu || {"name": "Unknown", "driver": "Unknown", "renderer": "Unknown"};
+            gfxInfo = data.graphics || {"modules": "", "compositor": ""};
+            selectedRes = currentRes.width + "x" + currentRes.height;
+        } catch(e) {
+            // Fallback to common resolutions
+            displayModes = [
+                {"width":1920,"height":1080,"refresh":60.0,"preferred":true},
+                {"width":1680,"height":1050,"refresh":60.0},
+                {"width":1600,"height":900,"refresh":60.0},
+                {"width":1440,"height":900,"refresh":60.0},
+                {"width":1366,"height":768,"refresh":60.0},
+                {"width":1280,"height":1024,"refresh":60.0},
+                {"width":1280,"height":720,"refresh":60.0},
+                {"width":1024,"height":768,"refresh":60.0},
+                {"width":800,"height":600,"refresh":60.0}
+            ];
+            gpuInfo = {"name": "VirtIO GPU", "driver": "virtio_gpu", "renderer": "pixman"};
+            gfxInfo = {"modules": "virtio_gpu,drm", "compositor": "Cage (wlroots)"};
+            selectedRes = "1920x1080";
+        }
+    }
+    function applyResolution(res) {
+        try {
+            var result = sysManager.exec("/opt/ainux/whaleos/display-helper.sh set " + res);
+            var data = JSON.parse(result);
+            if (data.success) {
+                resApplied = true;
+                revertCountdown = 15;
+                revertTimer.start();
+                root.showToast("Resolution changed to " + res + ". Reverting in 15s if not confirmed.", "success");
+            } else {
+                root.showToast(data.error || "Failed to change resolution", "error");
+            }
+        } catch(e) {
+            root.showToast("Resolution change failed: " + e, "error");
+        }
+    }
+    function confirmResolution() {
+        resApplied = false;
+        revertTimer.stop();
+        var parts = selectedRes.split("x");
+        currentRes = {"width": parseInt(parts[0]), "height": parseInt(parts[1]), "refresh": 60.0};
+        root.showToast("Resolution confirmed: " + selectedRes, "success");
+    }
+    function revertResolution() {
+        resApplied = false;
+        revertTimer.stop();
+        var oldRes = currentRes.width + "x" + currentRes.height;
+        selectedRes = oldRes;
+        applyResolution(oldRes);
+        resApplied = false; // Don't show revert for the revert
+        root.showToast("Resolution reverted to " + oldRes, "info");
+    }
+    Timer {
+        id: revertTimer; interval: 1000; repeat: true
+        onTriggered: {
+            revertCountdown--;
+            if (revertCountdown <= 0) { revertResolution(); }
+        }
+    }
     RowLayout {
         anchors.fill: parent; spacing: Math.round(0 * root.sf)
         Rectangle {
@@ -136,7 +210,7 @@ Rectangle {
             Column {
                 anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); anchors.topMargin: Math.round(10 * root.sf); spacing: Math.round(2 * root.sf)
                 Repeater {
-                    model: [{ id: "profile", icon: "\uf007", label: "Profile" }, { id: "users", icon: "\uf0c0", label: "Users" }, { id: "channels", icon: "\uf1e6", label: "Channels" }]
+                    model: [{ id: "profile", icon: "\uf007", label: "Profile" }, { id: "users", icon: "\uf0c0", label: "Users" }, { id: "channels", icon: "\uf1e6", label: "Channels" }, { id: "display", icon: "\uf108", label: "Display" }]
                     delegate: Rectangle {
                         width: parent ? parent.width : 150; height: Math.round(34 * root.sf); radius: root.radiusSm
                         color: activeTab === modelData.id ? Qt.rgba(1,1,1,0.08) : sMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
@@ -334,6 +408,192 @@ Rectangle {
                             Text { anchors.centerIn: parent; text: "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: connectCh("discord", dcToken) }
                         } }
+                        }
+                    }
+                }
+                // DISPLAY
+                Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "display"
+                    Text { text: "Display Settings"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                    Text { text: "Configure screen resolution, scaling, and graphics"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
+
+                    // ── Current Resolution Card ──
+                    Rectangle { width: parent.width; height: curResCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: curResCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
+                            Text { text: "Current Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                            RowLayout { width: parent.width; spacing: Math.round(16 * root.sf)
+                                Column { spacing: Math.round(2 * root.sf)
+                                    Text { text: currentRes.width + " × " + currentRes.height; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.accentBlue }
+                                    Text { text: currentRes.refresh + " Hz refresh rate"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
+                                }
+                                Item { Layout.fillWidth: true }
+                                Rectangle { width: refreshCol.width + Math.round(16 * root.sf); height: refreshCol.height + Math.round(12 * root.sf); radius: root.radiusSm; color: Qt.rgba(0.15, 0.7, 0.4, 0.1); border.color: Qt.rgba(0.15, 0.7, 0.4, 0.2); border.width: 1
+                                    Column { id: refreshCol; anchors.centerIn: parent; spacing: Math.round(1 * root.sf)
+                                        Text { text: "Active"; font.pixelSize: Math.round(9 * root.sf); color: root.accentGreen; anchors.horizontalCenter: parent.horizontalCenter }
+                                        Text { text: currentRes.refresh + " Hz"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.accentGreen; anchors.horizontalCenter: parent.horizontalCenter }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Resolution Picker Card ──
+                    Rectangle { width: parent.width; height: resPickerCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: resPickerCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
+                            RowLayout { width: parent.width
+                                Text { text: "Screen Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                                Item { Layout.fillWidth: true }
+                                Rectangle {
+                                    width: reloadText.width + Math.round(16 * root.sf); height: Math.round(24 * root.sf); radius: root.radiusSm
+                                    color: reloadMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.04)
+                                    Text { id: reloadText; anchors.centerIn: parent; text: "Refresh"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
+                                    MouseArea { id: reloadMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: loadDisplayInfo() }
+                                }
+                            }
+                            Text { text: "Select a resolution for your display"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
+
+                            // Resolution list
+                            Repeater {
+                                model: displayModes
+                                delegate: Rectangle {
+                                    width: resPickerCol.width; height: Math.round(36 * root.sf); radius: root.radiusSm
+                                    property bool isSelected: selectedRes === (modelData.width + "x" + modelData.height)
+                                    property bool isCurrent: currentRes.width === modelData.width && currentRes.height === modelData.height
+                                    color: resItemMa.containsMouse ? Qt.rgba(1,1,1,0.06) : isSelected ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
+                                    border.color: isSelected ? Qt.rgba(0.24, 0.39, 1, 0.3) : "transparent"
+                                    border.width: isSelected ? 1 : 0
+                                    RowLayout { anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
+                                        // Radio indicator
+                                        Rectangle { width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: Math.round(7 * root.sf)
+                                            color: "transparent"; border.color: isSelected ? root.accentBlue : Qt.rgba(1,1,1,0.2); border.width: 1.5
+                                            Rectangle { anchors.centerIn: parent; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: Math.round(4 * root.sf); color: root.accentBlue; visible: isSelected }
+                                        }
+                                        Text { text: modelData.width + " × " + modelData.height; font.pixelSize: Math.round(12 * root.sf); color: isSelected ? "#fff" : root.textPrimary; font.weight: isSelected ? Font.DemiBold : Font.Normal }
+                                        Text {
+                                            text: {
+                                                var ratio = modelData.width / modelData.height;
+                                                if (Math.abs(ratio - 16/9) < 0.05) return "16:9";
+                                                if (Math.abs(ratio - 16/10) < 0.05) return "16:10";
+                                                if (Math.abs(ratio - 4/3) < 0.05) return "4:3";
+                                                if (Math.abs(ratio - 5/4) < 0.05) return "5:4";
+                                                if (Math.abs(ratio - 21/9) < 0.05) return "21:9";
+                                                return "";
+                                            }
+                                            font.pixelSize: Math.round(10 * root.sf); color: root.textMuted
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: modelData.refresh + " Hz"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
+                                        Rectangle { visible: isCurrent; width: curLabel.width + Math.round(10 * root.sf); height: Math.round(16 * root.sf); radius: 8; color: Qt.rgba(0.15, 0.7, 0.4, 0.15)
+                                            Text { id: curLabel; anchors.centerIn: parent; text: "Current"; font.pixelSize: Math.round(8 * root.sf); color: root.accentGreen }
+                                        }
+                                        Rectangle { visible: modelData.preferred || false; width: prefLabel.width + Math.round(10 * root.sf); height: Math.round(16 * root.sf); radius: 8; color: Qt.rgba(0.24, 0.39, 1, 0.15)
+                                            Text { id: prefLabel; anchors.centerIn: parent; text: "Recommended"; font.pixelSize: Math.round(8 * root.sf); color: root.accentBlue }
+                                        }
+                                    }
+                                    MouseArea { id: resItemMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: selectedRes = modelData.width + "x" + modelData.height }
+                                }
+                            }
+
+                            // Apply / Revert buttons
+                            RowLayout { width: parent.width; spacing: Math.round(8 * root.sf); visible: selectedRes !== (currentRes.width + "x" + currentRes.height) && !resApplied
+                                Item { Layout.fillWidth: true }
+                                Rectangle { width: Math.round(70 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(1,1,1,0.06)
+                                    Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: selectedRes = currentRes.width + "x" + currentRes.height }
+                                }
+                                Rectangle { width: Math.round(130 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: root.accentBlue
+                                    Text { anchors.centerIn: parent; text: "Apply Resolution"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: applyResolution(selectedRes) }
+                                }
+                            }
+
+                            // Revert countdown bar
+                            Rectangle { width: parent.width; height: revertCol.height + Math.round(16 * root.sf); radius: root.radiusSm; color: Qt.rgba(0.9, 0.6, 0.1, 0.1); border.color: Qt.rgba(0.9, 0.6, 0.1, 0.3); border.width: 1; visible: resApplied
+                                Column { id: revertCol; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
+                                    Text { text: "Keep this resolution?"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: "#fbbf24"; anchors.horizontalCenter: parent.horizontalCenter }
+                                    Text { text: "Reverting in " + revertCountdown + " seconds..."; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
+                                    RowLayout { spacing: Math.round(8 * root.sf); anchors.horizontalCenter: parent.horizontalCenter
+                                        Rectangle { width: Math.round(80 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: Qt.rgba(1,1,1,0.06)
+                                            Text { anchors.centerIn: parent; text: "Revert Now"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: revertResolution() }
+                                        }
+                                        Rectangle { width: Math.round(130 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: root.accentBlue
+                                            Text { anchors.centerIn: parent; text: "Keep Resolution"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: confirmResolution() }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── UI Scaling Card ──
+                    Rectangle { width: parent.width; height: scaleCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: scaleCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
+                            Text { text: "UI Scaling"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                            Text { text: "Adjust the size of text, icons, and interface elements"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
+                            Repeater {
+                                model: [
+                                    { label: "Compact (Small UI)", scale: 0.75, desc: "More content, smaller elements" },
+                                    { label: "Default", scale: 1.0, desc: "Balanced layout" },
+                                    { label: "Comfortable", scale: 1.15, desc: "Slightly larger elements" },
+                                    { label: "Large", scale: 1.35, desc: "Easier to read" },
+                                    { label: "Extra Large", scale: 1.6, desc: "Maximum readability" }
+                                ]
+                                delegate: Rectangle {
+                                    width: scaleCol.width; height: Math.round(38 * root.sf); radius: root.radiusSm
+                                    property bool isActive: Math.abs(root.userScale - modelData.scale) < 0.01
+                                    color: scaleMa.containsMouse ? Qt.rgba(1,1,1,0.06) : isActive ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
+                                    border.color: isActive ? Qt.rgba(0.24, 0.39, 1, 0.3) : "transparent"; border.width: isActive ? 1 : 0
+                                    RowLayout { anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
+                                        Rectangle { width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: Math.round(7 * root.sf)
+                                            color: "transparent"; border.color: isActive ? root.accentBlue : Qt.rgba(1,1,1,0.2); border.width: 1.5
+                                            Rectangle { anchors.centerIn: parent; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: Math.round(4 * root.sf); color: root.accentBlue; visible: isActive }
+                                        }
+                                        Column { Layout.fillWidth: true; spacing: Math.round(1 * root.sf)
+                                            Text { text: modelData.label; font.pixelSize: Math.round(12 * root.sf); color: isActive ? "#fff" : root.textPrimary; font.weight: isActive ? Font.DemiBold : Font.Normal }
+                                            Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted }
+                                        }
+                                        Text { text: (modelData.scale * 100).toFixed(0) + "%"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
+                                    }
+                                    MouseArea { id: scaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.userScale = modelData.scale; root.showToast("Display: " + modelData.label, "success"); } }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── GPU & Driver Info Card ──
+                    Rectangle { width: parent.width; height: gpuCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: gpuCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
+                            Text { text: "Graphics & Driver Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                            // GPU Name row
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "GPU"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
+                                Text { text: gpuInfo.name || "Unknown"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            // Driver row
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Driver"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
+                                Text { text: gpuInfo.driver || "-"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            // Renderer row
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Renderer"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
+                                Text { text: gpuInfo.renderer || "-"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            // Compositor row
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Compositor"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
+                                Text { text: gfxInfo.compositor || "-"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            // Kernel modules row
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Modules"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
+                                Text { text: gfxInfo.modules || "None detected"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                            }
                         }
                     }
                 }
