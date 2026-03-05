@@ -175,7 +175,7 @@ Rectangle {
                                 width: parent.width; spacing: Math.round(10 * root.sf)
                                 Rectangle {
                                     width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8; color: Qt.rgba(1,1,1,0.06)
-                                    Text { anchors.centerIn: parent; text: modelData.icon || "\uf0e7"; font.family: modelData.id === "github" || modelData.id === "spotify" ? root.iconFontBrands : root.iconFont; font.pixelSize: Math.round(16 * root.sf); color: root.accentBlue }
+                                    Text { anchors.centerIn: parent; text: modelData.icon || "\uf0e7"; font.family: modelData.id === "github" || modelData.id === "spotify" ? root.iconFontBrands : root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: root.accentBlue }
                                 }
                                 Column {
                                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
@@ -240,7 +240,7 @@ Rectangle {
                             anchors.fill: parent; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
                             Rectangle {
                                 width: Math.round(30 * root.sf); height: Math.round(30 * root.sf); radius: 6; color: Qt.rgba(0.96,0.58,0.09,0.15)
-                                Text { anchors.centerIn: parent; text: "\uf15c"; font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf); color: root.accentOrange }
+                                Text { anchors.centerIn: parent; text: "\uf15c"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(14 * root.sf); color: root.accentOrange }
                             }
                             Column {
                                 Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
@@ -262,7 +262,7 @@ Rectangle {
                     width: parent.width; spacing: Math.round(8 * root.sf); visible: mdSkills.length === 0
                     anchors.horizontalCenter: parent.horizontalCenter
                     Item { width: Math.round(1 * root.sf); height: Math.round(20 * root.sf) }
-                    Text { text: "\uf15c"; font.family: root.iconFont; font.pixelSize: Math.round(32 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
+                    Text { text: "\uf15c"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(32 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
                     Text { text: "No markdown skills found"; font.pixelSize: Math.round(14 * root.sf); color: root.textSecondary; anchors.horizontalCenter: parent.horizontalCenter }
                     Text { text: "Add .md files to ~/.openwhale/skills/"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
                 }
@@ -279,7 +279,7 @@ Rectangle {
 
             RowLayout {
                 width: parent.width
-                Text { text: "\uf060"; font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf); color: root.textSecondary
+                Text { text: "\uf060"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(14 * root.sf); color: root.textSecondary
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: editorOpen = false }
                 }
                 Text { text: "  Skill Editor"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: root.textPrimary; Layout.fillWidth: true }

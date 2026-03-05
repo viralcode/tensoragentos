@@ -85,7 +85,7 @@ Rectangle {
 
             Text {
                 text: appWindow.windowIcon
-                font.family: root.iconFont; font.pixelSize: Math.round(14 * root.sf)
+                font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(14 * root.sf)
                 color: root.accentBlue
             }
 

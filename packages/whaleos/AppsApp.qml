@@ -71,7 +71,7 @@ Rectangle {
                             RowLayout {
                                 spacing: Math.round(8 * root.sf)
 
-                                Text { text: ""; font.pixelSize: Math.round(18 * root.sf); font.family: root.iconFont; color: root.textSecondary }
+                                Text { text: ""; font.pixelSize: Math.round(18 * root.sf); font.family: root.iconFont; font.weight: Font.Black; color: root.textSecondary }
 
                                 ColumnLayout {
                                     spacing: Math.round(2 * root.sf)
@@ -171,7 +171,7 @@ Rectangle {
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: ""
-                    font.pixelSize: Math.round(40 * root.sf); font.family: root.iconFont; color: root.textSecondary
+                    font.pixelSize: Math.round(40 * root.sf); font.family: root.iconFont; font.weight: Font.Black; color: root.textSecondary
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter

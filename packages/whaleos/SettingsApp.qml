@@ -313,7 +313,7 @@ Rectangle {
                         width: parent ? parent.width : 150; height: Math.round(34 * root.sf); radius: root.radiusSm
                         color: activeTab === modelData.id ? Qt.rgba(1,1,1,0.08) : sMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
                         Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
-                            Text { text: modelData.icon; font.family: root.iconFont; font.pixelSize: Math.round(13 * root.sf); color: root.accentBlue }
+                            Text { text: modelData.icon; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(13 * root.sf); color: root.accentBlue }
                             Text { text: modelData.label; font.pixelSize: Math.round(13 * root.sf); color: activeTab === modelData.id ? "#fff" : root.textSecondary }
                         }
                         Rectangle { visible: activeTab === modelData.id; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: Math.round(3 * root.sf); height: Math.round(18 * root.sf); radius: 2; color: root.accentBlue }
@@ -430,7 +430,7 @@ Rectangle {
                         Column { id: wI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
                             RowLayout { width: parent.width; spacing: Math.round(10 * root.sf)
                                 Rectangle { width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: waConnected ? Qt.rgba(0.15,0.68,0.38,0.25) : Qt.rgba(0.15,0.68,0.38,0.15)
-                                Text { anchors.centerIn: parent; text: "\uf232"; font.family: root.iconFont; font.pixelSize: Math.round(16 * root.sf); color: "#25D366" }
+                                Text { anchors.centerIn: parent; text: "\uf232"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#25D366" }
                             }
                                 Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                                 Text { text: "WhatsApp"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
@@ -470,7 +470,7 @@ Rectangle {
                         Column { id: tI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
                             RowLayout { width: parent.width; spacing: Math.round(10 * root.sf)
                             Rectangle { width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: Qt.rgba(0.16,0.55,0.85,0.15)
-                            Text { anchors.centerIn: parent; text: "\uf2c6"; font.family: root.iconFont; font.pixelSize: Math.round(16 * root.sf); color: "#0088cc" }
+                            Text { anchors.centerIn: parent; text: "\uf2c6"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#0088cc" }
                         }
                             Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                             Text { text: "Telegram"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
@@ -491,7 +491,7 @@ Rectangle {
                         Column { id: dI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
                             RowLayout { width: parent.width; spacing: Math.round(10 * root.sf)
                             Rectangle { width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10; color: Qt.rgba(0.35,0.40,0.95,0.15)
-                            Text { anchors.centerIn: parent; text: "\uf11b"; font.family: root.iconFont; font.pixelSize: Math.round(16 * root.sf); color: "#5865F2" }
+                            Text { anchors.centerIn: parent; text: "\uf11b"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#5865F2" }
                         }
                             Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                             Text { text: "Discord"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
