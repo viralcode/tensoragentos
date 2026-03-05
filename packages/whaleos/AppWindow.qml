@@ -6,8 +6,10 @@ Rectangle {
     id: appWindow
     x: initialX
     y: initialY
-    width: Math.min(Math.round(700 * root.sf), windowArea ? windowArea.width - Math.round(20 * root.sf) : Math.round(700 * root.sf))
-    height: Math.min(Math.round(450 * root.sf), windowArea ? windowArea.height - Math.round(20 * root.sf) : Math.round(450 * root.sf))
+    // width/height set once in Component.onCompleted — NOT live-bound to windowArea
+    // so chat panel expanding/collapsing never resizes open windows
+    width: Math.round(700 * root.sf)
+    height: Math.round(450 * root.sf)
     radius: root.radiusLg
     color: root.bgSurface
     border.color: root.borderColor
@@ -48,6 +50,17 @@ Rectangle {
     property bool isNative: appId.indexOf("native-") === 0 || appId.indexOf("wayland-") === 0
     property string nativeCmd: ""
     property string nativeSearchName: ""
+
+    // Set initial size once — capped to windowArea at creation time only
+    Component.onCompleted: {
+        if (windowArea) {
+            var initW = Math.round(700 * root.sf);
+            var initH = Math.round(450 * root.sf);
+            appWindow.width  = Math.min(initW, windowArea.width  - Math.round(20 * root.sf));
+            appWindow.height = Math.min(initH, windowArea.height - Math.round(20 * root.sf));
+        }
+    }
+
     property string nativeWinId: ""
 
     // Wayland surface (assigned by compositor)
