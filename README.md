@@ -24,8 +24,6 @@ TensorAgent OS is an **AI-native operating system** — not a Linux distro with 
 
 Think of it like Android: it uses a Linux kernel under the hood, but it's its own thing.
 
-Under the hood, TensorAgent OS combines:
-
 | Component | Technology |
 |-----------|------------|
 | **AI Brain** | [OpenWhale](https://github.com/viralcode/openwhale) — multi-agent AI platform |
@@ -41,24 +39,77 @@ Under the hood, TensorAgent OS combines:
 
 ## Table of Contents
 
-- [Quick Start (macOS — Recommended)](#quick-start-macos)
-- [Quick Start (Linux x86_64)](#quick-start-linux-x86_64)
-- [Building from Source (Full ISO)](#building-from-source)
-- [Running in QEMU](#running-in-qemu)
-- [iOS / Remote Access](#ios--remote-access)
-- [Project Structure](#project-structure)
-- [WhaleOS Desktop Shell](#whaleos-desktop-shell)
-- [System Administration](#system-administration)
-- [Updating TensorAgent OS](#updating-tensoragent-os)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+- [🚀 Quick Start — UTM (Recommended for macOS)](#-quick-start--utm-recommended-for-macos)
+- [🖥 Quick Start — QEMU (macOS ARM64)](#-quick-start--qemu-macos-arm64)
+- [🐧 Quick Start — QEMU (Linux x86_64)](#-quick-start--qemu-linux-x86_64)
+- [🔨 Building from Source (Full ISO)](#-building-from-source-full-iso)
+- [💽 Building a UTM Bundle (macOS)](#-building-a-utm-bundle-macos)
+- [🔩 Bare Metal Installation](#-bare-metal-installation)
+- [📱 iOS / Remote Access](#-ios--remote-access)
+- [📁 Project Structure](#-project-structure)
+- [🖥 WhaleOS Desktop Shell](#-whaleos-desktop-shell)
+- [⚙️ System Administration](#%EF%B8%8F-system-administration)
+- [🔄 Updating TensorAgent OS](#-updating-tensoragent-os)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [🏗 Architecture Overview](#-architecture-overview)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ---
 
-## Quick Start (macOS)
+## 🚀 Quick Start — UTM (Recommended for macOS)
 
-> **Best for:** Apple Silicon Macs (M1/M2/M3/M4). Uses HVF hardware acceleration. ~5 min setup.
+> **Best for:** Apple Silicon Macs (M1/M2/M3/M4). Zero setup, double-click to boot. ~30 seconds to desktop.
+
+### Option A: Pre-Built UTM Bundle (Fastest)
+
+A ready-to-run UTM virtual machine is included in the repository at `utm_build/TensorAgentOS.utm`.
+
+1. **Install UTM** (if not already installed):
+   - Download from [https://mac.getutm.app](https://mac.getutm.app) or install via Homebrew:
+     ```bash
+     brew install --cask utm
+     ```
+
+2. **Open the VM:**
+   ```bash
+   open utm_build/TensorAgentOS.utm
+   ```
+   Or simply **double-click** `utm_build/TensorAgentOS.utm` in Finder.
+
+3. **Start the VM** in UTM and wait for it to boot to the login screen.
+
+4. **Sign in** with credentials below and start using the AI.
+
+**Pre-built VM Specs:**
+| Setting | Value |
+|---------|-------|
+| **Architecture** | ARM64 (aarch64) |
+| **RAM** | 6 GB |
+| **CPU Cores** | 6 |
+| **Disk** | 20 GB (QCOW2) |
+| **Display** | virtio-ramfb |
+| **Network** | Emulated (NAT with port forwarding) |
+
+**Port Forwarding (pre-configured):**
+
+| Host Port | Guest Port | Service |
+|-----------|------------|---------|
+| 7777 | 7777 | OpenWhale API / Dashboard |
+| 2222 | 22 | SSH |
+
+### Option B: Build UTM from QEMU (Manual)
+
+If you want to build the UTM bundle yourself from the QEMU disk image:
+
+1. **Run the QEMU Quick Start** first (see next section) to create `vm/ainux.qcow2`.
+2. See [Building a UTM Bundle](#-building-a-utm-bundle-macos) below for conversion steps.
+
+---
+
+## 🖥 Quick Start — QEMU (macOS ARM64)
+
+> **Best for:** Apple Silicon Macs. Uses HVF hardware acceleration for native performance. ~5 min first-boot setup.
 
 ### Prerequisites
 
@@ -114,9 +165,27 @@ After the first boot, just re-run the same command. Cloud-init won't re-execute 
 python3 vm/launch-ainux.py
 ```
 
+### QEMU Configuration Details
+
+| Setting | Value |
+|---------|-------|
+| **Machine** | `virt` with HVF acceleration |
+| **CPU** | `host` (native Apple Silicon) |
+| **RAM** | 4 GB, 4 cores |
+| **Display** | `cocoa` (native macOS window) |
+| **Devices** | virtio-gpu, virtio-keyboard, usb-tablet, virtio-net, virtio-rng |
+| **UEFI** | EDK2 ARM64 firmware (`edk2-aarch64-code.fd`) |
+| **Networking** | User-mode with port forwarding |
+
+| Host Port | Guest Port | Service |
+|-----------|------------|---------|
+| 7777 | 7777 | OpenWhale API / Dashboard |
+| 2222 | 22 | SSH |
+| 9222 | 9222 | Chrome DevTools Protocol |
+
 ---
 
-## Quick Start (Linux x86_64)
+## 🐧 Quick Start — QEMU (Linux x86_64)
 
 > **Best for:** Running TensorAgent OS on a Linux host with KVM acceleration.
 
@@ -124,19 +193,19 @@ python3 vm/launch-ainux.py
 
 ```bash
 # Ubuntu/Debian
-sudo apt install qemu-system-x86 qemu-utils
+sudo apt install qemu-system-x86 qemu-utils ovmf
 
 # Fedora
-sudo dnf install qemu-system-x86 qemu-img
+sudo dnf install qemu-system-x86 qemu-img edk2-ovmf
 
 # Arch
-sudo pacman -S qemu-full
+sudo pacman -S qemu-full edk2-ovmf
 ```
 
 ### Build the ISO & Run
 
 ```bash
-# Build the full ISO from source (see "Building from Source" below)
+# Build the full ISO from source
 ./scripts/build-iso.sh
 
 # Boot in QEMU
@@ -152,17 +221,28 @@ sudo pacman -S qemu-full
 ./scripts/run-qemu.sh --headless   # No display, runs as daemon
 ```
 
-**VM Specs:**
-- **RAM:** 8 GB
-- **CPUs:** 4
-- **Disk:** 20 GB (qcow2, auto-created)
-- **Port Forwards:** `localhost:7777` → OpenWhale, `localhost:2222` → SSH
+### Manual QEMU Command (Linux x86_64)
+
+```bash
+qemu-system-x86_64 \
+  -enable-kvm -cpu host \
+  -m 8G -smp 4 \
+  -drive file=ainux.iso,format=raw,media=cdrom,readonly=on \
+  -drive file=build/ainux-disk.qcow2,format=qcow2 \
+  -boot d \
+  -device virtio-vga-gl \
+  -display gtk,gl=on \
+  -device virtio-net,netdev=net0 \
+  -netdev user,id=net0,hostfwd=tcp::7777-:7777,hostfwd=tcp::2222-:22 \
+  -device intel-hda -device hda-duplex \
+  -usb -device usb-tablet
+```
 
 ---
 
-## Building from Source
+## 🔨 Building from Source (Full ISO)
 
-> **Full from-scratch build.** Compiles the kernel, rootfs, Chromium, and OpenWhale into a bootable ISO. Requires a **Linux x86_64** host.
+> **Full from-scratch build.** Compiles the kernel, rootfs, and OpenWhale into a bootable ISO. Requires a **Linux x86_64** host.
 
 ### System Requirements
 
@@ -178,7 +258,8 @@ sudo pacman -S qemu-full
 
 ```bash
 sudo apt install build-essential git python3 wget curl xz-utils \
-  gcc g++ make tar patch pkg-config
+  gcc g++ make tar patch pkg-config \
+  xorriso grub-pc-bin grub-efi-amd64-bin mtools squashfs-tools
 ```
 
 ### Build Commands
@@ -200,8 +281,9 @@ sudo apt install build-essential git python3 wget curl xz-utils \
 2. **Applies TensorAgent OS defconfig** — custom kernel, systemd, Wayland, Mesa, PipeWire, Node.js, Python, etc.
 3. **Builds Chromium** (optional) — with Wayland/Ozone, VA-API hardware decode, PipeWire audio
 4. **Compiles the Linux kernel** and root filesystem
-5. **Integrates Chromium** into the rootfs at `/opt/ainux/chromium/`
-6. **Generates a bootable ISO** → `ainux.iso`
+5. **Integrates OpenWhale** into the rootfs at `/opt/ainux/openwhale/`
+6. **Installs WhaleOS** shell at `/opt/ainux/whaleos/`
+7. **Generates a bootable ISO** → `ainux.iso`
 
 ### Output
 
@@ -213,89 +295,240 @@ build/output/      — Full Buildroot output tree
 ### Flash to USB Drive
 
 ```bash
-sudo dd if=ainux.iso of=/dev/sdX bs=4M status=progress
+# Find your USB device
+lsblk
+
+# Write the ISO (replace /dev/sdX with your actual device)
+sudo dd if=ainux.iso of=/dev/sdX bs=4M status=progress conv=fsync
 sync
 ```
 
 > ⚠️ **Replace `/dev/sdX`** with your actual USB device. Double-check with `lsblk` — this will erase the drive.
 
----
-
-## Running in QEMU
-
-### macOS (Apple Silicon — ARM64)
-
-The `launch-ainux.py` script handles everything automatically:
-
+On **macOS** (for ARM64 ISO):
 ```bash
-python3 vm/launch-ainux.py
-```
+# Find your USB device
+diskutil list
 
-**QEMU configuration used:**
-- Machine: `virt` with HVF acceleration
-- CPU: `host` (native Apple Silicon)
-- RAM: 4 GB, 4 cores
-- Display: `cocoa` (native macOS window)
-- Devices: virtio-gpu, virtio-keyboard, usb-tablet, virtio-net, virtio-rng
-- UEFI: EDK2 ARM64 firmware (`edk2-aarch64-code.fd`)
-- Networking: user-mode with port forwarding
+# Unmount the USB
+diskutil unmountDisk /dev/diskN
 
-**Port Forwards:**
+# Write the ISO (replace /dev/diskN with your actual device)
+sudo dd if=ainux.iso of=/dev/rdiskN bs=4m status=progress
+sync
 
-| Host Port | Guest Port | Service |
-|-----------|------------|---------|
-| 7777 | 7777 | OpenWhale API/Dashboard |
-| 2222 | 22 | SSH |
-| 9222 | 9222 | Chrome DevTools Protocol |
-
-### Linux (x86_64)
-
-```bash
-# From a built ISO
-./scripts/run-qemu.sh
-
-# Or manually
-qemu-system-x86_64 \
-  -enable-kvm -cpu host \
-  -m 8G -smp 4 \
-  -drive file=ainux.iso,format=raw,media=cdrom,readonly=on \
-  -drive file=build/ainux-disk.qcow2,format=qcow2 \
-  -boot d \
-  -device virtio-vga-gl \
-  -display gtk,gl=on \
-  -device virtio-net,netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::7777-:7777,hostfwd=tcp::2222-:22 \
-  -device intel-hda -device hda-duplex \
-  -usb -device usb-tablet
-```
-
-### Alternative: Alpine Linux Base (Manual)
-
-For a lighter-weight VM, you can use the Alpine-based path:
-
-```bash
-# 1. Download Alpine ISO
-curl -O https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-virt-3.20.0-aarch64.iso
-mv alpine-virt-3.20.0-aarch64.iso vm/alpine.iso
-
-# 2. Create disk and boot installer
-qemu-img create -f qcow2 vm/ainux-disk.qcow2 20G
-./vm/boot-ainux.sh --install
-
-# 3. Inside the VM, install Alpine:
-#    Run setup-alpine (use 'sys' disk mode, select vda)
-#    Then run the TensorAgent OS setup:
-#    wget -O- http://10.0.2.2:8888/setup.sh | sh
-
-# 4. Reboot into TensorAgent OS
-./vm/boot-ainux.sh
+# Eject
+diskutil eject /dev/diskN
 ```
 
 ---
 
-## iOS / Remote Access
+## 💽 Building a UTM Bundle (macOS)
 
-Since TensorAgent OS exposes OpenWhale on port `7777`, you can access the AI interface from any device on the same network, including an iPhone or iPad.
+> **Convert a QEMU disk image into a ready-to-use UTM virtual machine bundle.**
+
+### Prerequisites
+
+- [UTM](https://mac.getutm.app) installed on your Mac
+- An existing `vm/ainux.qcow2` disk image (from the QEMU Quick Start)
+
+### Step 1: Create the UTM Bundle Directory
+
+```bash
+mkdir -p utm_build/TensorAgentOS.utm/Data
+```
+
+### Step 2: Copy the Disk Image
+
+```bash
+cp vm/ainux.qcow2 utm_build/TensorAgentOS.utm/Data/ainux.qcow2
+```
+
+### Step 3: Create the UTM Configuration
+
+Create `utm_build/TensorAgentOS.utm/config.plist` with the following content:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Backend</key>
+  <string>QEMU</string>
+  <key>ConfigurationVersion</key>
+  <integer>5</integer>
+  <key>Display</key>
+  <array>
+    <dict>
+      <key>Hardware</key>
+      <string>virtio-ramfb</string>
+    </dict>
+  </array>
+  <key>Drive</key>
+  <array>
+    <dict>
+      <key>Identifier</key>
+      <string>drive0</string>
+      <key>ImageName</key>
+      <string>ainux.qcow2</string>
+      <key>ImageType</key>
+      <string>Disk</string>
+      <key>Interface</key>
+      <string>VirtIO</string>
+    </dict>
+  </array>
+  <key>Information</key>
+  <dict>
+    <key>IconCustom</key>
+    <false/>
+    <key>Name</key>
+    <string>TensorAgent OS</string>
+  </dict>
+  <key>Input</key>
+  <dict>
+    <key>Sharing</key>
+    <true/>
+  </dict>
+  <key>Network</key>
+  <array>
+    <dict>
+      <key>Mode</key>
+      <string>Emulated</string>
+      <key>PortForward</key>
+      <array>
+        <dict>
+          <key>GuestAddress</key>
+          <string></string>
+          <key>GuestPort</key>
+          <integer>7777</integer>
+          <key>HostAddress</key>
+          <string>127.0.0.1</string>
+          <key>HostPort</key>
+          <integer>7777</integer>
+          <key>Protocol</key>
+          <string>TCP</string>
+        </dict>
+        <dict>
+          <key>GuestAddress</key>
+          <string></string>
+          <key>GuestPort</key>
+          <integer>22</integer>
+          <key>HostAddress</key>
+          <string>127.0.0.1</string>
+          <key>HostPort</key>
+          <integer>2222</integer>
+          <key>Protocol</key>
+          <string>TCP</string>
+        </dict>
+      </array>
+    </dict>
+  </array>
+  <key>QEMU</key>
+  <dict>
+    <key>MachinePropertyOverride</key>
+    <string></string>
+  </dict>
+  <key>Sound</key>
+  <array>
+    <dict>
+      <key>Hardware</key>
+      <string>intel-hda</string>
+    </dict>
+  </array>
+  <key>System</key>
+  <dict>
+    <key>Architecture</key>
+    <string>aarch64</string>
+    <key>CPU</key>
+    <string>Default</string>
+    <key>CPUCount</key>
+    <integer>6</integer>
+    <key>JitCacheSize</key>
+    <integer>0</integer>
+    <key>MemorySize</key>
+    <integer>6144</integer>
+    <key>Target</key>
+    <string>virt</string>
+  </dict>
+</dict>
+</plist>
+```
+
+### Step 4: Open in UTM
+
+```bash
+open utm_build/TensorAgentOS.utm
+```
+
+### Network Configuration (Important)
+
+The pre-built UTM image includes `systemd-networkd` DHCP configuration. If building from scratch, ensure the disk image has `/etc/systemd/network/10-dhcp.network`:
+
+```ini
+[Match]
+Name=enp*
+
+[Network]
+DHCP=yes
+
+[DHCP]
+UseDNS=yes
+UseDomains=yes
+```
+
+And enable the services:
+```bash
+sudo systemctl enable systemd-networkd systemd-resolved
+sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+```
+
+> **Note:** The QEMU launcher uses cloud-init for network configuration, but UTM does not include the `seed.img`, so `systemd-networkd` must be configured directly.
+
+---
+
+## 🔩 Bare Metal Installation
+
+> **Install TensorAgent OS on physical hardware.** Currently supports ARM64 (e.g., Raspberry Pi 4/5, Pine64, Apple Silicon with Asahi Linux).
+
+### From ISO (x86_64)
+
+1. Build the ISO: `./scripts/build-iso.sh`
+2. Flash to USB: `sudo dd if=ainux.iso of=/dev/sdX bs=4M status=progress`
+3. Boot the target computer from USB (UEFI boot required)
+4. The OS runs live from the USB or can be installed to disk
+
+### From QCOW2 (ARM64)
+
+To install to a physical ARM64 disk:
+
+```bash
+# Convert QCOW2 to raw disk image
+qemu-img convert -f qcow2 -O raw vm/ainux.qcow2 ainux-raw.img
+
+# Write to disk (replace /dev/sdX with your target disk)
+sudo dd if=ainux-raw.img of=/dev/sdX bs=4M status=progress conv=fsync
+sync
+```
+
+> ⚠️ **This will erase the target disk entirely.** Double-check the device path.
+
+### Hardware Requirements
+
+| Requirement | Minimum | Recommended |
+|-------------|---------|-------------|
+| **CPU** | ARM64 or x86_64, 2 cores | 4+ cores |
+| **RAM** | 2 GB | 4+ GB |
+| **Storage** | 20 GB | 40+ GB |
+| **Display** | DRM/KMS compatible GPU | Intel/AMD with Mesa support |
+| **Network** | Ethernet or supported WiFi | Ethernet recommended |
+| **Boot** | UEFI (GPT) | UEFI with Secure Boot disabled |
+
+---
+
+## 📱 iOS / Remote Access
+
+Since TensorAgent OS exposes OpenWhale on port `7777`, you can access the AI interface from any device on the same network.
 
 ### From Your Local Network
 
@@ -321,8 +554,6 @@ ssh ainux@<host-ip> -p 2222
 
 ### Expose Over the Internet (Advanced)
 
-To access TensorAgent OS from anywhere:
-
 ```bash
 # Option 1: SSH tunnel (requires a server with a public IP)
 ssh -R 80:localhost:7777 serveo.net
@@ -338,7 +569,7 @@ ngrok http 7777
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 ainux/
@@ -372,9 +603,10 @@ ainux/
 │       ├── AppsApp.qml         # App launcher
 │       ├── AppWindow.qml       # Window container
 │       ├── api.js              # API client helpers
+│       ├── fonts/              # Bundled Font Awesome fonts
 │       └── whaleos-helper.mjs  # Node.js helper service
 ├── scripts/
-│   ├── build-iso.sh            # Master build script
+│   ├── build-iso.sh            # Master build script (x86_64 ISO)
 │   ├── run-qemu.sh             # QEMU launcher (x86_64)
 │   ├── integrate-openwhale.sh  # Deep integration installer
 │   ├── ainux-update.sh         # Update manager
@@ -383,10 +615,16 @@ ainux/
 ├── vm/
 │   ├── launch-ainux.py         # One-command launcher (macOS ARM64)
 │   ├── boot-ainux.sh           # Boot script (ARM64 + HVF)
-│   ├── auto-setup.sh           # Fully automated Alpine setup
-│   ├── setup.sh                # Manual Alpine setup script
+│   ├── auto-setup.sh           # Fully automated setup
+│   ├── setup.sh                # Manual setup script
+│   ├── install-ai-tools.sh     # AI tools installer
 │   ├── patch-openwhale.py      # OpenWhale login page patcher
 │   └── qemu-type.py            # QEMU monitor keystroke helper
+├── utm_build/
+│   └── TensorAgentOS.utm/      # Pre-built UTM virtual machine
+│       ├── config.plist        # UTM VM configuration
+│       └── Data/
+│           └── ainux.qcow2     # Boot disk image
 ├── rootfs-overlay/
 │   └── etc/                    # System config overlays
 ├── package.json                # Workspace root
@@ -395,9 +633,9 @@ ainux/
 
 ---
 
-## WhaleOS Desktop Shell
+## 🖥 WhaleOS Desktop Shell
 
-WhaleOS is the native desktop environment, built with **Qt6 QML** and running on the **Cage** Wayland compositor. It provides a modern, translucent desktop experience with:
+WhaleOS is the native desktop environment, built with **Qt6 QML** and running on the **Cage** Wayland compositor.
 
 | App | Description |
 |-----|-------------|
@@ -450,7 +688,7 @@ sudo apt install qt6-base-dev qt6-declarative-dev \
 
 ---
 
-## System Administration
+## ⚙️ System Administration
 
 ### Default Credentials
 
@@ -516,7 +754,7 @@ Plus 30+ additional tools: `exec`, `file`, `browser`, `git`, `docker`, `ssh`, `e
 
 ---
 
-## Updating TensorAgent OS
+## 🔄 Updating TensorAgent OS
 
 TensorAgent OS includes a built-in update manager:
 
@@ -537,15 +775,26 @@ ainux-update all
 ainux-update rollback openwhale
 ```
 
-The update manager:
-- Backs up the current Git SHA before updating
-- Preserves your database, memory, skills, and configuration
-- Supports one-step rollback to the previous version
-- Auto-reinstalls npm dependencies after updates
+### Live Update via SSH (for UTM / QEMU)
+
+You can update the running OS without rebuilding the disk image:
+
+```bash
+# SSH into the VM
+ssh ainux@localhost -p 2222
+
+# Update WhaleOS shell from the host
+scp -P 2222 packages/whaleos/*.qml ainux@localhost:/opt/ainux/whaleos/
+scp -P 2222 packages/whaleos/*.js ainux@localhost:/opt/ainux/whaleos/
+scp -P 2222 packages/whaleos/*.mjs ainux@localhost:/opt/ainux/whaleos/
+
+# Restart GUI to apply changes
+ssh -p 2222 ainux@localhost "sudo systemctl restart ainux-gui"
+```
 
 ---
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### QEMU Won't Start (macOS)
 
@@ -559,12 +808,74 @@ brew reinstall qemu
 ls /opt/homebrew/share/qemu/edk2-aarch64-code.fd
 ```
 
+### UTM VM Shows No Network
+
+**Symptom:** OpenWhale shows "Connection error", can't reach the internet.
+
+The UTM build requires `systemd-networkd` configuration. SSH in and verify:
+
+```bash
+ssh ainux@localhost -p 2222
+ip addr show                    # Check if enp0s1 has an IP
+sudo systemctl status systemd-networkd
+cat /etc/systemd/network/10-dhcp.network  # Should contain DHCP=yes
+```
+
+If missing, create the network config:
+```bash
+sudo tee /etc/systemd/network/10-dhcp.network << 'EOF'
+[Match]
+Name=enp*
+
+[Network]
+DHCP=yes
+
+[DHCP]
+UseDNS=yes
+UseDomains=yes
+EOF
+sudo systemctl enable --now systemd-networkd systemd-resolved
+sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+```
+
+### Icons Not Rendering (UTM)
+
+**Symptom:** Font Awesome icons show as blank squares.
+
+The OS bundles Font Awesome fonts locally in `packages/whaleos/fonts/`. Verify they exist on the VM:
+
+```bash
+ssh ainux@localhost -p 2222
+ls /opt/ainux/whaleos/fonts/
+# Should show: fa-solid-900.woff2, fa-brands-400.woff2
+```
+
+If missing, copy from the host:
+```bash
+scp -P 2222 packages/whaleos/fonts/*.woff2 ainux@localhost:/opt/ainux/whaleos/fonts/
+ssh -p 2222 ainux@localhost "sudo systemctl restart ainux-gui"
+```
+
+### UTM VM is Slow
+
+**Symptom:** Laggy UI, slow mouse movement.
+
+The OS uses software rendering (`pixman`) by default for VM compatibility. To improve performance:
+
+1. **Increase resources** in UTM → Settings:
+   - RAM: **6 GB** (minimum 4 GB)
+   - CPU Cores: **6** (minimum 4)
+
+2. **Use virtio-ramfb display** (not virtio-gpu with virgl — it crashes):
+   - UTM → Settings → Display → `virtio-ramfb`
+
+> **Note:** `WLR_RENDERER=pixman` is required because OpenGL (virgl) is not supported by the default virtio-gpu configuration. This means rendering is CPU-bound, but with 6 cores it's usable.
+
 ### Cloud-Init Stalls / No Network
 
 **Symptom:** First boot hangs at "Waiting for network"
 
 ```bash
-# SSH in and check cloud-init status
 ssh ainux@localhost -p 2222
 sudo cloud-init status --long
 sudo cat /var/log/cloud-init-output.log
@@ -575,7 +886,6 @@ sudo cat /var/log/cloud-init-output.log
 **Symptom:** QEMU window shows nothing after boot
 
 ```bash
-# SSH in and check services
 ssh ainux@localhost -p 2222
 sudo systemctl status ainux-gui
 sudo systemctl status openwhale
@@ -590,7 +900,6 @@ sudo systemctl restart ainux-gui
 ### OpenWhale Not Starting
 
 ```bash
-# Check the logs
 journalctl -u openwhale -n 50
 
 # Try manual start
@@ -601,24 +910,17 @@ node openwhale.mjs
 npm rebuild better-sqlite3
 ```
 
-### Port Already in Use
+### No Mouse Cursor in UTM
+
+**Symptom:** Mouse cursor invisible in the VM window.
+
+The GUI service sets `WLR_NO_HARDWARE_CURSORS=1` to force software cursors. If still missing:
 
 ```bash
-# Check what's using port 7777
-lsof -i :7777
-
-# Kill conflicting process
-kill $(lsof -t -i :7777)
-```
-
-### No Audio in VM
-
-```bash
-# Check PipeWire status
-systemctl --user status pipewire wireplumber
-
-# Restart audio stack
-systemctl --user restart pipewire wireplumber
+ssh ainux@localhost -p 2222
+# Verify the environment variable
+sudo systemctl show ainux-gui | grep Environment
+# Should include WLR_NO_HARDWARE_CURSORS=1
 ```
 
 ### Re-Running Cloud-Init (Reset First Boot)
@@ -630,7 +932,7 @@ sudo reboot
 
 ---
 
-## Architecture Overview
+## 🏗 Architecture Overview
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -659,13 +961,13 @@ sudo reboot
 │               Linux Kernel (6.x LTS)                     │
 │         DRM/KMS · Mesa · PipeWire · virtio               │
 ├──────────────────────────────────────────────────────────┤
-│      QEMU (HVF on macOS / KVM on Linux) or Bare Metal   │
+│ QEMU (HVF/macOS · KVM/Linux) · UTM (macOS) · Bare Metal │
 └──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 1. **Fork** the repository
 2. **Create a branch:** `git checkout -b feature/my-feature`
@@ -676,22 +978,27 @@ sudo reboot
 ### Development Workflow
 
 ```bash
-# Run the core kernel in dev mode
-npm run dev
+# Launch the OS in QEMU for development
+python3 vm/launch-ainux.py
 
-# Build WhaleOS GUI
-npm run build:gui
+# Deploy changes to running VM
+scp -P 2222 packages/whaleos/*.qml ainux@localhost:/opt/ainux/whaleos/
+ssh -p 2222 ainux@localhost "sudo systemctl restart ainux-gui"
+
+# Build WhaleOS GUI binary
+cd packages/whaleos
+g++ -o whaleos main.cpp $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Core Qt6Gui) -fPIC
 
 # Lint
 npm run lint
 
-# Test in QEMU
-npm run test:qemu
+# Build full ISO (Linux only)
+./scripts/build-iso.sh
 ```
 
 ---
 
-## License
+## 📄 License
 
 MIT — see [LICENSE](LICENSE) for details.
 
