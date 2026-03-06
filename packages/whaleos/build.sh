@@ -10,7 +10,11 @@ cd /opt/ainux/whaleos
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) main.cpp -o main.moc
 
 # Compile with MOC output + Wayland Compositor support
+# -lcrypt needed for crypt(3) used in authenticate() to hash-check /etc/shadow
 g++ -o whaleos main.cpp moc_systemmanager.cpp \
     $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Core Qt6Gui Qt6WaylandCompositor) \
-    -fPIC
+    -lcrypt -fPIC
 echo "WhaleOS built successfully"
+
+# Ensure ainux user can read /etc/shadow (needed for in-process auth without sudo)
+usermod -aG shadow ainux 2>/dev/null || true

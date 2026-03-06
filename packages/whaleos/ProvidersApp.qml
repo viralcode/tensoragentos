@@ -300,9 +300,22 @@ Rectangle {
                                 GradientStop { position: 1.0; color: ollamaOnline ? Qt.rgba(0.08, 0.5, 0.24, 0.15) : Qt.rgba(1, 1, 1, 0.03) }
                             }
 
-                            Text {
-                                anchors.centerIn: parent; text: "🦙"
-                                font.pixelSize: Math.round(22 * root.sf)
+                            Canvas {
+                                id: ollamaIconCanvas
+                                anchors.fill: parent
+                                // Watch ollamaOnline via property to repaint when state changes
+                                property bool online: ollamaOnline
+                                onOnlineChanged: requestPaint()
+                                onPaint: {
+                                    var ctx = getContext("2d");
+                                    ctx.clearRect(0, 0, width, height);
+                                    ctx.fillStyle = online ? "#22c55e" : "#94a3b8";
+                                    ctx.font = "bold " + Math.round(17 * root.sf) + "px sans-serif";
+                                    ctx.textAlign = "center";
+                                    ctx.textBaseline = "middle";
+                                    ctx.fillText("Ol", width / 2, height / 2 + 1);
+                                }
+                                Component.onCompleted: requestPaint()
                             }
                         }
 

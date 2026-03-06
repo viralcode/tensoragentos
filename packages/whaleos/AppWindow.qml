@@ -51,13 +51,17 @@ Rectangle {
     property string nativeCmd: ""
     property string nativeSearchName: ""
 
-    // Set initial size once — capped to windowArea at creation time only
+    // Set initial size + launch native app in one onCompleted handler
+    // (QML only allows ONE Component.onCompleted per component)
     Component.onCompleted: {
         if (windowArea) {
             var initW = Math.round(700 * root.sf);
             var initH = Math.round(450 * root.sf);
             appWindow.width  = Math.min(initW, windowArea.width  - Math.round(20 * root.sf));
             appWindow.height = Math.min(initH, windowArea.height - Math.round(20 * root.sf));
+        }
+        if (isNative && nativeCmd.length > 0) {
+            nativeLauncher.start();
         }
     }
 
@@ -229,11 +233,6 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: {
-        if (isNative && nativeCmd.length > 0) {
-            nativeLauncher.start();
-        }
-    }
 
     function closeWindow() {
         // Send close to Wayland surface if applicable

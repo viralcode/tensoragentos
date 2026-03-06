@@ -10,10 +10,15 @@ Rectangle {
     clip: true
     z: 10
 
-    Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+    // PERF: No height animation — height change repaints the entire panel on every frame
+    // on the software renderer (pixman). Use instant snap instead.
+    // Visual smoothness comes from the content fading in (see chatContentOpacity below).
 
     property bool chatExpanded: false
     property bool chatFullScreen: false
+    // Fade in content when expanding (cheap — only affects opacity, not layout)
+    property real chatContentOpacity: chatExpanded ? 1.0 : 0.0
+    Behavior on chatContentOpacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
     property bool isSending: false
     property var messages: []
     property string selectedAgent: "main"
@@ -187,6 +192,7 @@ Rectangle {
     Rectangle {
         anchors.fill: parent; radius: parent.radius
         visible: chatExpanded
+        opacity: chatContentOpacity
         color: Qt.rgba(0.07, 0.07, 0.11, 0.92)
         border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
     }
@@ -196,6 +202,7 @@ Rectangle {
         id: chatHeader
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
         height: Math.round(52 * root.sf); visible: chatExpanded
+        opacity: chatContentOpacity
         color: Qt.rgba(0.06, 0.06, 0.10, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
@@ -951,7 +958,7 @@ Rectangle {
         border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.18)
         border.width: 1
 
-        Behavior on border.color { ColorAnimation { duration: 200 } }
+        // PERF: Removed border.color Behavior — triggers repaint on every focus change
 
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
@@ -1073,7 +1080,7 @@ Rectangle {
                 width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
 
                 color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.06)
-                Behavior on color { ColorAnimation { duration: 150 } }
+                // PERF: Removed color Behavior on send button
 
                 Canvas {
                     anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
@@ -1090,16 +1097,8 @@ Rectangle {
                     onSChanged: requestPaint()
                 }
 
-                Rectangle {
-                    visible: chatInput.text.trim() !== ""
-                    anchors.fill: parent; anchors.margins: -2; radius: Math.round(12 * root.sf)
-                    color: "transparent"; border.color: Qt.rgba(0.5, 0.3, 0.95, 0.3); border.width: 1
-                    SequentialAnimation on border.color {
-                        running: chatInput.text.trim() !== ""; loops: Animation.Infinite
-                        ColorAnimation { to: Qt.rgba(0.35, 0.55, 1.0, 0.4); duration: 1200 }
-                        ColorAnimation { to: Qt.rgba(0.5, 0.3, 0.95, 0.3); duration: 1200 }
-                    }
-                }
+                // PERF: Removed SequentialAnimation on border.color — was repainting every 1200ms
+                // even while idle. Static glow is visually equivalent and costs nothing.
 
                 MouseArea {
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor

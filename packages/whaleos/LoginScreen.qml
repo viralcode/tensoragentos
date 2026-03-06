@@ -10,10 +10,11 @@ Rectangle {
     property bool loginBusy: false
     property real glowPhase: 0
 
-    // ── Animated phase for effects ──
+    // ── Animated phase for effects (very slow — only used for whale ring) ──
+    // PERF: 500ms interval. Login screen is mostly static; fast timers pin CPU on pixman renderer.
     Timer {
-        running: true; repeat: true; interval: 40
-        onTriggered: glowPhase += 0.02
+        running: true; repeat: true; interval: 500
+        onTriggered: glowPhase += 0.3
     }
 
     // ════════════════════════════════════════
@@ -35,7 +36,7 @@ Rectangle {
     Rectangle {
         x: parent.width * 0.15; y: parent.height * 0.0
         width: parent.width * 0.7; height: parent.height * 0.5
-        radius: width / 2; opacity: 0.08 + Math.sin(glowPhase) * 0.02
+        radius: width / 2; opacity: 0.09
         rotation: -5
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#0ea5e9" }
@@ -48,7 +49,7 @@ Rectangle {
     Rectangle {
         x: parent.width * 0.2; y: parent.height * 0.1
         width: parent.width * 0.65; height: parent.height * 0.55
-        radius: width / 2; opacity: 0.10 + Math.sin(glowPhase * 0.7 + 1) * 0.03
+        radius: width / 2; opacity: 0.11
         rotation: 10
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#7c3aed" }
@@ -111,18 +112,14 @@ Rectangle {
             }
         }
 
-        // Subtle glow behind card
+        // Subtle glow behind card — static, no animation (saves full repaint)
         Rectangle {
             anchors.centerIn: parent; z: -1
             width: parent.width + Math.round(60 * root.sf)
             height: parent.height + Math.round(60 * root.sf)
             radius: Math.round(40 * root.sf)
-            opacity: 0.06 + Math.sin(glowPhase * 0.5) * 0.02
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#3b82f6" }
-                GradientStop { position: 0.5; color: "#7c3aed" }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
+            opacity: 0.12
+            color: "#3b82f6"
         }
 
         ColumnLayout {
@@ -137,14 +134,21 @@ Rectangle {
                 Layout.preferredWidth: Math.round(80 * root.sf)
                 Layout.preferredHeight: Math.round(80 * root.sf)
 
-                // Pulsing ring
+                // Pulsing ring — opacity animation only (safe, no binding loop)
                 Rectangle {
+                    id: whaleRing
                     anchors.centerIn: parent
-                    width: Math.round((76 + Math.sin(glowPhase * 1.5) * 4) * root.sf)
-                    height: width; radius: width / 2
+                    width: Math.round(76 * root.sf)
+                    height: Math.round(76 * root.sf)
+                    radius: width / 2
                     color: "transparent"
-                    border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15 + Math.sin(glowPhase) * 0.05)
+                    border.color: Qt.rgba(0.35, 0.55, 1.0, 0.18)
                     border.width: Math.round(1.5 * root.sf)
+                    SequentialAnimation on opacity {
+                        running: true; loops: Animation.Infinite
+                        NumberAnimation { to: 0.4; duration: 2000; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 1.0; duration: 2000; easing.type: Easing.InOutSine }
+                    }
                 }
 
                 // Inner circle

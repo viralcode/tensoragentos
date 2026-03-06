@@ -22,17 +22,17 @@ Rectangle {
     property bool displayExpanded: false
     property var wallpaperList: [
         { id: "default",        name: "Default Aurora",    file: "" },
-        { id: "nebula",         name: "🌌 Nebula",         file: "assets/wallpapers/nebula.png" },
-        { id: "cyber-grid",     name: "🔮 Cyber Grid",     file: "assets/wallpapers/cyber-grid.png" },
-        { id: "aurora",         name: "🌈 Aurora",          file: "assets/wallpapers/aurora.png" },
-        { id: "ocean-depth",    name: "🌊 Ocean Depth",    file: "assets/wallpapers/ocean-depth.png" },
-        { id: "abstract-waves", name: "🔥 Abstract Waves", file: "assets/wallpapers/abstract-waves.png" },
-        { id: "crystal",        name: "💎 Crystal",         file: "assets/wallpapers/crystal.png" },
-        { id: "ocean",          name: "🐋 Ocean",           file: "assets/wallpapers/ocean.png" },
-        { id: "topology",       name: "🧬 Topology",       file: "assets/wallpapers/topology.png" },
-        { id: "abstract",       name: "🎨 Abstract",       file: "assets/wallpapers/abstract.png" },
-        { id: "alien",          name: "👽 Alien",           file: "assets/wallpapers/alien.png" },
-        { id: "cosmic",         name: "🪐 Cosmic",         file: "assets/wallpapers/cosmic.png" },
+        { id: "nebula",         name: "★ Nebula",          file: "assets/wallpapers/nebula.png" },
+        { id: "cyber-grid",     name: "◈ Cyber Grid",      file: "assets/wallpapers/cyber-grid.png" },
+        { id: "aurora",         name: "◌ Aurora",          file: "assets/wallpapers/aurora.png" },
+        { id: "ocean-depth",    name: "≋ Ocean Depth",     file: "assets/wallpapers/ocean-depth.png" },
+        { id: "abstract-waves", name: "∿ Abstract Waves",  file: "assets/wallpapers/abstract-waves.png" },
+        { id: "crystal",        name: "◆ Crystal",         file: "assets/wallpapers/crystal.png" },
+        { id: "ocean",          name: "≈ Ocean",           file: "assets/wallpapers/ocean.png" },
+        { id: "topology",       name: "⬡ Topology",        file: "assets/wallpapers/topology.png" },
+        { id: "abstract",       name: "✦ Abstract",        file: "assets/wallpapers/abstract.png" },
+        { id: "alien",          name: "⊕ Alien",           file: "assets/wallpapers/alien.png" },
+        { id: "cosmic",         name: "⬢ Cosmic",          file: "assets/wallpapers/cosmic.png" },
         { id: "cyberpunk",      name: "⚡ Cyberpunk",      file: "assets/wallpapers/cyberpunk.png" }
     ]
 
@@ -724,10 +724,11 @@ Rectangle {
             wasActive = active;
         }
 
-        // Animation timer — much faster when AI is processing
+        // PERF: Fixed 150ms interval (safe with QSG_RENDER_LOOP=basic)
+        // Dynamic interval bindings on running Timers can cause QML instability
         Timer {
             running: siriGlow.visible
-            interval: 16; repeat: true
+            interval: 150; repeat: true
             onTriggered: {
                 siriGlow.phase += siriGlow.active ? 0.06 : 0.012;
                 orbCanvas.requestPaint();

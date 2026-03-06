@@ -206,6 +206,35 @@ Rectangle {
         }
     }
 
+    // Commands that block waiting for stdin when run without arguments
+    property var interactiveCommands: ["cat", "less", "more", "head", "tail", "grep", "sort",
+                                       "top", "htop", "vim", "vi", "nano", "emacs", "pico",
+                                       "python", "python3", "node", "irb", "ruby", "bash", "sh",
+                                       "ssh", "ftp", "sftp", "telnet", "nc", "netcat",
+                                       "read", "watch", "journalctl", "man", "info"]
+
+    function isInteractiveStdin(cmd) {
+        // Extract the base command (first word)
+        var parts = cmd.trim().split(/\s+/);
+        var base = parts[0].split("/").pop(); // handle /usr/bin/cat etc.
+        // Check if it's in the interactive list AND has no arguments (or only flags)
+        if (interactiveCommands.indexOf(base) >= 0) {
+            // Has at least one non-flag argument? Then it's probably OK
+            var hasFileArg = false;
+            for (var i = 1; i < parts.length; i++) {
+                if (!parts[i].startsWith("-") && parts[i] !== "") {
+                    hasFileArg = true; break;
+                }
+            }
+            // Special case: journalctl --follow / tail -f still block
+            if (cmd.indexOf("-f") >= 0 || cmd.indexOf("--follow") >= 0 || cmd.indexOf("--no-pager") < 0 && base === "journalctl") {
+                return !cmd.includes("--no-pager");
+            }
+            return !hasFileArg;
+        }
+        return false;
+    }
+
     function executeCommand() {
         var cmd = cmdInput.text.trim();
         cmdInput.text = "";
@@ -238,7 +267,7 @@ Rectangle {
             cmd = "systemctl status ainux-gui.service --no-pager -l 2>&1";
         } else if (cmd === "help") {
             appendLine("");
-            appendLine("TensorAgent OS Terminal - Available shortcuts:");
+            appendLine("TensorAgent OS Terminal — Available shortcuts:");
             appendLine("  ow-restart     Restart OpenWhale service");
             appendLine("  ow-status      OpenWhale service status");
             appendLine("  ow-logs        OpenWhale recent logs");
@@ -250,14 +279,26 @@ Rectangle {
             appendLine("  help           Show this help");
             appendLine("");
             appendLine("All standard Linux commands are available (ls, cat, grep, apt, etc.)");
+            appendLine("Note: Interactive/pager commands need arguments (e.g. 'cat file.txt')");
             appendLine("");
+            return;
+        }
+
+        // ── Stdin-blocking protection ──
+        // Catch bare interactive commands before they freeze the UI
+        if (isInteractiveStdin(cmd)) {
+            var base = cmd.trim().split(/\s+/)[0].split("/").pop();
+            appendLine("bash: " + base + ": requires a file argument in this terminal");
+            appendLine("Tip: Use '" + base + " <filename>' or pipe input: 'echo text | " + base + "'");
+            cmdInput.forceActiveFocus();
             return;
         }
 
         isRunning = true;
 
-        // Use sysManager.runCommand() — runs via QProcess/bash on the real system
-        var resultStr = sysManager.runCommand(cmd, currentCwd);
+        // Wrap with timeout 10s + stdin redirected from /dev/null to prevent any blocking
+        var safeCmd = "timeout 10s bash -c " + JSON.stringify(cmd) + " < /dev/null";
+        var resultStr = sysManager.runCommand(safeCmd, currentCwd);
         isRunning = false;
 
         try {
@@ -269,6 +310,10 @@ Rectangle {
                 for (var i = 0; i < errParts.length; i++) {
                     if (errParts[i]) appendLine(errParts[i]);
                 }
+            }
+            // If timeout killed the command, add a hint
+            if (data.exitCode === 124) {
+                appendLine("bash: command timed out after 10 seconds (use SSH for long-running tasks)");
             }
         } catch(e) {
             appendLine("Error: " + (resultStr || "Unknown error"));

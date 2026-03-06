@@ -212,12 +212,10 @@ Rectangle {
             border.width: 1
             clip: true
 
-            // Animated border glow — cycles through accent colors
-            property real glowPhase: 0
-            NumberAnimation on glowPhase { from: 0; to: 6.2832; duration: 8000; loops: Animation.Infinite }
+            // PERF: Static border — glowPhase Math.sin binding forced border repaint every frame of an 8s loop
             border.color: owAreaMouse.containsMouse
-                ? Qt.rgba(0.4 + 0.15 * Math.sin(glowPhase), 0.5 + 0.15 * Math.sin(glowPhase + 2), 1, 0.35)
-                : Qt.rgba(1, 1, 1, 0.10 + 0.04 * Math.sin(glowPhase))
+                ? Qt.rgba(0.4, 0.6, 1.0, 0.35)
+                : Qt.rgba(1, 1, 1, 0.10)
 
             scale: owAreaMouse.containsMouse ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
@@ -270,79 +268,26 @@ Rectangle {
                     Behavior on rotation { NumberAnimation { duration: 400; easing.type: Easing.OutBack } }
                 }
 
-                // ── Status indicator with ripple rings ──
+                // ── Status indicator — static dot (PERF: removed ripple animations
+                // that ran infinite scale+opacity loops and dirtied scene every frame)
                 Item {
                     width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
 
-                    // Ripple ring 1 — outer
+                    // Outer ring (static)
                     Rectangle {
-                        id: ripple1
                         anchors.centerIn: parent
-                        width: Math.round(7 * root.sf); height: width; radius: width / 2
+                        width: Math.round(13 * root.sf); height: width; radius: width / 2
                         color: "transparent"
-                        border.color: owOnline ? "#34d399" : "#f87171"
+                        border.color: owOnline ? Qt.rgba(0.2, 0.83, 0.6, 0.20) : Qt.rgba(0.97, 0.44, 0.44, 0.20)
                         border.width: 1
-                        opacity: 0
-                        property real rippleScale: 1.0
-                        transform: Scale { origin.x: ripple1.width / 2; origin.y: ripple1.height / 2; xScale: ripple1.rippleScale; yScale: ripple1.rippleScale }
-
-                        SequentialAnimation {
-                            running: owOnline; loops: Animation.Infinite
-                            ParallelAnimation {
-                                NumberAnimation { target: ripple1; property: "rippleScale"; from: 1.0; to: 2.8; duration: 2000; easing.type: Easing.OutQuad }
-                                NumberAnimation { target: ripple1; property: "opacity"; from: 0.7; to: 0; duration: 2000; easing.type: Easing.OutQuad }
-                            }
-                            PauseAnimation { duration: 500 }
-                        }
                     }
 
-                    // Ripple ring 2 — staggered
-                    Rectangle {
-                        id: ripple2
-                        anchors.centerIn: parent
-                        width: Math.round(7 * root.sf); height: width; radius: width / 2
-                        color: "transparent"
-                        border.color: owOnline ? "#34d399" : "#f87171"
-                        border.width: 1
-                        opacity: 0
-                        property real rippleScale: 1.0
-                        transform: Scale { origin.x: ripple2.width / 2; origin.y: ripple2.height / 2; xScale: ripple2.rippleScale; yScale: ripple2.rippleScale }
-
-                        SequentialAnimation {
-                            running: owOnline; loops: Animation.Infinite
-                            PauseAnimation { duration: 800 }
-                            ParallelAnimation {
-                                NumberAnimation { target: ripple2; property: "rippleScale"; from: 1.0; to: 2.4; duration: 1800; easing.type: Easing.OutQuad }
-                                NumberAnimation { target: ripple2; property: "opacity"; from: 0.5; to: 0; duration: 1800; easing.type: Easing.OutQuad }
-                            }
-                            PauseAnimation { duration: 700 }
-                        }
-                    }
-
-                    // Core dot with glow
+                    // Core dot
                     Rectangle {
                         anchors.centerIn: parent
                         width: Math.round(7 * root.sf); height: width; radius: width / 2
                         color: owOnline ? "#34d399" : "#f87171"
-
-                        // Outer glow halo
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: parent.width + Math.round(6 * root.sf)
-                            height: width; radius: width / 2
-                            color: "transparent"
-                            border.color: owOnline ? Qt.rgba(0.2, 0.83, 0.6, 0.25) : Qt.rgba(0.97, 0.44, 0.44, 0.25)
-                            border.width: Math.round(2 * root.sf)
-                            opacity: glowHaloOp
-
-                            property real glowHaloOp: 0.3
-                            SequentialAnimation on glowHaloOp {
-                                running: true; loops: Animation.Infinite
-                                NumberAnimation { to: 0.8; duration: 1800; easing.type: Easing.InOutSine }
-                                NumberAnimation { to: 0.3; duration: 1800; easing.type: Easing.InOutSine }
-                            }
-                        }
                     }
                 }
 
@@ -385,11 +330,8 @@ Rectangle {
             border.width: 1
             clip: true
 
-            property real clockGlow: 0
-            NumberAnimation on clockGlow { from: 0; to: 6.2832; duration: 10000; loops: Animation.Infinite }
-            border.color: clockMa.containsMouse || timePanelVisible
-                ? Qt.rgba(0.5 + 0.1 * Math.sin(clockGlow), 0.6 + 0.1 * Math.sin(clockGlow + 1.5), 1, 0.30)
-                : Qt.rgba(1, 1, 1, 0.10)
+            // PERF: Static border — clockGlow Math.sin binding forced repaint every frame
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             scale: clockMa.containsMouse ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
@@ -446,11 +388,8 @@ Rectangle {
                     radius: width / 2; anchors.verticalCenter: parent.verticalCenter
                     color: Qt.rgba(1, 1, 1, 0.25)
 
-                    SequentialAnimation on opacity {
-                        running: true; loops: Animation.Infinite
-                        NumberAnimation { to: 0.3; duration: 1000; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutSine }
-                    }
+                    // PERF: Removed always-running opacity pulse on separator dot
+                    opacity: 0.4
                 }
 
                 Text {
@@ -584,9 +523,13 @@ Rectangle {
                         id: avatarRing
                         anchors.centerIn: parent
                         width: parent.width; height: parent.height
+                        // PERF: Replaced 4s loop calling requestPaint() on every frame
+                        // with a slow Timer — avatar ring rotates subtly every 3s
                         property real ringPhase: 0
-                        NumberAnimation on ringPhase { from: 0; to: 6.2832; duration: 4000; loops: Animation.Infinite }
-                        onRingPhaseChanged: requestPaint()
+                        Timer {
+                            interval: 3000; running: true; repeat: true
+                            onTriggered: { avatarRing.ringPhase += 0.8; avatarRing.requestPaint(); }
+                        }
                         property real s: root.sf
                         onPaint: {
                             var ctx = getContext("2d");
