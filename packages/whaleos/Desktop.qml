@@ -869,16 +869,18 @@ Rectangle {
     AppDock {
         id: appDock
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: chatBarItem.top
-        anchors.bottomMargin: Math.round(14 * root.sf)
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Math.round(90 * root.sf)
+        z: 5
     }
 
-    // ── Chat Bar (absolute positioned, expands upward) ──
+    // ── Chat Bar (overlay, expands upward — z:20 floats above dock so dock stays in place) ──
     ChatBar {
         id: chatBarItem
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(24 * root.sf)
         width: chatBarItem.chatFullScreen ? parent.width : Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
+        z: 20
     }
 }
