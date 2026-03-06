@@ -1,9 +1,11 @@
-# VM disk images (too large for git)
-vm/*.qcow2
-vm/*.img
-vm/*.fd
-vm/*.dmg
-vm/cidata/
+# VM disk images and build artifacts (too large for git)
+vm/
+utm_build/
+*.qcow2
+*.img
+*.fd
+*.dmg
+*.iso
 
 # Node
 node_modules/
