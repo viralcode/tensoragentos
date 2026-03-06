@@ -53,8 +53,8 @@ function ensureTable(): void {
         const existing = db.prepare("SELECT id FROM agent_configs WHERE id = 'main'").get();
         if (!existing) {
             db.prepare(`
-                INSERT INTO agent_configs (id, name, description, is_default, enabled, capabilities)
-                VALUES ('main', 'OpenWhale', 'Default general-purpose AI assistant', 1, 1, '["general","code","tools"]')
+                INSERT INTO agent_configs (id, name, description, is_default, enabled, capabilities, allow_agents)
+                VALUES ('main', 'OpenWhale', 'Default general-purpose AI assistant', 1, 1, '["general","code","tools"]', '["*"]')
             `).run();
         }
     } catch (e) {
@@ -172,6 +172,7 @@ function defaultAgent(): AgentConfig {
         isDefault: true,
         enabled: true,
         capabilities: ["general", "code", "tools"],
+        allowAgents: ["*"],
     };
 }
 
@@ -182,9 +183,9 @@ export function canAgentSpawn(sourceAgentId: string, targetAgentId: string): boo
     const source = getAgentConfig(sourceAgentId);
     if (!source) return false;
 
-    // No allowlist = can only spawn self
+    // No allowlist = can spawn any agent (permissive by default)
     if (!source.allowAgents || source.allowAgents.length === 0) {
-        return sourceAgentId === targetAgentId;
+        return true;
     }
 
     // Wildcard = can spawn any

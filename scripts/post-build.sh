@@ -1,44 +1,56 @@
 #!/bin/bash
 #
-# Buildroot post-build script
-# Runs after the rootfs is built, before image generation
+# TensorAgent OS — Post-Build Script
+# Runs after the rootfs is built, before image generation.
+# Configures user, groups, systemd targets, and permissions.
 #
 
 TARGET_DIR="$1"
 
-echo "[ainux post-build] Configuring AInux..."
+echo "[tensoragent post-build] Configuring TensorAgent OS..."
 
-# Create ainux user
-if ! grep -q "ainux" "${TARGET_DIR}/etc/passwd"; then
-    echo "ainux:x:1000:1000:AInux User:/home/ainux:/bin/bash" >> "${TARGET_DIR}/etc/passwd"
-    echo "ainux:x:1000:" >> "${TARGET_DIR}/etc/group"
-    echo "ainux:*:19000:0:99999:7:::" >> "${TARGET_DIR}/etc/shadow"
-    mkdir -p "${TARGET_DIR}/home/ainux/.ainux"
-    
-    # Add ainux to necessary groups
-    sed -i '/^audio:/s/$/ainux/' "${TARGET_DIR}/etc/group"
-    sed -i '/^video:/s/$/ainux/' "${TARGET_DIR}/etc/group"
-    sed -i '/^input:/s/$/ainux/' "${TARGET_DIR}/etc/group"
-    sed -i '/^render:/s/$/,ainux/' "${TARGET_DIR}/etc/group" 2>/dev/null || true
+# ── Create default user (dynamic — avoids hardcoded UID) ──
+if ! grep -q "^ainux:" "${TARGET_DIR}/etc/passwd" 2>/dev/null; then
+    # Use chroot useradd for proper UID/GID allocation
+    chroot "${TARGET_DIR}" /usr/sbin/useradd -m -s /bin/bash \
+        -G sudo,video,audio,input ainux 2>/dev/null || {
+        # Fallback: manual creation if useradd unavailable
+        echo "ainux:x:1000:1000:TensorAgent User:/home/ainux:/bin/bash" >> "${TARGET_DIR}/etc/passwd"
+        echo "ainux:x:1000:" >> "${TARGET_DIR}/etc/group"
+        mkdir -p "${TARGET_DIR}/home/ainux"
+    }
 fi
 
-# Set up XDG runtime dir
-mkdir -p "${TARGET_DIR}/run/user/1000"
+# Ensure home directory structure
+mkdir -p "${TARGET_DIR}/home/ainux/.config"
+mkdir -p "${TARGET_DIR}/home/ainux/.local/share"
+mkdir -p "${TARGET_DIR}/home/ainux/Works"
 
-# Install pnpm globally
-if [ -f "${TARGET_DIR}/usr/bin/node" ]; then
-    echo "[ainux post-build] Installing pnpm..."
-    chroot "${TARGET_DIR}" /usr/bin/node -e "
-        const https = require('https');
-        // pnpm will be installed on first boot via setup.sh
-    " 2>/dev/null || true
+# Fix ownership (uses chroot to resolve UID dynamically)
+chroot "${TARGET_DIR}" chown -R ainux:ainux /home/ainux 2>/dev/null || true
+
+# ── Systemd: graphical target by default ──
+if [ -d "${TARGET_DIR}/etc/systemd/system" ]; then
+    ln -sf /lib/systemd/system/graphical.target \
+        "${TARGET_DIR}/etc/systemd/system/default.target" 2>/dev/null || true
 fi
 
-# Set default systemd target to graphical
-ln -sf /usr/lib/systemd/system/graphical.target \
-    "${TARGET_DIR}/etc/systemd/system/default.target"
+# ── XDG runtime dir (created by logind at login, but seed the path) ──
+# systemd-logind creates /run/user/<UID> dynamically at login.
+# We no longer hardcode /run/user/1000.
 
-# Make scripts executable
-chmod +x "${TARGET_DIR}/opt/ainux/bin/"* 2>/dev/null || true
+# ── PAM configuration for WhaleOS login ──
+if [ -d "${TARGET_DIR}/etc/pam.d" ]; then
+    cat > "${TARGET_DIR}/etc/pam.d/whaleos" << 'PAMCFG'
+# PAM configuration for WhaleOS desktop login
+auth       required   pam_unix.so
+account    required   pam_unix.so
+session    required   pam_unix.so
+PAMCFG
+fi
 
-echo "[ainux post-build] Done!"
+# ── Make scripts executable ──
+chmod +x "${TARGET_DIR}/opt/ainux/whaleos/build.sh"  2>/dev/null || true
+chmod +x "${TARGET_DIR}/opt/ainux/bin/"*              2>/dev/null || true
+
+echo "[tensoragent post-build] Done!"

@@ -1,5 +1,5 @@
 # VM disk images and build artifacts (too large for git)
-vm/
+
 utm_build/
 *.qcow2
 *.img

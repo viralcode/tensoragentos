@@ -1,19 +1,24 @@
 #!/bin/bash
 #
-# AInux Master Build Script
+# TensorAgent OS — Master Build Script
 #
-# Builds the entire AInux OS from source:
-# 1. Clones/updates Buildroot
-# 2. Applies AInux configuration
-# 3. Builds Linux kernel, rootfs, Chromium, OpenWhale
-# 4. Generates bootable ISO
+# Builds the entire OS from a Debian Bookworm base:
+#   1. Creates rootfs via debootstrap
+#   2. Installs system dependencies (Qt6, Node.js, PAM, Wayland)
+#   3. Integrates OpenWhale AI platform + WhaleOS shell
+#   4. Configures systemd services and boot
+#   5. Generates bootable ISO (via xorriso)
+#
+# Supports:
+#   x86_64 (native or cross-compile)
+#   aarch64 (cross-compile via qemu-user-static)
 #
 # Requirements:
-#   - Linux x86_64 host (Ubuntu 22.04+ recommended)
-#   - 16GB+ RAM, 150GB+ disk space
-#   - Build tools: gcc, g++, make, git, python3, pkg-config
+#   - Linux x86_64 host (Ubuntu 22.04+ / Debian 12+)
+#   - 8GB+ RAM, 20GB+ disk
+#   - Build tools: debootstrap, xorriso, mtools, qemu-user-static (for ARM)
 #
-# Usage: ./scripts/build-iso.sh [--clean] [--skip-chromium]
+# Usage: ./scripts/build-iso.sh [--arch=x86_64|aarch64] [--clean] [--skip-chromium]
 #
 
 set -euo pipefail
@@ -21,212 +26,327 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AINUX_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="${AINUX_ROOT}/build"
-BUILDROOT_VERSION="2024.11"
-BUILDROOT_DIR="${BUILD_DIR}/buildroot"
-OUTPUT_DIR="${BUILD_DIR}/output"
+ROOTFS_DIR="${BUILD_DIR}/rootfs"
+ISO_DIR="${BUILD_DIR}/iso"
 
+ARCH="x86_64"
 CLEAN=false
 SKIP_CHROMIUM=false
 
 # Parse arguments
 for arg in "$@"; do
     case $arg in
+        --arch=*) ARCH="${arg#*=}" ;;
         --clean) CLEAN=true ;;
         --skip-chromium) SKIP_CHROMIUM=true ;;
         --help)
-            echo "Usage: $0 [--clean] [--skip-chromium]"
+            echo "Usage: $0 [--arch=x86_64|aarch64] [--clean] [--skip-chromium]"
+            echo "  --arch=ARCH      Target architecture (default: x86_64)"
             echo "  --clean          Remove build directory and start fresh"
-            echo "  --skip-chromium  Skip Chromium build (use pre-built binary)"
+            echo "  --skip-chromium  Use Debian's packaged Chromium instead of building"
             exit 0
             ;;
     esac
 done
 
+# Resolve Debian arch name
+case "$ARCH" in
+    x86_64)  DEB_ARCH="amd64" ; KERNEL_ARCH="amd64" ;;
+    aarch64) DEB_ARCH="arm64" ; KERNEL_ARCH="arm64" ;;
+    *)       echo "ERROR: Unsupported arch: $ARCH"; exit 1 ;;
+esac
+
 echo ""
 echo "  🐋 ═══════════════════════════════════════════════════════"
-echo "  🐋  AInux Build System"
-echo "  🐋  Building AI Agentic Operating System..."
+echo "  🐋  TensorAgent OS Build System"
+echo "  🐋  Target: ${ARCH} (Debian Bookworm)"
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo ""
 
-# ─── Prerequisites Check ────────────────────────────────────────────────────
-
-echo "[1/7] Checking prerequisites..."
-REQUIRED_CMDS="gcc g++ make git python3 wget curl tar xz patch"
+# ─── Prerequisites Check ────────────────────────────────────────
+echo "[1/8] Checking prerequisites..."
+REQUIRED_CMDS="debootstrap xorriso mtools mksquashfs"
+MISSING=""
 for cmd in $REQUIRED_CMDS; do
     if ! command -v "$cmd" &> /dev/null; then
-        echo "ERROR: Required command '$cmd' not found."
-        echo "Install build essentials: sudo apt install build-essential git python3 wget curl xz-utils"
-        exit 1
+        MISSING="$MISSING $cmd"
     fi
 done
 
-# Check disk space (need at least 50GB)
-AVAILABLE_SPACE=$(df -BG "${AINUX_ROOT}" | tail -1 | awk '{print $4}' | tr -d 'G')
-if [ "${AVAILABLE_SPACE}" -lt 50 ]; then
-    echo "WARNING: Only ${AVAILABLE_SPACE}GB available. AInux build needs ~100-150GB."
+if [ -n "$MISSING" ]; then
+    echo "Missing tools:$MISSING"
+    echo "Install: sudo apt install debootstrap xorriso mtools squashfs-tools"
+    exit 1
+fi
+
+# Cross-compilation check for aarch64
+if [ "$ARCH" = "aarch64" ] && ! command -v qemu-aarch64-static &> /dev/null; then
+    echo "ERROR: qemu-user-static needed for aarch64 cross-builds"
+    echo "Install: sudo apt install qemu-user-static binfmt-support"
+    exit 1
 fi
 
 echo "  ✓ Prerequisites OK"
 
-# ─── Clean (optional) ───────────────────────────────────────────────────────
-
+# ─── Clean (optional) ───────────────────────────────────────────
 if [ "$CLEAN" = true ]; then
     echo "[*] Cleaning build directory..."
-    rm -rf "$BUILD_DIR"
+    sudo rm -rf "$BUILD_DIR"
 fi
 
-mkdir -p "$BUILD_DIR"
+mkdir -p "$BUILD_DIR" "$ISO_DIR"
 
-# ─── Clone/Update Buildroot ─────────────────────────────────────────────────
-
-echo "[2/7] Setting up Buildroot ${BUILDROOT_VERSION}..."
-if [ ! -d "$BUILDROOT_DIR" ]; then
-    echo "  Cloning Buildroot..."
-    git clone --depth 1 --branch "${BUILDROOT_VERSION}" \
-        https://github.com/buildroot/buildroot.git "$BUILDROOT_DIR"
+# ─── Create Rootfs via Debootstrap ──────────────────────────────
+echo "[2/8] Creating Debian Bookworm rootfs (${DEB_ARCH})..."
+if [ ! -d "$ROOTFS_DIR" ] || [ "$CLEAN" = true ]; then
+    sudo debootstrap --arch="$DEB_ARCH" \
+        --include=systemd,systemd-sysv,dbus,sudo,bash,curl,wget,git,openssh-server \
+        bookworm "$ROOTFS_DIR" http://deb.debian.org/debian
+    echo "  ✓ Base rootfs created"
 else
-    echo "  Buildroot already present, updating..."
-    cd "$BUILDROOT_DIR" && git fetch && git checkout "${BUILDROOT_VERSION}" 2>/dev/null || true
+    echo "  ✓ Rootfs already exists, skipping debootstrap"
 fi
 
-echo "  ✓ Buildroot ready"
+# ─── Configure Rootfs ──────────────────────────────────────────
+echo "[3/8] Configuring rootfs..."
 
-# ─── Apply AInux Configuration ──────────────────────────────────────────────
+# Mount pseudo-filesystems for chroot
+sudo mount --bind /dev  "${ROOTFS_DIR}/dev"  2>/dev/null || true
+sudo mount --bind /proc "${ROOTFS_DIR}/proc" 2>/dev/null || true
+sudo mount --bind /sys  "${ROOTFS_DIR}/sys"  2>/dev/null || true
 
-echo "[3/7] Applying AInux configuration..."
-cd "$BUILDROOT_DIR"
+# Set hostname
+echo "tensoragent" | sudo tee "${ROOTFS_DIR}/etc/hostname" > /dev/null
 
-# Set external tree
-export BR2_EXTERNAL="${AINUX_ROOT}/buildroot-external"
+# Configure apt sources with non-free for firmware
+sudo tee "${ROOTFS_DIR}/etc/apt/sources.list" > /dev/null << 'SOURCES'
+deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+SOURCES
 
-# Copy our defconfig
-cp "${AINUX_ROOT}/configs/ainux_defconfig" \
-   "${BUILDROOT_DIR}/configs/ainux_defconfig"
+echo "  ✓ Base configuration applied"
 
-# Load the configuration
-make ainux_defconfig O="${OUTPUT_DIR}"
+# ─── Install System Dependencies ───────────────────────────────
+echo "[4/8] Installing system dependencies in chroot..."
 
-echo "  ✓ Configuration applied"
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    export DEBIAN_FRONTEND=noninteractive
 
-# ─── Chromium Build (optional) ──────────────────────────────────────────────
+    apt-get update -qq
 
-if [ "$SKIP_CHROMIUM" = false ]; then
-    echo "[4/7] Building Chromium from source (this takes 6-8 hours)..."
-    echo "  This is the longest step. Go get coffee ☕"
-    
-    CHROMIUM_BUILD="${BUILD_DIR}/chromium"
-    mkdir -p "$CHROMIUM_BUILD"
-    
-    # Download depot_tools
-    if [ ! -d "${BUILD_DIR}/depot_tools" ]; then
-        git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git \
-            "${BUILD_DIR}/depot_tools"
+    # Core system
+    apt-get install -y -qq \
+        linux-image-'"$KERNEL_ARCH"' grub-efi-'"$DEB_ARCH"' \
+        systemd-boot firmware-linux \
+        2>/dev/null || apt-get install -y -qq linux-image-'"$KERNEL_ARCH"' grub-efi
+
+    # Graphics & Wayland
+    apt-get install -y -qq \
+        mesa-utils libgl1-mesa-dri libglx-mesa0 libegl-mesa0 \
+        wayland-protocols libwayland-dev weston cage \
+        xwayland xdg-utils
+
+    # Qt6 (for WhaleOS shell)
+    apt-get install -y -qq \
+        qt6-base-dev qt6-declarative-dev \
+        qt6-wayland-dev qt6-wayland \
+        qml6-module-qtquick qml6-module-qtquick-controls \
+        qml6-module-qtquick-layouts qml6-module-qtwayland-compositor \
+        libqt6waylandcompositor6 \
+        2>/dev/null || echo "  ⚠ Some Qt6 packages unavailable, will build from source"
+
+    # PAM (for secure authentication)
+    apt-get install -y -qq libpam0g-dev
+
+    # Node.js 22.x
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    apt-get install -y -qq nodejs
+
+    # Python & AI tools
+    apt-get install -y -qq python3 python3-pip python3-venv sqlite3
+
+    # Multimedia & utilities
+    apt-get install -y -qq \
+        ffmpeg chromium mousepad galculator \
+        htop tmux ripgrep jq tree \
+        fonts-dejavu fonts-noto fontconfig \
+        pipewire pipewire-alsa wireplumber \
+        xsel wl-clipboard
+
+    # Flatpak (dynamic package management)
+    apt-get install -y -qq flatpak
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
+
+    # Clean apt cache
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+'
+
+echo "  ✓ Dependencies installed"
+
+# ─── Create User ───────────────────────────────────────────────
+echo "[5/8] Creating default user..."
+
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    if ! id ainux 2>/dev/null; then
+        useradd -m -s /bin/bash -G sudo,video,audio,input,render ainux
+        echo "ainux:ainux" | chpasswd
+        echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/nopasswd
+        chmod 440 /etc/sudoers.d/nopasswd
     fi
-    export PATH="${BUILD_DIR}/depot_tools:$PATH"
-    
-    # Fetch Chromium source
-    if [ ! -d "${CHROMIUM_BUILD}/src" ]; then
-        cd "$CHROMIUM_BUILD"
-        fetch --nohooks chromium
-        cd src
-        gclient runhooks
-    fi
-    
-    cd "${CHROMIUM_BUILD}/src"
-    
-    # Apply AInux patches
-    echo "  Applying AInux patches..."
-    for patch in "${AINUX_ROOT}/packages/chromium/patches/"*.patch; do
-        if [ -f "$patch" ]; then
-            echo "    Applying $(basename "$patch")..."
-            git apply "$patch" 2>/dev/null || patch -p1 < "$patch" || true
-        fi
-    done
-    
-    # Generate build files
-    echo "  Generating build files..."
-    gn gen out/AInux --args='
-        is_debug = false
-        is_official_build = true
-        is_component_build = false
-        enable_nacl = false
-        use_ozone = true
-        ozone_platform = "wayland"
-        ozone_auto_platforms = false
-        ozone_platform_wayland = true
-        ozone_platform_x11 = false
-        enable_experimental_web_platform_features = true
-        proprietary_codecs = true
-        ffmpeg_branding = "Chrome"
-        use_vaapi = true
-        use_pulseaudio = false
-        use_pipewire = true
-        rtc_use_pipewire = true
-        chrome_pgo_phase = 0
-        symbol_level = 0
-        blink_symbol_level = 0
-        v8_symbol_level = 0
-    '
-    
-    # Build
-    echo "  Building Chromium (this will take a while)..."
-    ninja -j$(nproc) -C out/AInux chrome
-    
-    echo "  ✓ Chromium built successfully"
-else
-    echo "[4/7] Skipping Chromium build (--skip-chromium)"
-fi
+'
 
-# ─── Build Rootfs ───────────────────────────────────────────────────────────
+echo "  ✓ User created (ainux/ainux)"
 
-echo "[5/7] Building Linux kernel and root filesystem..."
-cd "$BUILDROOT_DIR"
-make O="${OUTPUT_DIR}" -j$(nproc)
+# ─── Integrate OpenWhale + WhaleOS ─────────────────────────────
+echo "[6/8] Installing OpenWhale + WhaleOS..."
 
-echo "  ✓ Root filesystem built"
+# Copy OpenWhale
+sudo mkdir -p "${ROOTFS_DIR}/opt/ainux"
+sudo cp -r "${AINUX_ROOT}/packages/openwhale" "${ROOTFS_DIR}/opt/ainux/"
+sudo cp -r "${AINUX_ROOT}/packages/whaleos"   "${ROOTFS_DIR}/opt/ainux/"
 
-# ─── Integrate Chromium ─────────────────────────────────────────────────────
+# Install OpenWhale dependencies
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    cd /opt/ainux/openwhale
+    npm install --omit=dev 2>/dev/null || true
+'
 
-echo "[6/7] Integrating Chromium into rootfs..."
-if [ "$SKIP_CHROMIUM" = false ] && [ -f "${CHROMIUM_BUILD}/src/out/AInux/chrome" ]; then
-    ROOTFS_DIR="${OUTPUT_DIR}/target"
-    mkdir -p "${ROOTFS_DIR}/opt/ainux/chromium"
-    cp "${CHROMIUM_BUILD}/src/out/AInux/chrome" "${ROOTFS_DIR}/opt/ainux/chromium/"
-    cp "${CHROMIUM_BUILD}/src/out/AInux/"*.pak "${ROOTFS_DIR}/opt/ainux/chromium/" 2>/dev/null || true
-    cp "${CHROMIUM_BUILD}/src/out/AInux/"*.dat "${ROOTFS_DIR}/opt/ainux/chromium/" 2>/dev/null || true
-    cp "${CHROMIUM_BUILD}/src/out/AInux/"*.bin "${ROOTFS_DIR}/opt/ainux/chromium/" 2>/dev/null || true
-    cp -r "${CHROMIUM_BUILD}/src/out/AInux/locales" "${ROOTFS_DIR}/opt/ainux/chromium/" 2>/dev/null || true
-    echo "  ✓ Chromium integrated"
-else
-    echo "  ⚠ No Chromium build found, image will use system Chromium"
-fi
+# Build WhaleOS shell
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    cd /opt/ainux/whaleos
+    bash build.sh
+'
 
-# ─── Generate ISO ───────────────────────────────────────────────────────────
+echo "  ✓ OpenWhale + WhaleOS installed"
 
-echo "[7/7] Generating bootable ISO..."
-cd "$BUILDROOT_DIR"
-make O="${OUTPUT_DIR}" -j$(nproc)
+# ─── Configure Systemd Services ───────────────────────────────
+echo "[7/8] Configuring systemd services..."
 
-ISO_PATH="${OUTPUT_DIR}/images/rootfs.iso9660"
-if [ -f "$ISO_PATH" ]; then
-    FINAL_ISO="${AINUX_ROOT}/ainux.iso"
-    cp "$ISO_PATH" "$FINAL_ISO"
-    
-    SIZE=$(du -h "$FINAL_ISO" | cut -f1)
-    echo ""
-    echo "  🐋 ═══════════════════════════════════════════════════════"
-    echo "  🐋  BUILD COMPLETE!"
-    echo "  🐋  ISO: ${FINAL_ISO} (${SIZE})"
-    echo "  🐋"
-    echo "  🐋  Test with QEMU:"
-    echo "  🐋    ./scripts/run-qemu.sh"
-    echo "  🐋"
-    echo "  🐋  Flash to USB:"
-    echo "  🐋    sudo dd if=ainux.iso of=/dev/sdX bs=4M status=progress"
-    echo "  🐋 ═══════════════════════════════════════════════════════"
-    echo ""
-else
-    echo "ERROR: ISO generation failed. Check build logs."
-    exit 1
-fi
+# OpenWhale service
+sudo tee "${ROOTFS_DIR}/etc/systemd/system/openwhale.service" > /dev/null << 'OWSERVICE'
+[Unit]
+Description=OpenWhale AI Platform
+After=network.target
+
+[Service]
+Type=simple
+User=ainux
+WorkingDirectory=/opt/ainux/openwhale
+ExecStart=/usr/bin/node openwhale.mjs
+Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+OWSERVICE
+
+# WhaleOS GUI service (Cage compositor running WhaleOS)
+sudo tee "${ROOTFS_DIR}/etc/systemd/system/ainux-gui.service" > /dev/null << 'GUISERVICE'
+[Unit]
+Description=TensorAgent OS Desktop Shell
+After=openwhale.service
+Wants=openwhale.service
+
+[Service]
+Type=simple
+User=ainux
+PAMName=login
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+Environment=WLR_NO_HARDWARE_CURSORS=1
+Environment=QT_QPA_PLATFORM=wayland
+Environment=QSG_RENDER_LOOP=basic
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/bin/cage -- /opt/ainux/whaleos/whaleos
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical.target
+GUISERVICE
+
+# Enable services
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    systemctl enable openwhale.service
+    systemctl enable ainux-gui.service
+    systemctl set-default graphical.target
+    # Enable loginctl for multi-seat support
+    systemctl enable systemd-logind
+'
+
+# Auto-login on tty1
+sudo mkdir -p "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
+sudo tee "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf" > /dev/null << 'AUTOLOGIN'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin ainux --noclear %I $TERM
+AUTOLOGIN
+
+echo "  ✓ Services configured"
+
+# ─── Generate Bootable ISO ────────────────────────────────────
+echo "[8/8] Generating bootable ISO..."
+
+# Create squashfs from rootfs
+sudo umount "${ROOTFS_DIR}/dev"  2>/dev/null || true
+sudo umount "${ROOTFS_DIR}/proc" 2>/dev/null || true
+sudo umount "${ROOTFS_DIR}/sys"  2>/dev/null || true
+
+sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/filesystem.squashfs" \
+    -comp xz -Xbcj x86 -b 1M -no-exports -noappend 2>/dev/null || \
+sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/filesystem.squashfs" \
+    -comp gzip -b 1M -no-exports -noappend
+
+# Copy kernel and initrd for live boot
+sudo cp "${ROOTFS_DIR}/boot/vmlinuz-"*  "${ISO_DIR}/vmlinuz"  2>/dev/null || true
+sudo cp "${ROOTFS_DIR}/boot/initrd.img-"* "${ISO_DIR}/initrd"  2>/dev/null || true
+
+# Create GRUB config
+sudo mkdir -p "${ISO_DIR}/boot/grub"
+sudo tee "${ISO_DIR}/boot/grub/grub.cfg" > /dev/null << 'GRUB'
+set timeout=3
+set default=0
+
+menuentry "TensorAgent OS" {
+    linux /vmlinuz boot=live quiet splash
+    initrd /initrd
+}
+
+menuentry "TensorAgent OS (Safe Mode)" {
+    linux /vmlinuz boot=live nomodeset
+    initrd /initrd
+}
+GRUB
+
+# Build ISO with xorriso
+FINAL_ISO="${AINUX_ROOT}/tensoragent-os-${ARCH}.iso"
+xorriso -as mkisofs \
+    -iso-level 3 \
+    -o "$FINAL_ISO" \
+    -full-iso9660-filenames \
+    -volid "TENSORAGENT" \
+    --grub2-boot-info \
+    --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+    -eltorito-boot boot/grub/grub.img \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    --eltorito-catalog boot/grub/boot.cat \
+    "$ISO_DIR" 2>/dev/null || \
+xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" "$ISO_DIR"
+
+SIZE=$(du -h "$FINAL_ISO" | cut -f1)
+echo ""
+echo "  🐋 ═══════════════════════════════════════════════════════"
+echo "  🐋  BUILD COMPLETE!"
+echo "  🐋  ISO: ${FINAL_ISO} (${SIZE})"
+echo "  🐋  Arch: ${ARCH}"
+echo "  🐋"
+echo "  🐋  Test with QEMU:"
+echo "  🐋    ./scripts/run-qemu.sh"
+echo "  🐋"
+echo "  🐋  Flash to USB:"
+echo "  🐋    sudo dd if=${FINAL_ISO} of=/dev/sdX bs=4M status=progress"
+echo "  🐋 ═══════════════════════════════════════════════════════"
+echo ""

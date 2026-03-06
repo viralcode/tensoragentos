@@ -260,7 +260,7 @@ Rectangle {
                 MouseArea {
                     id: agentPickerMa; anchors.fill: parent; hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: showAgentPicker = !showAgentPicker
+                    onClicked: { if (!showAgentPicker) loadAgents(); showAgentPicker = !showAgentPicker; }
                 }
             }
 
@@ -1431,25 +1431,21 @@ Rectangle {
                             for (var i = 0; i < keys.length; i++) {
                                 if (fanOutChecked[keys[i]]) agents.push(keys[i]);
                             }
-                            if (agents.length === 0) { root.showToast("Select at least one agent", "error"); return; }
+                            if (agents.length < 2) { root.showToast("Select at least 2 agents for fan-out", "error"); return; }
 
-                            var xhr = new XMLHttpRequest();
-                            xhr.open("POST", root.apiBase + "/agents/fan-out");
-                            xhr.setRequestHeader("Content-Type", "application/json");
-                            xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
-                            xhr.onreadystatechange = function() {
-                                if (xhr.readyState === 4) {
-                                    if (xhr.status === 200) {
-                                        root.showToast("Multi-agent task dispatched!", "success");
-                                    } else {
-                                        root.showToast("Fan-out failed (HTTP " + xhr.status + ")", "error");
-                                    }
-                                }
-                            };
-                            xhr.send(JSON.stringify({ task: task, agents: agents }));
+                            // Build directive message matching the dashboard's launchMultiAgentTask() pattern
+                            var taskListStr = "";
+                            for (var j = 0; j < agents.length; j++) {
+                                taskListStr += "  - Agent \"" + agents[j] + "\" (label: \"" + agents[j] + "\")\n";
+                            }
+                            var directive = "[Fan-Out Task] Use sessions_fanout to split this task across " + agents.length + " agents and wait for all results:\n\nOverall task: " + task + "\n\nAgent assignments:\n" + taskListStr;
+
+                            // Send as a regular chat message via /chat/stream
+                            chatInput.text = directive;
                             showFanOutModal = false;
                             fanOutTaskInput.text = "";
                             fanOutChecked = ({});
+                            sendMessage();
                         }
                     }
                 }

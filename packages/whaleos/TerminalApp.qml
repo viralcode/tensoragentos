@@ -8,12 +8,20 @@ Rectangle {
 
     property var outputLines: []
     property bool isRunning: false
-    property string currentCwd: "/home/ainux"
+    property string currentCwd: ""
     property var cmdHistory: []
     property int historyIndex: -1
     property string savedInput: ""
+    property string activeCommandId: ""
 
     Component.onCompleted: {
+        // Dynamically resolve the user's home directory
+        try {
+            var result = JSON.parse(sysManager.runCommand("echo $HOME", ""));
+            currentCwd = (result.stdout || "").trim() || "/home";
+        } catch(e) {
+            currentCwd = "/home";
+        }
         appendLine("TensorAgent OS — Terminal");
         appendLine("System shell access. Type commands and press Enter.");
         appendLine("Type 'help' for available shortcuts.");
@@ -21,10 +29,57 @@ Rectangle {
         cmdInput.forceActiveFocus();
     }
 
+    // ════════════════════════════════════════════════
+    // ── Async Command Signal Handlers
+    // ════════════════════════════════════════════════
+
+    Connections {
+        target: sysManager
+
+        function onCommandOutput(cmdId, data) {
+            if (cmdId !== activeCommandId) return;
+            appendLines(data);
+        }
+
+        function onCommandError(cmdId, data) {
+            if (cmdId !== activeCommandId) return;
+            var parts = data.split("\n");
+            for (var i = 0; i < parts.length; i++) {
+                if (parts[i]) appendLine(parts[i]);
+            }
+        }
+
+        function onCommandFinished(cmdId, exitCode, cwd) {
+            if (cmdId !== activeCommandId) return;
+            activeCommandId = "";
+            isRunning = false;
+            if (cwd) currentCwd = cwd;
+
+            if (exitCode === 124) {
+                appendLine("bash: command timed out (use SSH for long-running tasks)");
+            }
+
+            cmdInput.forceActiveFocus();
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Helpers
+    // ════════════════════════════════════════════════
+
     function getPrompt() {
         var dir = currentCwd;
-        dir = dir.replace("/home/ainux", "~");
-        return "ainux@tensoragent:" + dir + "$ ";
+        // Replace home dir with ~ for display
+        try {
+            var home = JSON.parse(sysManager.runCommand("echo $HOME", "")).stdout.trim();
+            if (home && dir.indexOf(home) === 0) {
+                dir = "~" + dir.substring(home.length);
+            }
+        } catch(e) {
+            dir = dir.replace(/^\/home\/[^/]+/, "~");
+        }
+        var user = root.currentUser || "user";
+        return user + "@tensoragent:" + dir + "$ ";
     }
 
     function appendLine(text) {
@@ -70,7 +125,7 @@ Rectangle {
                     width: termCol.width
                     text: modelData
                     color: {
-                        if (modelData.indexOf("ainux@tensoragent:") === 0) return "#60a5fa";
+                        if (modelData.indexOf("@tensoragent:") > 0) return "#60a5fa";
                         if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
                         if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
                         if (modelData.indexOf("command not found") >= 0) return "#f59e0b";
@@ -134,6 +189,7 @@ Rectangle {
                         if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
                             if (isRunning) {
                                 isRunning = false;
+                                activeCommandId = "";
                                 appendLine("^C");
                             } else {
                                 appendLine(getPrompt() + cmdInput.text + "^C");
@@ -149,7 +205,7 @@ Rectangle {
                 }
             }
 
-            // ── Busy line while command runs ──
+            // ── Busy indicator while command runs ──
             Row {
                 visible: isRunning
                 width: termCol.width
@@ -163,7 +219,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: "..."
+                    text: "running..."
                     color: "#f59e0b"
                     font.pixelSize: Math.round(13 * root.sf)
                     font.family: "monospace"
@@ -184,6 +240,10 @@ Rectangle {
             });
         }
     }
+
+    // ════════════════════════════════════════════════
+    // ── Command History Navigation
+    // ════════════════════════════════════════════════
 
     function navigateHistory(direction) {
         if (cmdHistory.length === 0) return;
@@ -206,7 +266,10 @@ Rectangle {
         }
     }
 
-    // Commands that block waiting for stdin when run without arguments
+    // ════════════════════════════════════════════════
+    // ── Interactive Command Detection
+    // ════════════════════════════════════════════════
+
     property var interactiveCommands: ["cat", "less", "more", "head", "tail", "grep", "sort",
                                        "top", "htop", "vim", "vi", "nano", "emacs", "pico",
                                        "python", "python3", "node", "irb", "ruby", "bash", "sh",
@@ -214,26 +277,27 @@ Rectangle {
                                        "read", "watch", "journalctl", "man", "info"]
 
     function isInteractiveStdin(cmd) {
-        // Extract the base command (first word)
         var parts = cmd.trim().split(/\s+/);
-        var base = parts[0].split("/").pop(); // handle /usr/bin/cat etc.
-        // Check if it's in the interactive list AND has no arguments (or only flags)
+        var base = parts[0].split("/").pop();
         if (interactiveCommands.indexOf(base) >= 0) {
-            // Has at least one non-flag argument? Then it's probably OK
             var hasFileArg = false;
             for (var i = 1; i < parts.length; i++) {
                 if (!parts[i].startsWith("-") && parts[i] !== "") {
                     hasFileArg = true; break;
                 }
             }
-            // Special case: journalctl --follow / tail -f still block
-            if (cmd.indexOf("-f") >= 0 || cmd.indexOf("--follow") >= 0 || cmd.indexOf("--no-pager") < 0 && base === "journalctl") {
+            if (cmd.indexOf("-f") >= 0 || cmd.indexOf("--follow") >= 0
+                || (cmd.indexOf("--no-pager") < 0 && base === "journalctl")) {
                 return !cmd.includes("--no-pager");
             }
             return !hasFileArg;
         }
         return false;
     }
+
+    // ════════════════════════════════════════════════
+    // ── Command Execution (Async)
+    // ════════════════════════════════════════════════
 
     function executeCommand() {
         var cmd = cmdInput.text.trim();
@@ -244,6 +308,7 @@ Rectangle {
 
         if (!cmd) return;
 
+        // Add to history
         if (cmdHistory.length === 0 || cmdHistory[cmdHistory.length - 1] !== cmd) {
             var hist = cmdHistory.slice();
             hist.push(cmd);
@@ -251,6 +316,7 @@ Rectangle {
             cmdHistory = hist;
         }
 
+        // Built-in commands
         if (cmd === "clear") { outputLines = []; return; }
         if (cmd === "exit") { appendLine("Use the close button to close the terminal."); return; }
 
@@ -285,7 +351,6 @@ Rectangle {
         }
 
         // ── Stdin-blocking protection ──
-        // Catch bare interactive commands before they freeze the UI
         if (isInteractiveStdin(cmd)) {
             var base = cmd.trim().split(/\s+/)[0].split("/").pop();
             appendLine("bash: " + base + ": requires a file argument in this terminal");
@@ -294,31 +359,24 @@ Rectangle {
             return;
         }
 
-        isRunning = true;
-
-        // Wrap with timeout 10s + stdin redirected from /dev/null to prevent any blocking
-        var safeCmd = "timeout 10s bash -c " + JSON.stringify(cmd) + " < /dev/null";
-        var resultStr = sysManager.runCommand(safeCmd, currentCwd);
-        isRunning = false;
-
-        try {
-            var data = JSON.parse(resultStr);
-            if (data.cwd) currentCwd = data.cwd;
-            if (data.stdout) appendLines(data.stdout);
-            if (data.stderr) {
-                var errParts = data.stderr.split("\n");
-                for (var i = 0; i < errParts.length; i++) {
-                    if (errParts[i]) appendLine(errParts[i]);
+        // ── Handle 'cd' locally (synchronous, instant) ──
+        if (cmd.trim().startsWith("cd ") || cmd.trim() === "cd") {
+            var cdResult = sysManager.runCommand(cmd + " && pwd", currentCwd);
+            try {
+                var d = JSON.parse(cdResult);
+                if (d.exitCode === 0 && d.stdout) {
+                    currentCwd = d.stdout.trim();
+                } else if (d.stderr) {
+                    appendLine(d.stderr.trim());
                 }
-            }
-            // If timeout killed the command, add a hint
-            if (data.exitCode === 124) {
-                appendLine("bash: command timed out after 10 seconds (use SSH for long-running tasks)");
-            }
-        } catch(e) {
-            appendLine("Error: " + (resultStr || "Unknown error"));
+            } catch(e) {}
+            cmdInput.forceActiveFocus();
+            return;
         }
 
-        cmdInput.forceActiveFocus();
+        // ── Async execution: non-blocking, streams output in real-time ──
+        isRunning = true;
+        var safeCmd = "timeout 30s bash -c " + JSON.stringify(cmd) + " < /dev/null 2>&1";
+        activeCommandId = sysManager.runCommandAsync(safeCmd, currentCwd);
     }
 }

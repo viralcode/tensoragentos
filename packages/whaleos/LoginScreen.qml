@@ -234,7 +234,7 @@ Rectangle {
                                 id: userField; width: parent.width - Math.round(28 * root.sf)
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: "#fff"; font.pixelSize: Math.round(14 * root.sf); clip: true
-                                text: "ainux"
+                                text: ""
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: "Enter username"; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(14 * root.sf); visible: !parent.text && !parent.activeFocus }
                             }
                         }
@@ -275,7 +275,7 @@ Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: "#fff"; font.pixelSize: Math.round(14 * root.sf)
                                 echoMode: TextInput.Password; clip: true
-                                text: "ainux"
+                                text: ""
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: "Enter password"; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(14 * root.sf); visible: !parent.text && !parent.activeFocus }
                                 Keys.onReturnPressed: doLogin()
                             }

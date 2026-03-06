@@ -1,19 +1,20 @@
 {
-    "name": "ainux",
-    "version": "0.1.0",
-    "description": "AInux — Bootable AI Agentic Operating System powered by OpenWhale",
+    "name": "tensoragent-os",
+    "version": "0.2.0",
+    "description": "TensorAgent OS — AI-Native Operating System powered by OpenWhale",
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "node packages/core/src/kernel.js",
-        "build:gui": "cd packages/gui && npm run build",
+        "dev": "node packages/openwhale/openwhale.mjs",
+        "build:shell": "cd packages/whaleos && bash build.sh",
         "build:iso": "bash scripts/build-iso.sh",
+        "build:iso:arm64": "bash scripts/build-iso.sh --arch=aarch64",
+        "setup:vm": "bash vm/setup.sh",
         "test:qemu": "bash scripts/run-qemu.sh",
-        "lint": "eslint packages/*/src/**/*.{js,jsx}"
+        "lint": "eslint packages/*/src/**/*.{js,jsx,ts}"
     },
     "workspaces": [
-        "packages/core",
-        "packages/gui"
+        "packages/openwhale"
     ],
     "author": "Jijo John",
     "license": "MIT"

@@ -1,3 +1,12 @@
+/*
+ * WhaleOS — TensorAgent OS Native Desktop Shell
+ *
+ * Entry point for the Qt6 QML Wayland compositor.
+ * Registers SystemManager for kernel-level OS operations,
+ * installs a global clipboard event filter, and loads the
+ * QML compositor from /opt/ainux/whaleos/main.qml.
+ */
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -9,57 +18,70 @@
 #include <QFontDatabase>
 #include "systemmanager.h"
 
-// Global clipboard event filter — intercepts Ctrl+V and Ctrl+C
-// before Qt's broken Wayland clipboard handler processes them
+
+// ════════════════════════════════════════════════════════════════
+// Global clipboard event filter
+//
+// Intercepts Ctrl+V and Ctrl+C before Qt's broken Wayland
+// clipboard handler processes them, using SystemManager's
+// wl-paste / xsel based clipboard sync.
+// ════════════════════════════════════════════════════════════════
+
 class ClipboardFilter : public QObject {
     Q_OBJECT
 public:
     explicit ClipboardFilter(SystemManager *mgr, QObject *parent = nullptr)
         : QObject(parent), m_mgr(mgr) {}
-    
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override {
-        if (event->type() == QEvent::KeyPress) {
-            QKeyEvent *ke = static_cast<QKeyEvent *>(event);
-            
-            // Ctrl+V — Paste
-            if (ke->key() == Qt::Key_V && (ke->modifiers() & Qt::ControlModifier)) {
-                QString text = m_mgr->pasteFromClipboard();
-                if (!text.isEmpty()) {
-                    // Send as input method event to the focused item
-                    QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
-                    if (app && app->focusObject()) {
-                        QInputMethodEvent ime;
-                        ime.setCommitString(text);
-                        QCoreApplication::sendEvent(app->focusObject(), &ime);
-                        qDebug() << "ClipboardFilter: Pasted" << text.length() << "chars";
-                    }
-                    return true;  // Consume the event
-                }
-            }
-            
-            // Ctrl+C — Copy
-            if (ke->key() == Qt::Key_C && (ke->modifiers() & Qt::ControlModifier)) {
+        if (event->type() != QEvent::KeyPress)
+            return QObject::eventFilter(obj, event);
+
+        QKeyEvent *ke = static_cast<QKeyEvent *>(event);
+
+        // Ctrl+V — Paste
+        if (ke->key() == Qt::Key_V && (ke->modifiers() & Qt::ControlModifier)) {
+            QString text = m_mgr->pasteFromClipboard();
+            if (!text.isEmpty()) {
                 QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
                 if (app && app->focusObject()) {
-                    QQuickItem *item = qobject_cast<QQuickItem *>(app->focusObject());
-                    if (item) {
-                        QVariant sel = item->property("selectedText");
-                        if (sel.isValid() && !sel.toString().isEmpty()) {
-                            m_mgr->copyToClipboard(sel.toString());
-                            qDebug() << "ClipboardFilter: Copied" << sel.toString().length() << "chars";
-                            return true;
-                        }
+                    QInputMethodEvent ime;
+                    ime.setCommitString(text);
+                    QCoreApplication::sendEvent(app->focusObject(), &ime);
+                    qDebug() << "ClipboardFilter: Pasted" << text.length() << "chars";
+                }
+                return true;
+            }
+        }
+
+        // Ctrl+C — Copy
+        if (ke->key() == Qt::Key_C && (ke->modifiers() & Qt::ControlModifier)) {
+            QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
+            if (app && app->focusObject()) {
+                QQuickItem *item = qobject_cast<QQuickItem *>(app->focusObject());
+                if (item) {
+                    QVariant sel = item->property("selectedText");
+                    if (sel.isValid() && !sel.toString().isEmpty()) {
+                        m_mgr->copyToClipboard(sel.toString());
+                        qDebug() << "ClipboardFilter: Copied" << sel.toString().length() << "chars";
+                        return true;
                     }
                 }
             }
         }
+
         return QObject::eventFilter(obj, event);
     }
-    
+
 private:
     SystemManager *m_mgr;
 };
+
+
+// ════════════════════════════════════════════════════════════════
+// main()
+// ════════════════════════════════════════════════════════════════
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -67,8 +89,6 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("TensorAgentOS");
 
     // ── Register Font Awesome fonts BEFORE QML loads ──
-    // This is the only reliable approach: QFontDatabase makes fonts available
-    // by family name immediately, without needing FontLoader or file:// paths.
     const QString fontDir = "/opt/ainux/whaleos/fonts";
     QStringList fontFiles = {
         fontDir + "/fa-solid-900.ttf",
@@ -85,6 +105,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // ── QML Engine ──
     QQmlApplicationEngine engine;
 
     // Register SystemManager for kernel-level OS operations
@@ -108,6 +129,7 @@ int main(int argc, char *argv[]) {
                 qWarning() << "QML Warning:" << w.toString();
         });
 
+    // Load the compositor QML
     qDebug() << "TensorAgent OS: Loading main.qml from /opt/ainux/whaleos/main.qml";
     engine.load(QUrl::fromLocalFile("/opt/ainux/whaleos/main.qml"));
 
@@ -116,7 +138,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Pass main window to SystemManager for X11 window operations
+    // Pass main window to SystemManager for display operations
     QQuickWindow *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     if (mainWindow) {
         sysManager.setMainWindow(mainWindow);

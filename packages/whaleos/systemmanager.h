@@ -1,3 +1,16 @@
+/*
+ * SystemManager — TensorAgent OS kernel-level operations
+ *
+ * Provides QML-callable methods for:
+ *   • PAM-based authentication (replaces insecure /etc/shadow parsing)
+ *   • Asynchronous shell command execution (non-blocking UI)
+ *   • User management (add/delete/password)
+ *   • File system operations
+ *   • Clipboard sync (Qt ↔ Wayland ↔ XWayland)
+ *   • Display settings (wlr-randr / xrandr)
+ *   • Native app launching with dynamic environment
+ */
+
 #ifndef SYSTEMMANAGER_H
 #define SYSTEMMANAGER_H
 
@@ -17,19 +30,94 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QMimeData>
-#include <crypt.h>
+#include <QUuid>
+
+#include <security/pam_appl.h>
+#include <pwd.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <cstring>
+
+// ════════════════════════════════════════════════════════════════
+// PAM conversation callback — feeds password to PAM non-interactively
+// ════════════════════════════════════════════════════════════════
+
+static int pamConversation(int numMsg, const struct pam_message **msg,
+                           struct pam_response **resp, void *appdata) {
+    const char *password = static_cast<const char *>(appdata);
+    if (numMsg <= 0 || numMsg > PAM_MAX_NUM_MSG) return PAM_CONV_ERR;
+
+    struct pam_response *reply = static_cast<struct pam_response *>(
+        calloc(numMsg, sizeof(struct pam_response)));
+    if (!reply) return PAM_BUF_ERR;
+
+    for (int i = 0; i < numMsg; i++) {
+        if (msg[i]->msg_style == PAM_PROMPT_ECHO_OFF ||
+            msg[i]->msg_style == PAM_PROMPT_ECHO_ON) {
+            reply[i].resp = strdup(password);
+            reply[i].resp_retcode = 0;
+        }
+    }
+
+    *resp = reply;
+    return PAM_SUCCESS;
+}
+
 
 class SystemManager : public QObject {
     Q_OBJECT
 
 public:
-    explicit SystemManager(QObject *parent = nullptr) : QObject(parent), m_mainWindow(nullptr) {}
-
+    explicit SystemManager(QObject *parent = nullptr)
+        : QObject(parent), m_mainWindow(nullptr) {}
 
     void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
-    // ── List real Linux system users (UID >= 1000, excluding nobody/nogroup) ──
+
+    // ════════════════════════════════════════════════
+    // ── Authentication (PAM-based, secure)
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE bool authenticate(const QString &username, const QString &password) {
+        if (username.isEmpty() || password.isEmpty()) return false;
+
+        QByteArray user = username.toUtf8();
+        QByteArray pass = password.toUtf8();
+
+        struct pam_conv conv;
+        conv.conv = pamConversation;
+        conv.appdata_ptr = const_cast<char *>(pass.constData());
+
+        pam_handle_t *pamh = nullptr;
+        int ret = pam_start("login", user.constData(), &conv, &pamh);
+        if (ret != PAM_SUCCESS) {
+            qWarning() << "SystemManager: PAM start failed:" << pam_strerror(pamh, ret);
+            return false;
+        }
+
+        ret = pam_authenticate(pamh, 0);
+        bool authenticated = (ret == PAM_SUCCESS);
+
+        if (authenticated) {
+            // Verify the account is valid (not expired, etc.)
+            ret = pam_acct_mgmt(pamh, 0);
+            if (ret != PAM_SUCCESS) {
+                qWarning() << "SystemManager: PAM account check failed:" << pam_strerror(pamh, ret);
+                authenticated = false;
+            }
+        }
+
+        pam_end(pamh, ret);
+        qDebug() << "SystemManager: Auth" << username << ":"
+                 << (authenticated ? "SUCCESS" : "FAILED");
+        return authenticated;
+    }
+
+
+    // ════════════════════════════════════════════════
+    // ── User Management
+    // ════════════════════════════════════════════════
+
     Q_INVOKABLE QString listUsers() {
         QJsonArray users;
         QFile passwd("/etc/passwd");
@@ -41,19 +129,18 @@ public:
                 QStringList parts = line.split(':');
                 if (parts.size() < 7) continue;
 
-                QString username = parts[0];
+                QString uname = parts[0];
                 int uid = parts[2].toInt();
                 QString shell = parts[6];
 
-                // Only show real users: UID >= 1000, not nobody, has a real shell
-                if (uid >= 1000 && username != "nobody" && username != "nogroup"
+                // Only real users: UID >= 1000, valid shell
+                if (uid >= 1000 && uname != "nobody" && uname != "nogroup"
                     && !shell.contains("nologin") && !shell.contains("false")) {
                     QJsonObject user;
-                    user["username"] = username;
+                    user["username"] = uname;
                     user["uid"] = uid;
                     user["home"] = parts[5];
                     user["shell"] = shell;
-                    // First user (uid 1000) is admin
                     user["role"] = (uid == 1000) ? "admin" : "user";
                     users.append(user);
                 }
@@ -63,18 +150,15 @@ public:
         return QString::fromUtf8(QJsonDocument(users).toJson(QJsonDocument::Compact));
     }
 
-    // ── Add a new Linux system user ──
     Q_INVOKABLE bool addUser(const QString &username, const QString &password) {
         if (username.isEmpty() || password.isEmpty()) return false;
 
-        // Validate username (alphanumeric + underscore, starts with letter)
         QRegularExpression rx("^[a-z_][a-z0-9_-]*$");
         if (!rx.match(username).hasMatch()) {
             qWarning() << "SystemManager: Invalid username:" << username;
             return false;
         }
 
-        // Create user with home directory and bash shell
         QProcess proc;
         proc.start("sudo", QStringList() << "useradd" << "-m" << "-s" << "/bin/bash" << username);
         proc.waitForFinished(5000);
@@ -83,7 +167,6 @@ public:
             return false;
         }
 
-        // Set password
         QProcess chpasswd;
         chpasswd.start("sudo", QStringList() << "chpasswd");
         chpasswd.waitForStarted(3000);
@@ -99,11 +182,9 @@ public:
         return true;
     }
 
-    // ── Delete a Linux system user ──
     Q_INVOKABLE bool deleteUser(const QString &username) {
         if (username.isEmpty()) return false;
 
-        // Prevent deleting the primary admin user (uid 1000)
         QProcess idProc;
         idProc.start("id", QStringList() << "-u" << username);
         idProc.waitForFinished(3000);
@@ -113,7 +194,6 @@ public:
             return false;
         }
 
-        // Delete user and their home directory
         QProcess proc;
         proc.start("sudo", QStringList() << "userdel" << "-r" << username);
         proc.waitForFinished(5000);
@@ -126,7 +206,6 @@ public:
         return true;
     }
 
-    // ── Change a user's password ──
     Q_INVOKABLE bool changePassword(const QString &username, const QString &newPassword) {
         if (username.isEmpty() || newPassword.isEmpty()) return false;
 
@@ -146,69 +225,104 @@ public:
         return true;
     }
 
-    // ── Authenticate user against /etc/shadow (non-blocking, no subprocess) ──
-    // Reads shadow file directly in-process using crypt(3).
-    // Falls back to accepting login if shadow is unreadable (single-user kiosk).
-    Q_INVOKABLE bool authenticate(const QString &username, const QString &password) {
-        if (username.isEmpty() || password.isEmpty()) return false;
-
-        QByteArray user = username.toUtf8();
-        QByteArray pass = password.toUtf8();
-
-        // Try reading /etc/shadow directly (ainux user is in shadow group)
-        QFile shadow("/etc/shadow");
-        if (shadow.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&shadow);
-            while (!in.atEnd()) {
-                QString line = in.readLine().trimmed();
-                if (line.isEmpty() || line.startsWith('#')) continue;
-                QStringList parts = line.split(':');
-                if (parts.size() < 2) continue;
-                if (parts[0] != username) continue;
-
-                QString storedHash = parts[1];
-
-                // Locked/empty account
-                if (storedHash.isEmpty() || storedHash == "!" || storedHash == "*") {
-                    shadow.close();
-                    qDebug() << "SystemManager: Auth" << username << "- account locked";
-                    return false;
-                }
-
-                // Verify using system crypt(3) — instant, no subprocess
-                QByteArray hashBytes = storedHash.toUtf8();
-                const char *result = crypt(pass.constData(), hashBytes.constData());
-                bool ok = result && (strcmp(result, hashBytes.constData()) == 0);
-                shadow.close();
-                qDebug() << "SystemManager: Auth" << username << ":" << (ok ? "SUCCESS" : "FAILED");
-                return ok;
-            }
-            shadow.close();
-            // User not found in shadow
-            qDebug() << "SystemManager: Auth" << username << "- user not found in shadow";
-            return false;
-        }
-
-        // /etc/shadow not readable — fall back to accepting credentials
-        // (safe for single-user kiosk: avoids freezing the UI at boot)
-        qDebug() << "SystemManager: /etc/shadow not readable, accepting login (kiosk fallback)";
-        return true;
-    }
-
-    // ── Get system hostname ──
     Q_INVOKABLE QString getHostname() {
         QFile f("/etc/hostname");
         if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
             return f.readAll().trimmed();
         }
-        return "ainux";
+        return "tensoragent";
     }
 
+
     // ════════════════════════════════════════════════
-    // ── File System Operations (kernel level) ──
+    // ── Asynchronous Shell Command Execution
+    //
+    // runCommand()     — legacy synchronous (kept for short system queries)
+    // runCommandAsync() — non-blocking, emits commandFinished signal
     // ════════════════════════════════════════════════
 
-    // ── Create directory (mkdir -p) ──
+    // Synchronous — safe for sub-second system queries (lspci, pwd, etc.)
+    Q_INVOKABLE QString runCommand(const QString &command, const QString &cwd) {
+        QProcess proc;
+        proc.setWorkingDirectory(cwd.isEmpty() ? currentUserHome() : cwd);
+        proc.setProcessChannelMode(QProcess::SeparateChannels);
+        proc.start("/bin/bash", QStringList() << "-c" << command);
+
+        if (!proc.waitForStarted(5000)) {
+            return buildCommandResult("", "Failed to start command", -1, cwd);
+        }
+
+        // Reduced timeout: 10s max for synchronous calls
+        proc.waitForFinished(10000);
+
+        QString stdoutStr = QString::fromUtf8(proc.readAllStandardOutput());
+        QString stderrStr = QString::fromUtf8(proc.readAllStandardError());
+
+        QString newCwd = cwd.isEmpty() ? currentUserHome() : cwd;
+        if (command.trimmed().startsWith("cd ")) {
+            QProcess pwdProc;
+            pwdProc.setWorkingDirectory(newCwd);
+            pwdProc.start("/bin/bash", QStringList() << "-c" << command + " && pwd");
+            if (pwdProc.waitForFinished(3000)) {
+                QString pwd = QString::fromUtf8(pwdProc.readAllStandardOutput()).trimmed();
+                if (!pwd.isEmpty()) newCwd = pwd;
+            }
+        }
+
+        return buildCommandResult(stdoutStr, stderrStr, proc.exitCode(), newCwd);
+    }
+
+    // Asynchronous — for terminal commands, long-running tasks
+    Q_INVOKABLE QString runCommandAsync(const QString &command, const QString &cwd) {
+        QString cmdId = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+        QString workDir = cwd.isEmpty() ? currentUserHome() : cwd;
+
+        QProcess *proc = new QProcess(this);
+        proc->setWorkingDirectory(workDir);
+        proc->setProcessChannelMode(QProcess::SeparateChannels);
+        proc->setProperty("cmdId", cmdId);
+        proc->setProperty("cmdCwd", workDir);
+        proc->setProperty("cmdCommand", command);
+
+        // Stream stdout incrementally
+        connect(proc, &QProcess::readyReadStandardOutput, this, [this, proc]() {
+            QString cmdId = proc->property("cmdId").toString();
+            QString data = QString::fromUtf8(proc->readAllStandardOutput());
+            emit commandOutput(cmdId, data);
+        });
+
+        // Stream stderr incrementally
+        connect(proc, &QProcess::readyReadStandardError, this, [this, proc]() {
+            QString cmdId = proc->property("cmdId").toString();
+            QString data = QString::fromUtf8(proc->readAllStandardError());
+            emit commandError(cmdId, data);
+        });
+
+        // Completion handler
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int exitCode, QProcess::ExitStatus) {
+            QString cmdId = proc->property("cmdId").toString();
+            QString cwd = proc->property("cmdCwd").toString();
+            emit commandFinished(cmdId, exitCode, cwd);
+            proc->deleteLater();
+        });
+
+        proc->start("/bin/bash", QStringList() << "-c" << command);
+        qDebug() << "SystemManager: async command" << cmdId << "started:" << command;
+        return cmdId;
+    }
+
+signals:
+    void commandOutput(const QString &cmdId, const QString &data);
+    void commandError(const QString &cmdId, const QString &data);
+    void commandFinished(const QString &cmdId, int exitCode, const QString &cwd);
+
+
+    // ════════════════════════════════════════════════
+    // ── File System Operations
+    // ════════════════════════════════════════════════
+
+public:
     Q_INVOKABLE bool createDir(const QString &path) {
         if (path.isEmpty()) return false;
         QDir dir;
@@ -218,7 +332,6 @@ public:
         return ok;
     }
 
-    // ── List directory contents → JSON array ──
     Q_INVOKABLE QString listDirectory(const QString &path) {
         QJsonArray items;
         QDir dir(path);
@@ -236,8 +349,6 @@ public:
             item["size"] = info.isDir() ? 0 : (qint64)info.size();
             item["modified"] = info.lastModified().toString("yyyy-MM-dd HH:mm");
             item["permissions"] = info.isReadable() ? (info.isWritable() ? "rw" : "r") : "-";
-
-            // File extension for icon mapping
             if (!info.isDir()) {
                 item["ext"] = info.suffix().toLower();
             }
@@ -246,7 +357,6 @@ public:
         return QString::fromUtf8(QJsonDocument(items).toJson(QJsonDocument::Compact));
     }
 
-    // ── Read file contents ──
     Q_INVOKABLE QString readFileContent(const QString &path) {
         QFile file(path);
         if (!file.exists()) return "";
@@ -256,7 +366,6 @@ public:
         return content;
     }
 
-    // ── Write file contents ──
     Q_INVOKABLE bool writeFileContent(const QString &path, const QString &content) {
         QFile file(path);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -268,11 +377,9 @@ public:
         return true;
     }
 
-    // ── Delete file or directory ──
     Q_INVOKABLE bool deleteFile(const QString &path) {
         QFileInfo info(path);
         if (!info.exists()) return false;
-
         bool ok;
         if (info.isDir()) {
             QDir dir(path);
@@ -285,7 +392,6 @@ public:
         return ok;
     }
 
-    // ── Rename/move file or directory ──
     Q_INVOKABLE bool renameFile(const QString &oldPath, const QString &newPath) {
         QFile file(oldPath);
         bool ok = file.rename(newPath);
@@ -293,7 +399,6 @@ public:
         return ok;
     }
 
-    // ── Get file info as JSON ──
     Q_INVOKABLE QString getFileInfo(const QString &path) {
         QFileInfo info(path);
         if (!info.exists()) return "{}";
@@ -309,19 +414,47 @@ public:
         return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
     }
 
+    Q_INVOKABLE bool openFile(const QString &path) {
+        QFileInfo info(path);
+        if (!info.exists()) return false;
+
+        QString ext = info.suffix().toLower();
+        QStringList args;
+
+        if (ext == "pdf") {
+            args << "evince" << path;
+        } else if (ext == "xlsx" || ext == "xls" || ext == "ods" || ext == "csv") {
+            args << "gnumeric" << path;
+        } else if (ext == "doc" || ext == "docx" || ext == "odt" || ext == "pptx" || ext == "ppt") {
+            args << "libreoffice" << "--norestore" << path;
+        } else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif"
+                   || ext == "bmp" || ext == "svg" || ext == "webp") {
+            args << "feh" << "--scale-down" << path;
+        } else {
+            args << "xdg-open" << path;
+        }
+
+        QProcess *proc = new QProcess();
+        proc->setProgram(args.takeFirst());
+        proc->setArguments(args);
+        proc->startDetached();
+        qDebug() << "SystemManager: Opening file:" << path;
+        return true;
+    }
+
+
     // ════════════════════════════════════════════════
-    // ── Clipboard Operations (Qt native + X11/Wayland sync) ──
+    // ── Clipboard Operations (Qt ↔ Wayland ↔ XWayland)
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
-        // Primary: Use Qt's native clipboard (works within QML shell)
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             clipboard->setText(text);
             qDebug() << "SystemManager: copyToClipboard via Qt OK";
         }
 
-        // Secondary: Also push to X11 clipboard for XWayland apps
+        // Also push to X11 clipboard for XWayland apps
         {
             QProcess *proc = new QProcess(this);
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -339,12 +472,12 @@ public:
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
-        // Primary: Read from Wayland clipboard (clipboard-sync daemon pushes X11→Wayland)
+        // Primary: Wayland clipboard
         {
             QProcess proc;
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("WAYLAND_DISPLAY", "wayland-0");
-            env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+            env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
             proc.setProcessEnvironment(env);
             proc.start("wl-paste", QStringList() << "--no-newline");
             proc.waitForFinished(2000);
@@ -357,7 +490,7 @@ public:
             }
         }
 
-        // Fallback: Qt's native clipboard
+        // Fallback: Qt native clipboard
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             QString text = clipboard->text();
@@ -370,8 +503,9 @@ public:
         return "";
     }
 
+
     // ════════════════════════════════════════════════
-    // ── Display Settings (via xrandr — works under XWayland on Cage) ──
+    // ── Display Settings (wlr-randr / xrandr)
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE QString getDisplayInfo() {
@@ -379,7 +513,7 @@ public:
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
         proc.start("xrandr", QStringList());
         proc.waitForFinished(3000);
@@ -391,12 +525,12 @@ public:
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
-        // xrandr custom modes use WxH_60.00 naming
+
         QString mode = QString("%1x%2_60.00").arg(w).arg(h);
-        // For the default 1280x800, use the native mode name
         if (w == 1280 && h == 800) mode = "1280x800";
+
         proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--mode" << mode);
         proc.waitForFinished(5000);
         qDebug() << "SystemManager: setDisplayResolution" << mode << "exit:" << proc.exitCode();
@@ -404,14 +538,13 @@ public:
     }
 
     Q_INVOKABLE bool setDisplayScale(double scale) {
-        // Use xrandr transform for scaling
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
         env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
-        // xrandr scale uses inverse: 2x scale = --scale 0.5x0.5
+
         QString scaleStr = QString("%1x%1").arg(1.0 / scale);
         proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--scale" << scaleStr);
         proc.waitForFinished(5000);
@@ -420,47 +553,12 @@ public:
     }
 
 
-    Q_INVOKABLE bool openFile(const QString &path) {
-        QFileInfo info(path);
-        if (!info.exists()) return false;
-
-        QString ext = info.suffix().toLower();
-        QStringList args;
-
-        // PDF → evince
-        if (ext == "pdf") {
-            args << "evince" << path;
-        }
-        // Spreadsheets → gnumeric
-        else if (ext == "xlsx" || ext == "xls" || ext == "ods" || ext == "csv") {
-            args << "gnumeric" << path;
-        }
-        // Documents → libreoffice
-        else if (ext == "doc" || ext == "docx" || ext == "odt" || ext == "pptx" || ext == "ppt") {
-            args << "libreoffice" << "--norestore" << path;
-        }
-        // Images → eog (Eye of GNOME) or feh
-        else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" || ext == "bmp" || ext == "svg" || ext == "webp") {
-            args << "feh" << "--scale-down" << path;
-        }
-        // Text/code → xdg-open (fallback to terminal editor)
-        else {
-            args << "xdg-open" << path;
-        }
-
-        QProcess *proc = new QProcess();
-        proc->setProgram(args.takeFirst());
-        proc->setArguments(args);
-        proc->startDetached();
-        qDebug() << "SystemManager: Opening file:" << path;
-        return true;
-    }
-
     // ════════════════════════════════════════════════
-    // ── Native App Window Management (XWayland + xdotool) ──
-    // Under Cage (Wayland), native apps must run on XWayland.
-    // We launch them with DISPLAY=:0 and use xdotool to
-    // position XWayland windows over QML content areas.
+    // ── Native App Window Management
+    //
+    // Uses Wayland-native approach: apps connect to Cage's
+    // compositor via the inherited WAYLAND_DISPLAY env var.
+    // xdotool is no longer needed.
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE QString getMainWindowId() {
@@ -468,113 +566,45 @@ public:
         return "";
     }
 
-    // Helper: set DISPLAY=:0 on a QProcess so xdotool targets XWayland
-    void setXWaylandEnv(QProcess &proc) {
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("DISPLAY", ":0");
-        proc.setProcessEnvironment(env);
-    }
-
-    // Launch a native app via XWayland (Cage manages display)
     Q_INVOKABLE bool launchNativeApp(const QString &command) {
         if (command.isEmpty()) return false;
 
-        // Bake env vars directly into the shell command to guarantee they're set
+        // Dynamically resolve current user's environment
+        uid_t uid = getuid();
+        struct passwd *pw = getpwuid(uid);
+        QString home = pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
+        QString runtimeDir = QString("/run/user/%1").arg(uid);
+
+        // Read the Wayland display from our current environment
+        // (Cage sets WAYLAND_DISPLAY when it starts WhaleOS)
+        QString waylandDisplay = qEnvironmentVariable("WAYLAND_DISPLAY", "wayland-0");
+
+        // Tell native apps to connect to our Wayland compositor
         QString fullCmd = QString(
+            "export WAYLAND_DISPLAY=%1; "
+            "export XDG_RUNTIME_DIR=%2; "
+            "export HOME=%3; "
+            "export DBUS_SESSION_BUS_ADDRESS=unix:path=%2/bus; "
             "export DISPLAY=:0; "
-            "export XDG_RUNTIME_DIR=/run/user/1000; "
-            "export HOME=/home/ainux; "
-            "export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; "
-            "exec %1"
-        ).arg(command);
+            "exec %4"
+        ).arg(waylandDisplay, runtimeDir, home, command);
 
         QProcess *proc = new QProcess(this);
         proc->setProgram("/bin/bash");
         proc->setArguments(QStringList() << "-c" << fullCmd);
         proc->start();
-        
-        qDebug() << "SystemManager: launchNativeApp" << command << "started:" << proc->processId();
+
+        qDebug() << "SystemManager: launchNativeApp" << command
+                 << "WAYLAND_DISPLAY=" << waylandDisplay
+                 << "started:" << proc->processId();
         return true;
     }
 
-    // Non-blocking single attempt to find an XWayland window by name
-    // Called repeatedly from QML via a Timer for async polling
-    Q_INVOKABLE QString findNativeWindow(const QString &searchName) {
-        if (searchName.isEmpty()) return "";
-
-        QProcess search;
-        setXWaylandEnv(search);
-        search.start("xdotool", QStringList() << "search" << "--name" << searchName);
-        if (!search.waitForStarted(500)) return "";
-        search.waitForFinished(800);
-        QString output = search.readAllStandardOutput().trimmed();
-        if (!output.isEmpty()) {
-            QStringList ids = output.split('\n');
-            QString winId = ids.last();
-            qDebug() << "SystemManager: Found XWayland window:" << winId << "for" << searchName;
-            return winId;
-        }
-        return "";
-    }
-
-    // Position and resize an XWayland window to overlay a QML content area
-    Q_INVOKABLE bool embedWindow(const QString &childWinId, const QString &parentWinId, int x, int y, int w, int h) {
-        if (childWinId.isEmpty()) return false;
-        Q_UNUSED(parentWinId)  // Not used for XWayland overlay approach
-
-        // Remove window decorations
-        QProcess undecorate;
-        setXWaylandEnv(undecorate);
-        undecorate.start("xdotool", QStringList() << "set_window" << "--overrideredirect" << "1" << childWinId);
-        undecorate.waitForFinished(800);
-
-        // Resize first (no --sync to avoid extra blocking)
-        QProcess resize;
-        setXWaylandEnv(resize);
-        resize.start("xdotool", QStringList() << "windowsize" << childWinId << QString::number(w) << QString::number(h));
-        resize.waitForFinished(800);
-
-        // Move to absolute position (no --sync to avoid extra blocking)
-        QProcess move;
-        setXWaylandEnv(move);
-        move.start("xdotool", QStringList() << "windowmove" << childWinId << QString::number(x) << QString::number(y));
-        move.waitForFinished(800);
-
-        // Activate
-        QProcess activate;
-        setXWaylandEnv(activate);
-        activate.start("xdotool", QStringList() << "windowactivate" << childWinId);
-        activate.waitForFinished(800);
-
-        qDebug() << "SystemManager: Positioned XWayland window" << childWinId << "at" << x << y << w << "x" << h;
-        return true;
-    }
-
-    Q_INVOKABLE bool moveEmbeddedWindow(const QString &winId, int x, int y, int w, int h) {
-        if (winId.isEmpty()) return false;
-
-        QProcess move;
-        setXWaylandEnv(move);
-        move.start("xdotool", QStringList() << "windowmove" << winId << QString::number(x) << QString::number(y));
-        move.waitForFinished(500);
-
-        QProcess resize;
-        setXWaylandEnv(resize);
-        resize.start("xdotool", QStringList() << "windowsize" << winId << QString::number(w) << QString::number(h));
-        resize.waitForFinished(500);
-        return true;
-    }
-
-    Q_INVOKABLE bool closeNativeWindow(const QString &winId) {
-        if (winId.isEmpty()) return false;
-
-        QProcess proc;
-        setXWaylandEnv(proc);
-        proc.start("xdotool", QStringList() << "windowclose" << winId);
-        proc.waitForFinished(1000);
-        qDebug() << "SystemManager: Closed XWayland window:" << winId;
-        return true;
-    }
+    // Legacy xdotool stubs — kept for QML compatibility, but no longer used
+    Q_INVOKABLE QString findNativeWindow(const QString &) { return ""; }
+    Q_INVOKABLE bool embedWindow(const QString &, const QString &, int, int, int, int) { return false; }
+    Q_INVOKABLE bool moveEmbeddedWindow(const QString &, int, int, int, int) { return false; }
+    Q_INVOKABLE bool closeNativeWindow(const QString &) { return false; }
 
     Q_INVOKABLE bool launchApp(const QString &command) {
         if (command.isEmpty()) return false;
@@ -586,55 +616,30 @@ public:
         return true;
     }
 
-    // ════════════════════════════════════════════════
-    // ── Shell Command Execution (for Terminal) ──
-    // ════════════════════════════════════════════════
-
-    Q_INVOKABLE QString runCommand(const QString &command, const QString &cwd) {
-        QProcess proc;
-        proc.setWorkingDirectory(cwd.isEmpty() ? "/home/ainux" : cwd);
-        proc.setProcessChannelMode(QProcess::SeparateChannels);
-
-        // Run via bash -c to support pipes, redirects, etc.
-        proc.start("/bin/bash", QStringList() << "-c" << command);
-
-        if (!proc.waitForStarted(5000)) {
-            QJsonObject result;
-            result["stdout"] = "";
-            result["stderr"] = "Failed to start command";
-            result["exitCode"] = -1;
-            result["cwd"] = cwd;
-            return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
-        }
-
-        proc.waitForFinished(30000); // 30 second timeout
-
-        QString stdoutStr = QString::fromUtf8(proc.readAllStandardOutput());
-        QString stderrStr = QString::fromUtf8(proc.readAllStandardError());
-
-        // Determine new cwd after cd commands
-        QString newCwd = cwd.isEmpty() ? "/home/ainux" : cwd;
-        if (command.trimmed().startsWith("cd ")) {
-            // Run pwd to get the actual new directory
-            QProcess pwdProc;
-            pwdProc.setWorkingDirectory(newCwd);
-            pwdProc.start("/bin/bash", QStringList() << "-c" << command + " && pwd");
-            if (pwdProc.waitForFinished(3000)) {
-                QString pwd = QString::fromUtf8(pwdProc.readAllStandardOutput()).trimmed();
-                if (!pwd.isEmpty()) newCwd = pwd;
-            }
-        }
-
-        QJsonObject result;
-        result["stdout"] = stdoutStr;
-        result["stderr"] = stderrStr;
-        result["exitCode"] = proc.exitCode();
-        result["cwd"] = newCwd;
-        return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
-    }
 
 private:
     QQuickWindow *m_mainWindow;
+
+    // ── Helpers ──
+
+    QString currentUserHome() const {
+        struct passwd *pw = getpwuid(getuid());
+        return pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
+    }
+
+    QString currentXdgRuntimeDir() const {
+        return QString("/run/user/%1").arg(getuid());
+    }
+
+    QString buildCommandResult(const QString &out, const QString &err,
+                               int code, const QString &cwd) const {
+        QJsonObject result;
+        result["stdout"] = out;
+        result["stderr"] = err;
+        result["exitCode"] = code;
+        result["cwd"] = cwd;
+        return QString(QJsonDocument(result).toJson(QJsonDocument::Compact));
+    }
 };
 
 #endif // SYSTEMMANAGER_H
