@@ -920,7 +920,6 @@ public:
                 this, [this, proc, enable](int exitCode, QProcess::ExitStatus) {
             if (exitCode == 0) {
                 emit timeOpResult("toggleNtp", true, enable ? "enabled" : "disabled");
-                getTimeInfoAsync();
             } else {
                 emit timeOpResult("toggleNtp", false, QString::fromUtf8(proc->readAllStandardError()).trimmed());
             }

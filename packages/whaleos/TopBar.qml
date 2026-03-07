@@ -73,14 +73,23 @@ Rectangle {
 
         function onTimeOpResult(operation, success, detail) {
             topBar.timeOpPending = false;
-            if (operation === "setTimezone" && success) {
+            if (operation === "toggleNtp" && success) {
+                topBar.ntpActive = (detail === "enabled");
+                if (!topBar.ntpActive) topBar.ntpSynced = false;
+            } else if (operation === "setTimezone" && success) {
                 currentTimezone = detail;
             } else if (operation === "setTime" && success) {
                 clockText.text = Qt.formatTime(new Date(), "h:mm AP");
             }
-            // Refresh to get confirmed state
-            sysManager.getTimeInfoAsync();
+            // Delayed refresh to confirm state after system settles
+            delayedRefreshTimer.restart();
         }
+    }
+
+    Timer {
+        id: delayedRefreshTimer
+        interval: 2000; repeat: false
+        onTriggered: sysManager.getTimeInfoAsync()
     }
 
     Timer {
