@@ -99,6 +99,32 @@ function clearChatHistory(callback) {
     request("DELETE", "/dashboard/api/chat/history", null, callback);
 }
 
+// Conversation management
+function getConversations(callback) {
+    request("GET", "/dashboard/api/chat/conversations", null, callback);
+}
+
+function newConversation(callback) {
+    request("POST", "/dashboard/api/chat/conversations/new", null, callback);
+}
+
+function switchConversation(id, callback) {
+    request("POST", "/dashboard/api/chat/conversations/" + id + "/switch", null, callback);
+}
+
+function deleteConversation(id, callback) {
+    request("DELETE", "/dashboard/api/chat/conversations/" + id, null, callback);
+}
+
+// OS config persistence
+function getOsConfig(callback) {
+    request("GET", "/dashboard/api/os-config", null, callback);
+}
+
+function saveOsConfig(config, callback) {
+    request("POST", "/dashboard/api/os-config", config, callback);
+}
+
 function getConfig(callback) {
     request("GET", "/dashboard/api/config", null, callback);
 }

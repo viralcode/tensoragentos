@@ -25,13 +25,20 @@ import {
     processCommand as processSessionCommand,
     getChatHistory,
     clearChatHistory,
+    listConversations,
+    newConversation,
+    switchConversation,
+    deleteConversation,
+    getCurrentConversationId,
+    getOsConfig,
+    setOsConfig,
+    setOsConfigs,
 } from "../sessions/session-service.js";
 import { registry } from "../providers/index.js";
 import { createAnthropicProvider } from "../providers/anthropic.js";
 import { createOpenAIProvider, createDeepSeekProvider } from "../providers/openai-compatible.js";
 import { createGoogleProvider } from "../providers/google.js";
 import { getCanvasHTML, injectCanvasScripts, canvasPush, canvasReset, canvasEval } from "../canvas/index.js";
-import { mcpManager } from "../tools/mcp-manager.js";
 
 const execAsync = promisify(exec);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -876,6 +883,62 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
     dashboard.delete("/api/chat/history", (c) => {
         clearChatHistory();
         return c.json({ success: true, message: "Chat history cleared" });
+    });
+
+    // ============== CONVERSATION MANAGEMENT ==============
+
+    // List all conversations
+    dashboard.get("/api/chat/conversations", (c) => {
+        const conversations = listConversations();
+        const currentId = getCurrentConversationId();
+        return c.json({ ok: true, conversations, currentId });
+    });
+
+    // Create new conversation
+    dashboard.post("/api/chat/conversations/new", (c) => {
+        const id = newConversation();
+        return c.json({ ok: true, id });
+    });
+
+    // Switch to a conversation
+    dashboard.post("/api/chat/conversations/:id/switch", (c) => {
+        const id = c.req.param("id");
+        const messages = switchConversation(id);
+        return c.json({ ok: true, messages });
+    });
+
+    // Delete a conversation
+    dashboard.delete("/api/chat/conversations/:id", (c) => {
+        const id = c.req.param("id");
+        const success = deleteConversation(id);
+        return c.json({ ok: success });
+    });
+
+    // ============== OS CONFIG PERSISTENCE ==============
+
+    // Get all OS config
+    dashboard.get("/api/os-config", (c) => {
+        const config = getOsConfig();
+        return c.json({ ok: true, config });
+    });
+
+    // Set OS config (merge)
+    dashboard.post("/api/os-config", async (c) => {
+        const data = await c.req.json();
+        if (data && typeof data === "object") {
+            for (const [key, value] of Object.entries(data)) {
+                setOsConfig(key, String(value));
+            }
+        }
+        return c.json({ ok: true });
+    });
+
+    // Set single OS config key
+    dashboard.put("/api/os-config/:key", async (c) => {
+        const key = c.req.param("key");
+        const data = await c.req.json();
+        setOsConfig(key, String(data.value));
+        return c.json({ ok: true });
     });
 
     // Download a file created by tools
@@ -1974,10 +2037,22 @@ echo "Hello from ${name}"
         const { apiKey, enabled } = await c.req.json();
 
         const existing = skillConfigs.get(id) || { enabled: false };
+        // If apiKey is explicitly null/empty string, treat as disconnect (clear key)
+        const newApiKey = (apiKey === null || apiKey === '') ? undefined : (apiKey || existing.apiKey);
         skillConfigs.set(id, {
             enabled: enabled ?? existing.enabled,
-            apiKey: apiKey || existing.apiKey
+            apiKey: newApiKey
         });
+
+        // Clear env vars if disconnecting
+        if (apiKey === null || apiKey === '') {
+            if (id === 'github') delete process.env.GITHUB_TOKEN;
+            if (id === 'weather') delete process.env.OPENWEATHERMAP_API_KEY;
+            if (id === 'notion') delete process.env.NOTION_API_KEY;
+            if (id === 'trello') delete process.env.TRELLO_API_KEY;
+            if (id === 'elevenlabs') delete process.env.ELEVENLABS_API_KEY;
+            if (id === 'twilio') { delete process.env.TWILIO_ACCOUNT_SID; delete process.env.TWILIO_AUTH_TOKEN; delete process.env.TWILIO_FROM_NUMBER; }
+        }
 
         // Update env vars
         if (apiKey) {
@@ -3329,47 +3404,6 @@ echo "Hello from ${name}"
         );
     });
 
-
-    // ============== MCP ROUTES ==============
-
-    dashboard.get("/api/mcp/servers", (c) => {
-        const servers = mcpManager.listServers();
-        return c.json({ servers });
-    });
-
-    dashboard.post("/api/mcp/servers/:id/start", async (c) => {
-        const id = c.req.param("id");
-        const result = await mcpManager.startServer(id);
-        if (result.success) {
-            return c.json({ ok: true, tools: result.tools });
-        }
-        return c.json({ ok: false, error: result.error }, 400);
-    });
-
-    dashboard.post("/api/mcp/servers/:id/stop", async (c) => {
-        const id = c.req.param("id");
-        const result = await mcpManager.stopServer(id);
-        if (result.success) {
-            return c.json({ ok: true });
-        }
-        return c.json({ ok: false, error: result.error }, 400);
-    });
-
-    dashboard.post("/api/mcp/servers/:id/configure", async (c) => {
-        const id = c.req.param("id");
-        const body = await c.req.json();
-        const result = mcpManager.configure(id, body.env || {});
-        if (result.success) {
-            return c.json({ ok: true });
-        }
-        return c.json({ ok: false, error: result.error }, 400);
-    });
-
-    dashboard.get("/api/mcp/tools", (c) => {
-        const servers = mcpManager.listServers().filter(s => s.running);
-        const tools = servers.flatMap(s => s.tools.map(t => ({ server: s.id, name: t })));
-        return c.json({ tools, count: tools.length });
-    });
     // ============== HTML SHELL ==============
 
     dashboard.get("*", (c) => {

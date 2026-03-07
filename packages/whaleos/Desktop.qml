@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import "api.js" as API
 
 Rectangle {
     id: desktop
@@ -400,6 +401,8 @@ Rectangle {
                         onClicked: {
                             desktop.currentWallpaper = modelData.id;
                             contextMenu.visible = false;
+                            // Persist wallpaper choice
+                            API.saveOsConfig({ wallpaper: modelData.id }, function(s, d) {});
                         }
                     }
                 }
@@ -773,5 +776,14 @@ Rectangle {
         anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(24 * root.sf)
         width: chatBarItem.chatFullScreen ? parent.width : Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
         z: 20
+    }
+
+    // Load persisted OS config on startup
+    Component.onCompleted: {
+        API.getOsConfig(function(status, data) {
+            if (data && data.config) {
+                if (data.config.wallpaper) desktop.currentWallpaper = data.config.wallpaper;
+            }
+        });
     }
 }

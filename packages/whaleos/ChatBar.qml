@@ -43,6 +43,11 @@ Rectangle {
     // Per-conversation work folder
     property string currentWorkFolder: ""
 
+    // Conversation management
+    property var conversations: []
+    property string currentConversationId: ""
+    property bool showConversationList: false
+
     // Generate a slug from the first message for a readable folder name
     function generateWorkFolder(firstMsg) {
         // Take first ~30 chars, lowercase, replace non-alphanum with underscore
@@ -96,7 +101,7 @@ Rectangle {
         return s;
     }
 
-    Component.onCompleted: { loadAgents(); loadHistory(); loadActiveModel(); }
+    Component.onCompleted: { loadAgents(); loadHistory(); loadActiveModel(); loadConversations(); }
 
     // Poll active model every 10s
     Timer {
@@ -261,24 +266,31 @@ Rectangle {
                 MouseArea { id: stopMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { isSending = false; isStreaming = false; } }
             }
 
+            // New Chat button
             Rectangle {
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
-                color: clearMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                color: newChatMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : "transparent"
                 visible: !isSending
 
-                Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: "#c0cfe0" }
+                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#60a5fa" }
 
                 MouseArea {
-                    id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        messages = []; streamingSteps = []; activePlan = null; streamingContent = "";
-                        // Clear server-side history too
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("DELETE", root.apiBase + "/chat/history");
-                        xhr.setRequestHeader("Content-Type", "application/json");
-                        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
-                        xhr.send();
-                    }
+                    id: newChatMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: newChat()
+                }
+            }
+
+            // Conversation history button
+            Rectangle {
+                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
+                color: convListMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                visible: !isSending
+
+                Text { anchors.centerIn: parent; text: "\u2261"; font.pixelSize: Math.round(14 * root.sf); color: showConversationList ? "#60a5fa" : "#c0cfe0" }
+
+                MouseArea {
+                    id: convListMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: { loadConversations(); showConversationList = !showConversationList; showAgentPicker = false; }
                 }
             }
 
@@ -393,6 +405,87 @@ Rectangle {
         }
     }
 
+    // ── Conversations Dropdown ──
+    Rectangle {
+        id: conversationDropdown
+        anchors.top: chatHeader.bottom; anchors.topMargin: Math.round(4 * root.sf)
+        anchors.right: parent.right; anchors.rightMargin: Math.round(12 * root.sf)
+        width: Math.round(280 * root.sf); height: Math.min(convCol.height + Math.round(12 * root.sf), Math.round(350 * root.sf))
+        radius: root.radiusMd; z: 100
+        color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
+        border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+        visible: chatExpanded && showConversationList
+        clip: true
+
+        Flickable {
+            anchors.fill: parent; anchors.margins: Math.round(6 * root.sf)
+            contentHeight: convCol.height; clip: true
+
+            Column {
+                id: convCol
+                width: parent.width; spacing: Math.round(2 * root.sf)
+
+                // Header
+                Text {
+                    text: "Conversations"
+                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
+                    color: root.textMuted
+                    leftPadding: Math.round(6 * root.sf); topPadding: Math.round(4 * root.sf)
+                    bottomPadding: Math.round(6 * root.sf)
+                }
+
+                Repeater {
+                    model: conversations
+
+                    delegate: Rectangle {
+                        width: convCol.width; height: convItemCol.height + Math.round(10 * root.sf)
+                        radius: Math.round(6 * root.sf)
+                        color: modelData.id === currentConversationId ? Qt.rgba(0.35, 0.55, 1.0, 0.12) : convItemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+
+                        Column {
+                            id: convItemCol
+                            anchors.left: parent.left; anchors.right: convDeleteBtn.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.leftMargin: Math.round(8 * root.sf)
+                            anchors.rightMargin: Math.round(4 * root.sf)
+                            spacing: Math.round(2 * root.sf)
+
+                            Text {
+                                text: modelData.title || "New Chat"
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
+                                color: modelData.id === currentConversationId ? "#60a5fa" : "#e4e4e7"
+                                elide: Text.ElideRight; width: parent.width
+                            }
+                            Text {
+                                text: (modelData.messageCount || 0) + " msgs"
+                                font.pixelSize: Math.round(9 * root.sf)
+                                color: root.textMuted
+                            }
+                        }
+
+                        // Delete button
+                        Rectangle {
+                            id: convDeleteBtn
+                            anchors.right: parent.right; anchors.rightMargin: Math.round(4 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.round(20 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(4 * root.sf)
+                            color: convDelMa.containsMouse ? Qt.rgba(1, 0.3, 0.3, 0.15) : "transparent"
+                            visible: conversations.length > 1
+
+                            Text { anchors.centerIn: parent; text: "x"; font.pixelSize: Math.round(10 * root.sf); color: convDelMa.containsMouse ? root.accentRed : root.textMuted }
+                            MouseArea { id: convDelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: deleteConv(modelData.id) }
+                        }
+
+                        MouseArea {
+                            id: convItemMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; z: -1
+                            onClicked: switchToConversation(modelData.id)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // ── Multi-Agent Activity Panel ──
     Rectangle {
         id: multiAgentPanel
@@ -490,7 +583,7 @@ Rectangle {
             id: messageList
             anchors.fill: parent; anchors.leftMargin: Math.round(20 * root.sf); anchors.rightMargin: Math.round(20 * root.sf)
             anchors.topMargin: Math.round(16 * root.sf); anchors.bottomMargin: Math.round(12 * root.sf)
-            model: messages; spacing: Math.round(20 * root.sf); clip: true
+            model: messages; spacing: Math.round(20 * root.sf); cacheBuffer: 400
 
             delegate: Item {
                 width: messageList.width
@@ -943,7 +1036,7 @@ Rectangle {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: "#e4e4e7"; font.pixelSize: Math.round(14 * root.sf); clip: true
+                color: "#e4e4e7"; font.pixelSize: Math.round(14 * root.sf)
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -1364,4 +1457,61 @@ Rectangle {
             }
         }
     }
+
+    // ============== CONVERSATION MANAGEMENT ==============
+
+    function loadConversations() {
+        API.getConversations(function(status, data) {
+            if (data && Array.isArray(data.conversations)) {
+                conversations = data.conversations;
+                if (data.currentId) currentConversationId = data.currentId;
+            }
+        });
+    }
+
+    function newChat() {
+        API.newConversation(function(status, data) {
+            if (data && data.id) {
+                currentConversationId = data.id;
+                messages = [];
+                streamingSteps = [];
+                activePlan = null;
+                streamingContent = "";
+                showConversationList = false;
+                loadConversations();
+            }
+        });
+    }
+
+    function switchToConversation(convId) {
+        API.switchConversation(convId, function(status, data) {
+            if (data && data.ok) {
+                currentConversationId = convId;
+                messages = data.messages || [];
+                streamingSteps = [];
+                activePlan = null;
+                streamingContent = "";
+                showConversationList = false;
+                loadConversations();
+            }
+        });
+    }
+
+    function deleteConv(convId) {
+        API.deleteConversation(convId, function(status, data) {
+            if (data && data.ok) {
+                loadConversations();
+                if (convId === currentConversationId) {
+                    // The server will have auto-switched, reload messages
+                    API.getChatHistory(function(s2, d2) {
+                        if (d2 && d2.messages) messages = d2.messages;
+                        else messages = [];
+                    });
+                }
+            }
+        });
+    }
+
+
+
 }

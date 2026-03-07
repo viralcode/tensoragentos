@@ -59,6 +59,7 @@ Rectangle {
                         color: root.bgElevated
                         border.color: root.borderColor
                         border.width: 1
+                        property string extName: modelData.name || ""
 
                         ColumnLayout {
                             id: extCol
@@ -146,10 +147,10 @@ Rectangle {
                                             anchors.fill: parent
                                             cursorShape: modelData.label === "Edit" ? Qt.ForbiddenCursor : Qt.PointingHandCursor
                                             onClicked: {
-                                                var extName = extensions[index] ? extensions[index].name : "";
-                                                if (modelData.label === "Run") runExt(extName);
-                                                else if (modelData.label === "Toggle") toggleExt(extName);
-                                                else if (modelData.label === "Delete") deleteExt(extName);
+                                                var name = extName;
+                                                if (modelData.label === "Run") runExt(name);
+                                                else if (modelData.label === "Toggle") toggleExt(name);
+                                                else if (modelData.label === "Delete") deleteExt(name);
                                             }
                                         }
                                     }
@@ -191,8 +192,13 @@ Rectangle {
 
     function loadExtensions() {
         API.getExtensions(function(status, data) {
-            if (status === 200 && Array.isArray(data)) {
+            console.log("Extensions API status:", status, "data:", JSON.stringify(data));
+            if (data && Array.isArray(data.extensions)) {
+                extensions = data.extensions;
+            } else if (Array.isArray(data)) {
                 extensions = data;
+            } else {
+                console.log("Extensions: unexpected format");
             }
         });
     }

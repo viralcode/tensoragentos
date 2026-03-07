@@ -49,6 +49,7 @@ export interface ChatMessage {
     toolCalls?: ToolCallInfo[];
     model?: string;
     createdAt: string;
+    conversationId?: string;
 }
 
 export interface ToolCallInfo {
@@ -96,6 +97,7 @@ if (currentModel) {
 // Uses in-memory cache + SQLite persistence
 const dashboardMessages: ChatMessage[] = [];
 let dbInitialized = false;
+let currentConversationId: string = randomUUID();
 
 // Initialize message table and load history
 function ensureDbInit(): void {
@@ -244,6 +246,7 @@ export async function processMessage(
         role: "user",
         content,
         createdAt: new Date().toISOString(),
+        conversationId: currentConversationId,
     };
     dashboardMessages.push(userMsg);
     persistMessage(userMsg);
@@ -560,7 +563,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
             model,
             createdAt: new Date().toISOString(),
-        };
+        conversationId: currentConversationId,
+    };
         dashboardMessages.push(assistantMsg);
         persistMessage(assistantMsg);
 
@@ -578,7 +582,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             role: "assistant",
             content: `Error: ${error instanceof Error ? error.message : String(error)}`,
             createdAt: new Date().toISOString(),
-        };
+        conversationId: currentConversationId,
+    };
         dashboardMessages.push(errorMsg);
         persistMessage(errorMsg);
         return errorMsg;
@@ -613,6 +618,7 @@ export async function processMessageStream(
         role: "user",
         content,
         createdAt: new Date().toISOString(),
+        conversationId: currentConversationId,
     };
     dashboardMessages.push(userMsg);
     persistMessage(userMsg);
@@ -944,7 +950,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
             model,
             createdAt: new Date().toISOString(),
-        };
+        conversationId: currentConversationId,
+    };
         dashboardMessages.push(assistantMsg);
         persistMessage(assistantMsg);
 
@@ -963,7 +970,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             role: "assistant",
             content: errorContent,
             createdAt: new Date().toISOString(),
-        };
+        conversationId: currentConversationId,
+    };
         dashboardMessages.push(errorMsg);
         persistMessage(errorMsg);
         return errorMsg;
@@ -1004,4 +1012,144 @@ export function processCommand(sessionId: string, message: string): string | nul
 
     // Not a command
     return null;
+}
+
+// ============== CONVERSATION MANAGEMENT ==============
+
+export function getCurrentConversationId(): string {
+    ensureDbInit();
+    return currentConversationId;
+}
+
+export function listConversations(): Array<{ id: string; title: string; messageCount: number; lastMessage: string; createdAt: string; updatedAt: string }> {
+    ensureDbInit();
+    try {
+        const rows = db.prepare(`
+            SELECT c.id, c.title, c.created_at, c.updated_at,
+                   COUNT(m.id) as message_count,
+                   COALESCE((SELECT content FROM dashboard_messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1), '') as last_message
+            FROM conversations c
+            LEFT JOIN dashboard_messages m ON m.conversation_id = c.id
+            GROUP BY c.id
+            ORDER BY c.updated_at DESC
+            LIMIT 50
+        `).all() as Array<any>;
+
+        return rows.map((r: any) => ({
+            id: r.id,
+            title: r.title || "New Chat",
+            messageCount: r.message_count || 0,
+            lastMessage: (r.last_message || "").substring(0, 100),
+            createdAt: new Date(r.created_at * 1000).toISOString(),
+            updatedAt: new Date(r.updated_at * 1000).toISOString(),
+        }));
+    } catch (e) {
+        console.warn("[SessionService] Failed to list conversations:", e);
+        return [];
+    }
+}
+
+export function newConversation(): string {
+    ensureDbInit();
+    const id = randomUUID();
+    try {
+        db.prepare("INSERT INTO conversations (id, title) VALUES (?, ?)").run(id, "New Chat");
+    } catch (e) {
+        console.warn("[SessionService] Failed to create conversation:", e);
+    }
+    currentConversationId = id;
+    dashboardMessages.length = 0;
+    return id;
+}
+
+export function switchConversation(conversationId: string): ChatMessage[] {
+    ensureDbInit();
+    currentConversationId = conversationId;
+    dashboardMessages.length = 0;
+
+    try {
+        const rows = db.prepare(`
+            SELECT id, role, content, tool_calls, model, conversation_id, created_at 
+            FROM dashboard_messages 
+            WHERE conversation_id = ?
+            ORDER BY created_at ASC 
+            LIMIT 200
+        `).all(conversationId) as Array<any>;
+
+        for (const row of rows) {
+            dashboardMessages.push({
+                id: row.id,
+                role: row.role,
+                content: row.content,
+                toolCalls: row.tool_calls ? JSON.parse(row.tool_calls) : undefined,
+                model: row.model || undefined,
+                conversationId: row.conversation_id,
+                createdAt: new Date(row.created_at * 1000).toISOString(),
+            });
+        }
+    } catch (e) {
+        console.warn("[SessionService] Failed to switch conversation:", e);
+    }
+
+    return dashboardMessages.slice();
+}
+
+export function deleteConversation(conversationId: string): boolean {
+    ensureDbInit();
+    try {
+        db.prepare("DELETE FROM dashboard_messages WHERE conversation_id = ?").run(conversationId);
+        db.prepare("DELETE FROM conversations WHERE id = ?").run(conversationId);
+        
+        if (currentConversationId === conversationId) {
+            const next = db.prepare("SELECT id FROM conversations ORDER BY updated_at DESC LIMIT 1").get() as { id: string } | undefined;
+            if (next) {
+                switchConversation(next.id);
+            } else {
+                newConversation();
+            }
+        }
+        return true;
+    } catch (e) {
+        console.warn("[SessionService] Failed to delete conversation:", e);
+        return false;
+    }
+}
+
+// ============== OS CONFIG PERSISTENCE ==============
+
+export function getOsConfig(): Record<string, string> {
+    ensureDbInit();
+    try {
+        const rows = db.prepare("SELECT key, value FROM os_config").all() as Array<{ key: string; value: string }>;
+        const config: Record<string, string> = {};
+        for (const row of rows) config[row.key] = row.value;
+        return config;
+    } catch (e) {
+        console.warn("[SessionService] Failed to get OS config:", e);
+        return {};
+    }
+}
+
+export function setOsConfig(key: string, value: string): void {
+    ensureDbInit();
+    try {
+        db.prepare("INSERT OR REPLACE INTO os_config (key, value, updated_at) VALUES (?, ?, unixepoch())").run(key, value);
+    } catch (e) {
+        console.warn("[SessionService] Failed to set OS config:", e);
+    }
+}
+
+export function setOsConfigs(configs: Record<string, string>): void {
+    ensureDbInit();
+    const stmt = db.prepare("INSERT OR REPLACE INTO os_config (key, value, updated_at) VALUES (?, ?, unixepoch())");
+    try {
+        const transaction = db.transaction(() => {
+            for (const [key, value] of Object.entries(configs)) {
+                stmt.run(key, value);
+            }
+        });
+        transaction();
+    } catch (e) {
+        console.warn("[SessionService] Failed to set OS configs:", e);
+    }
 }
