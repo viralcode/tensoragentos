@@ -215,19 +215,32 @@ Rectangle {
         xhr.send(JSON.stringify({ name: modelName }));
     }
 
-    function deleteOllamaModel(modelName) {
-        var result = sysManager.runCommand("ollama rm " + modelName + " 2>&1", "/home/ainux");
-        try {
-            var data = JSON.parse(result);
-            if (data.exitCode === 0) {
-                root.showToast(modelName + " removed", "success");
-                checkOllama();
-            } else {
-                root.showToast("Failed to remove: " + (data.stderr || ""), "error");
-            }
-        } catch(e) {
-            checkOllama();
+    // Property to track pending delete operation
+    property string pendingDeleteModel: ""
+
+    // ── Async signal handler for ollama delete ──
+    Connections {
+        target: sysManager
+        function onCommandOutput(cmdId, data) {
+            // Capture output from delete command if needed
         }
+        function onCommandFinished(cmdId, exitCode, cwd) {
+            if (pendingDeleteModel.length > 0) {
+                if (exitCode === 0) {
+                    root.showToast(pendingDeleteModel + " removed", "success");
+                } else {
+                    root.showToast("Failed to remove " + pendingDeleteModel, "error");
+                }
+                pendingDeleteModel = "";
+                checkOllama();
+            }
+        }
+    }
+
+    function deleteOllamaModel(modelName) {
+        // ASYNC: non-blocking model deletion
+        pendingDeleteModel = modelName;
+        sysManager.runCommandAsync("ollama rm " + modelName + " 2>&1", "/home/ainux");
     }
 
     function connectOllamaToOpenWhale(modelName) {

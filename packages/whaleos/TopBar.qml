@@ -25,97 +25,79 @@ Rectangle {
     property var timezoneList: []
     property string tzSearchFilter: ""
     property bool timeLoading: false
+    property bool timeOpPending: false
 
-    Component.onCompleted: { checkOwHealth(); fetchTimeInfo(); }
+    Component.onCompleted: { checkOwHealth(); sysManager.getTimeInfoAsync(); }
 
     function fetchTimeInfo() {
         timeLoading = true;
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://127.0.0.1:7778/time/info");
-        xhr.timeout = 5000;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                timeLoading = false;
-                if (xhr.status === 200) {
-                    try {
-                        var d = JSON.parse(xhr.responseText);
-                        if (d.ok) {
-                            currentTimezone = d.timezone || "Unknown";
-                            ntpSynced = d.ntpSync || false;
-                            ntpActive = d.ntpActive || false;
-                            localTimeStr = d.localTime || "";
-                            utcTimeStr = d.utcTime || "";
-                        }
-                    } catch(e) {}
-                }
-            }
-        };
-        xhr.send();
+        sysManager.getTimeInfoAsync();
     }
 
     function fetchTimezones() {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://127.0.0.1:7778/time/timezones");
-        xhr.timeout = 10000;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    var d = JSON.parse(xhr.responseText);
-                    if (d.ok) timezoneList = d.timezones || [];
-                } catch(e) {}
-            }
-        };
-        xhr.send();
+        sysManager.getTimezonesAsync();
     }
 
     function setTimezone(tz) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/timezone");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    currentTimezone = tz;
-                    fetchTimeInfo();
-                }
-            }
-        };
-        xhr.send(JSON.stringify({ timezone: tz }));
+        sysManager.setTimezoneAsync(tz);
     }
 
     function toggleNtp(enable) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/ntp");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    ntpActive = enable;
-                    fetchTimeInfo();
-                }
-            }
-        };
-        xhr.send(JSON.stringify({ enable: enable }));
+        timeOpPending = true;
+        sysManager.toggleNtpAsync(enable);
     }
 
     function setManualTime(timeStr) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/time/set");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    clockText.text = Qt.formatTime(new Date(), "h:mm AP");
-                    fetchTimeInfo();
-                }
+        sysManager.setManualTimeAsync(timeStr);
+    }
+
+    // ── Signal handlers for C++ time management ──
+    Connections {
+        target: sysManager
+
+        function onTimeInfoReady(timezone, ntpSync, ntpActive, localTime, utcTime) {
+            timeLoading = false;
+            currentTimezone = timezone || "Unknown";
+            localTimeStr = localTime || "";
+            utcTimeStr = utcTime || "";
+            // Don't override toggle state while an operation is pending
+            if (!topBar.timeOpPending) {
+                topBar.ntpSynced = ntpSync || false;
+                topBar.ntpActive = ntpActive || false;
             }
-        };
-        xhr.send(JSON.stringify({ time: timeStr }));
+        }
+
+        function onTimezonesReady(timezones) {
+            timezoneList = timezones || [];
+        }
+
+        function onTimeOpResult(operation, success, detail) {
+            topBar.timeOpPending = false;
+            if (operation === "setTimezone" && success) {
+                currentTimezone = detail;
+            } else if (operation === "setTime" && success) {
+                clockText.text = Qt.formatTime(new Date(), "h:mm AP");
+            }
+            // Refresh to get confirmed state
+            sysManager.getTimeInfoAsync();
+        }
     }
 
     Timer {
         interval: 10000; running: true; repeat: true
         onTriggered: checkOwHealth()
+    }
+
+    // Refresh time info periodically when time panel is open
+    Timer {
+        interval: 15000; running: timePanelVisible; repeat: true
+        onTriggered: sysManager.getTimeInfoAsync()
+    }
+    onTimePanelVisibleChanged: {
+        if (timePanelVisible) {
+            sysManager.getTimeInfoAsync();
+            if (timezoneList.length === 0) sysManager.getTimezonesAsync();
+        }
     }
 
     function checkOwHealth() {
@@ -829,6 +811,90 @@ Rectangle {
                     }
                 }
             }
+
+            // ── System Power Options ──
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
+
+            RowLayout {
+                width: parent.width
+                spacing: Math.round(8 * root.sf)
+
+                // Restart System button
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: Math.round(34 * root.sf)
+                    radius: root.radiusSm
+                    color: restartSysMa.containsMouse ? Qt.rgba(0.98, 0.62, 0.04, 0.15) : Qt.rgba(1, 1, 1, 0.04)
+                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Math.round(6 * root.sf)
+                        Canvas {
+                            width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            property real s: root.sf
+                            onPaint: {
+                                var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                ctx.save(); ctx.scale(s, s);
+                                ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.5;
+                                ctx.beginPath(); ctx.arc(7, 7, 5, -0.5, Math.PI * 1.5); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(10, 3); ctx.lineTo(7, 5); ctx.fill();
+                                ctx.restore();
+                            }
+                            onSChanged: requestPaint()
+                        }
+                        Text {
+                            text: "Restart"
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
+                            color: restartSysMa.containsMouse ? "#f59e0b" : root.textSecondary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea {
+                        id: restartSysMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: sysManager.runCommandAsync("sudo reboot", "")
+                    }
+                }
+
+                // Shut Down button
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: Math.round(34 * root.sf)
+                    radius: root.radiusSm
+                    color: shutdownMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1, 1, 1, 0.04)
+                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Math.round(6 * root.sf)
+                        Canvas {
+                            width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            property real s: root.sf
+                            onPaint: {
+                                var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                                ctx.save(); ctx.scale(s, s);
+                                ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.8;
+                                ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(7, 6); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(7, 7, 5, -1.2, Math.PI + 1.2); ctx.stroke();
+                                ctx.restore();
+                            }
+                            onSChanged: requestPaint()
+                        }
+                        Text {
+                            text: "Shut Down"
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
+                            color: shutdownMa.containsMouse ? "#ef4444" : root.textSecondary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea {
+                        id: shutdownMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: sysManager.runCommandAsync("sudo shutdown -h now", "")
+                    }
+                }
+            }
         }
     }
 
@@ -1070,7 +1136,12 @@ Rectangle {
 
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                            onClicked: toggleNtp(!ntpActive)
+                            onClicked: {
+                                var newState = !ntpActive;
+                                ntpActive = newState;
+                                if (!newState) ntpSynced = false;
+                                toggleNtp(newState);
+                            }
                         }
                     }
                 }

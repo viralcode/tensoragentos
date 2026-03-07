@@ -52,7 +52,7 @@ apt-get install -y -qq \
     libpam0g-dev \
     chromium mousepad galculator \
     pipewire pipewire-alsa wireplumber \
-    fonts-dejavu fonts-noto fontconfig \
+    fonts-dejavu fonts-noto fonts-noto-color-emoji fontconfig \
     xsel wl-clipboard ripgrep jq tree \
     python3 python3-pip python3-venv sqlite3 \
     flatpak \
@@ -150,7 +150,7 @@ User=ainux
 WorkingDirectory=/opt/ainux/openwhale
 ExecStart=/usr/bin/node openwhale.mjs
 Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
@@ -193,7 +193,7 @@ Type=simple
 User=ainux
 ExecStart=/usr/local/bin/ollama serve
 Environment=HOME=/home/ainux OLLAMA_HOST=0.0.0.0
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
@@ -232,6 +232,10 @@ systemctl enable ainux-gui.service
 systemctl enable ollama.service 2>/dev/null || true
 systemctl enable whaleos-helper.service
 systemctl enable systemd-logind
+systemctl enable systemd-timesyncd 2>/dev/null || true
+
+# Activate NTP time sync immediately
+timedatectl set-ntp true 2>/dev/null || true
 systemctl set-default graphical.target
 
 # Auto-login on tty1

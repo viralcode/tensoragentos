@@ -36,6 +36,64 @@ Rectangle {
         }
     }
 
+    // ── Async signal handlers for SystemManager ──
+    Connections {
+        target: sysManager
+
+        function onUserOpResult(operation, success, detail) {
+            if (operation === "addUser") {
+                if (success) {
+                    root.showToast("User '" + detail + "' created successfully", "success");
+                } else {
+                    root.showToast("Failed to create user: " + detail, "error");
+                }
+                showAddUser = false; newUsername = ""; newPassword = ""; loadUsers();
+            } else if (operation === "deleteUser") {
+                if (success) {
+                    root.showToast("User '" + detail + "' deleted", "success");
+                } else {
+                    root.showToast("Failed to delete user: " + detail, "error");
+                }
+                loadUsers();
+            } else if (operation === "changePassword") {
+                if (success) {
+                    root.showToast("Password updated successfully", "success");
+                } else {
+                    root.showToast("Failed to update password: " + detail, "error");
+                }
+            }
+        }
+
+        function onDisplayInfoReady(xrandrText) {
+            if (xrandrText && xrandrText.length > 10) {
+                var parsed = parseXrandrModes(xrandrText);
+                if (parsed.modes.length === 0) {
+                    displayModes = defaultDisplayModes();
+                    currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                } else {
+                    displayModes = parsed.modes;
+                    currentRes = parsed.current;
+                    if (currentRes.width === 0) currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                }
+            } else {
+                displayModes = defaultDisplayModes();
+                currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+            }
+            selectedRes = currentRes.width + "x" + currentRes.height;
+            // Now fetch GPU info (async)
+            sysManager.getGpuInfoAsync();
+        }
+
+        function onGpuInfoReady(gpuLine) {
+            gpuInfo = {
+                "name": gpuLine.length > 5 ? gpuLine.replace(/.*VGA.*:\s*/,"").split("[")[0].trim() : "VirtIO GPU (QEMU)",
+                "driver": "virtio_gpu / pixman",
+                "renderer": "wlroots (Cage compositor)"
+            };
+            gfxInfo = {"modules": "virtio_gpu, drm, kms", "compositor": "Cage (wlroots)"};
+        }
+    }
+
     function checkChannelStatus() {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", root.apiBase + "/channels/whatsapp/status");
@@ -57,31 +115,34 @@ Rectangle {
     }
     function addUser() {
         if (!newUsername || !newPassword) { root.showToast("Username and password required", "error"); return; }
-        var ok = sysManager.addUser(newUsername, newPassword);
-        if (ok) {
-            root.showToast("User '" + newUsername + "' created successfully", "success");
+        if (typeof sysManager.addUserAsync === "function") {
+            sysManager.addUserAsync(newUsername, newPassword);
         } else {
-            root.showToast("Failed to create user '" + newUsername + "'", "error");
+            var ok = sysManager.addUser(newUsername, newPassword);
+            if (ok) { root.showToast("User '" + newUsername + "' created successfully", "success"); }
+            else { root.showToast("Failed to create user '" + newUsername + "'", "error"); }
+            showAddUser = false; newUsername = ""; newPassword = ""; loadUsers();
         }
-        showAddUser = false; newUsername = ""; newPassword = ""; loadUsers();
     }
     function deleteUser(u) {
         if (u === root.currentUser) { root.showToast("Cannot delete your own account", "error"); return; }
-        var ok = sysManager.deleteUser(u);
-        if (ok) {
-            root.showToast("User '" + u + "' deleted", "success");
+        if (typeof sysManager.deleteUserAsync === "function") {
+            sysManager.deleteUserAsync(u);
         } else {
-            root.showToast("Failed to delete user '" + u + "'", "error");
+            var ok = sysManager.deleteUser(u);
+            if (ok) { root.showToast("User '" + u + "' deleted", "success"); }
+            else { root.showToast("Failed to delete user '" + u + "'", "error"); }
+            loadUsers();
         }
-        loadUsers();
     }
     function changePassword(newPass) {
         if (!newPass) { root.showToast("Enter a new password", "error"); return; }
-        var ok = sysManager.changePassword(root.currentUser, newPass);
-        if (ok) {
-            root.showToast("Password updated successfully", "success");
+        if (typeof sysManager.changePasswordAsync === "function") {
+            sysManager.changePasswordAsync(root.currentUser, newPass);
         } else {
-            root.showToast("Failed to update password", "error");
+            var ok = sysManager.changePassword(root.currentUser, newPass);
+            if (ok) { root.showToast("Password updated successfully", "success"); }
+            else { root.showToast("Failed to update password", "error"); }
         }
     }
     property int qrPollCount: 0
@@ -179,63 +240,60 @@ Rectangle {
         return { modes: modes, current: {"width": curW || 1280, "height": curH || 800, "refresh": curR || 60.0} };
     }
 
-    function loadDisplayInfo() {
-        try {
-            var xrandrText = sysManager.getDisplayInfo();
-            if (xrandrText && xrandrText.length > 10) {
-                var parsed = parseXrandrModes(xrandrText);
-                // If no modes found (Wayland-native, no XWayland), use standard set
-                if (parsed.modes.length === 0) {
-                    displayModes = [
-                        {"width":1920,"height":1080,"refresh":60.0,"preferred":true,"current":false},
-                        {"width":1680,"height":1050,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1600,"height":900,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1440,"height":900,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1366,"height":768,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1280,"height":1024,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1280,"height":800,"refresh":60.0,"preferred":false,"current":true},
-                        {"width":1280,"height":720,"refresh":60.0,"preferred":false,"current":false},
-                        {"width":1024,"height":768,"refresh":60.0,"preferred":false,"current":false}
-                    ];
-                    currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
-                } else {
-                    displayModes = parsed.modes;
-                    currentRes = parsed.current;
-                    if (currentRes.width === 0) currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
-                }
-            } else {
-                throw new Error("no xrandr output");
-            }
-        } catch(e) {
-            // Standard fallback modes when xrandr/XWayland not available
-            displayModes = [
-                {"width":1920,"height":1080,"refresh":60.0,"preferred":true,"current":false},
-                {"width":1680,"height":1050,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1600,"height":900,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1440,"height":900,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1366,"height":768,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1280,"height":1024,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1280,"height":800,"refresh":60.0,"preferred":false,"current":true},
-                {"width":1280,"height":720,"refresh":60.0,"preferred":false,"current":false},
-                {"width":1024,"height":768,"refresh":60.0,"preferred":false,"current":false}
-            ];
-            currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
-        }
+    function defaultDisplayModes() {
+        return [
+            {"width":1920,"height":1080,"refresh":60.0,"preferred":true,"current":false},
+            {"width":1680,"height":1050,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1600,"height":900,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1440,"height":900,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1366,"height":768,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1280,"height":1024,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1280,"height":800,"refresh":60.0,"preferred":false,"current":true},
+            {"width":1280,"height":720,"refresh":60.0,"preferred":false,"current":false},
+            {"width":1024,"height":768,"refresh":60.0,"preferred":false,"current":false}
+        ];
+    }
 
-        // GPU/driver info from sysManager.runCommand
-        try {
-            var gpuRaw = JSON.parse(sysManager.runCommand("lspci 2>/dev/null | grep -i vga || echo 'VirtIO GPU'", "/"));
-            var gpuLine = (gpuRaw.stdout || "").trim();
-            gpuInfo = {
-                "name": gpuLine.length > 5 ? gpuLine.replace(/.*VGA.*:\s*/,"").split("[")[0].trim() : "VirtIO GPU (QEMU)",
-                "driver": "virtio_gpu / pixman",
-                "renderer": "wlroots (Cage compositor)"
-            };
-        } catch(e) {
-            gpuInfo = {"name": "VirtIO GPU (QEMU)", "driver": "virtio_gpu", "renderer": "wlroots/pixman"};
+    function loadDisplayInfo() {
+        if (typeof sysManager.getDisplayInfoAsync === "function") {
+            // ASYNC: non-blocking display info fetch — result comes via onDisplayInfoReady
+            sysManager.getDisplayInfoAsync();
+        } else {
+            // Sync fallback for current binary
+            try {
+                var xrandrText = sysManager.getDisplayInfo();
+                if (xrandrText && xrandrText.length > 10) {
+                    var parsed = parseXrandrModes(xrandrText);
+                    if (parsed.modes.length === 0) {
+                        displayModes = defaultDisplayModes();
+                        currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                    } else {
+                        displayModes = parsed.modes;
+                        currentRes = parsed.current;
+                        if (currentRes.width === 0) currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+                    }
+                } else {
+                    throw new Error("no xrandr");
+                }
+            } catch(e) {
+                displayModes = defaultDisplayModes();
+                currentRes = {"width": 1280, "height": 800, "refresh": 60.0};
+            }
+            // GPU info (sync)
+            try {
+                var gpuRaw = JSON.parse(sysManager.runCommand("lspci 2>/dev/null | grep -i vga || echo 'VirtIO GPU'", "/"));
+                var gpuLine = (gpuRaw.stdout || "").trim();
+                gpuInfo = {
+                    "name": gpuLine.length > 5 ? gpuLine.replace(/.*VGA.*:\s*/,"").split("[")[0].trim() : "VirtIO GPU (QEMU)",
+                    "driver": "virtio_gpu / pixman",
+                    "renderer": "wlroots (Cage compositor)"
+                };
+            } catch(e) {
+                gpuInfo = {"name": "VirtIO GPU (QEMU)", "driver": "virtio_gpu", "renderer": "wlroots/pixman"};
+            }
+            gfxInfo = {"modules": "virtio_gpu, drm, kms", "compositor": "Cage (wlroots)"};
+            selectedRes = currentRes.width + "x" + currentRes.height;
         }
-        gfxInfo = {"modules": "virtio_gpu, drm, kms", "compositor": "Cage (wlroots)"};
-        selectedRes = currentRes.width + "x" + currentRes.height;
     }
 
     function applyResolution(res) {
@@ -253,13 +311,14 @@ Rectangle {
         } else {
             // xrandr might fail if mode doesn't exist — try adding it first
             var modeName = w + "x" + h + "_60.00";
-            var cvtResult = JSON.parse(sysManager.runCommand(
+            var runFn = (typeof sysManager.runCommandQuick === "function") ? "runCommandQuick" : "runCommand";
+            var cvtResult = JSON.parse(sysManager[runFn](
                 "cvt " + w + " " + h + " 60 2>/dev/null | grep Modeline | sed 's/Modeline //'", "/"
             ));
             var modeline = (cvtResult.stdout || "").trim();
             if (modeline) {
                 // Add mode then retry
-                sysManager.runCommand(
+                sysManager[runFn](
                     "xrandr --newmode " + modeline + " 2>/dev/null; " +
                     "xrandr --addmode XWAYLAND0 '" + modeName + "' 2>/dev/null; " +
                     "xrandr --output XWAYLAND0 --mode '" + modeName + "' 2>/dev/null", "/"

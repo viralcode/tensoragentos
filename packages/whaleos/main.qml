@@ -25,17 +25,35 @@ WaylandCompositor {
             title: "TensorAgent OS"
             color: "#0d0d0d"
 
-            // ── Clipboard: poll Wayland clipboard + keep Qt clipboard synced ──
+            // ── Clipboard: async Wayland clipboard sync (non-blocking) ──
+            // PERF: Replaced 1s blocking poll with 5s async check.
+            //       pasteFromClipboardAsync() emits clipboardReady() without blocking.
             property string lastClipboard: ""
-            Timer {
-                interval: 1000
-                running: true
-                repeat: true
-                onTriggered: {
-                    var text = sysManager.pasteFromClipboard();
+
+            Connections {
+                target: sysManager
+                function onClipboardReady(text) {
                     if (text.length > 0 && text !== root.lastClipboard) {
                         root.lastClipboard = text;
                         sysManager.copyToClipboard(text);  // Syncs to Qt clipboard
+                    }
+                }
+            }
+
+            Timer {
+                interval: 5000   // 5s instead of 1s — async so no UI freeze
+                running: true
+                repeat: true
+                onTriggered: {
+                    if (typeof sysManager.pasteFromClipboardAsync === "function") {
+                        sysManager.pasteFromClipboardAsync();
+                    } else {
+                        // Sync fallback for current binary
+                        var text = sysManager.pasteFromClipboard();
+                        if (text.length > 0 && text !== root.lastClipboard) {
+                            root.lastClipboard = text;
+                            sysManager.copyToClipboard(text);
+                        }
                     }
                 }
             }

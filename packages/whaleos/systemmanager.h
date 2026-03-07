@@ -2,13 +2,16 @@
  * SystemManager — TensorAgent OS kernel-level operations
  *
  * Provides QML-callable methods for:
- *   • PAM-based authentication (replaces insecure /etc/shadow parsing)
+ *   • PAM-based authentication (async, non-blocking)
  *   • Asynchronous shell command execution (non-blocking UI)
- *   • User management (add/delete/password)
+ *   • User management (async add/delete/password)
  *   • File system operations
- *   • Clipboard sync (Qt ↔ Wayland ↔ XWayland)
- *   • Display settings (wlr-randr / xrandr)
+ *   • Clipboard sync (Qt ↔ Wayland ↔ XWayland) — async
+ *   • Display settings (wlr-randr / xrandr) — async
  *   • Native app launching with dynamic environment
+ *
+ * PERF: All system operations that spawn QProcess now use async
+ *       signal-based completion to avoid blocking the QML main thread.
  */
 
 #ifndef SYSTEMMANAGER_H
@@ -64,20 +67,74 @@ static int pamConversation(int numMsg, const struct pam_message **msg,
 }
 
 
+// ════════════════════════════════════════════════════════════════
+// AuthWorker — runs PAM authentication off the main thread
+// ════════════════════════════════════════════════════════════════
+
+class AuthWorker : public QObject {
+    Q_OBJECT
+public:
+    AuthWorker(const QString &user, const QString &pass)
+        : m_user(user), m_pass(pass) {}
+
+public slots:
+    void doWork() {
+        QByteArray user = m_user.toUtf8();
+        QByteArray pass = m_pass.toUtf8();
+
+        struct pam_conv conv;
+        conv.conv = pamConversation;
+        conv.appdata_ptr = const_cast<char *>(pass.constData());
+
+        pam_handle_t *pamh = nullptr;
+        int ret = pam_start("login", user.constData(), &conv, &pamh);
+        if (ret != PAM_SUCCESS) {
+            qWarning() << "AuthWorker: PAM start failed:" << pam_strerror(pamh, ret);
+            emit finished(false);
+            return;
+        }
+
+        ret = pam_authenticate(pamh, 0);
+        bool authenticated = (ret == PAM_SUCCESS);
+
+        if (authenticated) {
+            ret = pam_acct_mgmt(pamh, 0);
+            if (ret != PAM_SUCCESS) {
+                qWarning() << "AuthWorker: PAM account check failed:" << pam_strerror(pamh, ret);
+                authenticated = false;
+            }
+        }
+
+        pam_end(pamh, ret);
+        qDebug() << "AuthWorker: Auth" << m_user << ":"
+                 << (authenticated ? "SUCCESS" : "FAILED");
+        emit finished(authenticated);
+    }
+
+signals:
+    void finished(bool success);
+
+private:
+    QString m_user;
+    QString m_pass;
+};
+
+
 class SystemManager : public QObject {
     Q_OBJECT
 
 public:
     explicit SystemManager(QObject *parent = nullptr)
-        : QObject(parent), m_mainWindow(nullptr) {}
+        : QObject(parent), m_mainWindow(nullptr), m_cachedHome("") {}
 
     void setMainWindow(QQuickWindow *win) { m_mainWindow = win; }
 
 
     // ════════════════════════════════════════════════
-    // ── Authentication (PAM-based, secure)
+    // ── Authentication (PAM-based, ASYNC — non-blocking)
     // ════════════════════════════════════════════════
 
+    // Legacy synchronous — kept for backward compat but should be avoided
     Q_INVOKABLE bool authenticate(const QString &username, const QString &password) {
         if (username.isEmpty() || password.isEmpty()) return false;
 
@@ -99,7 +156,6 @@ public:
         bool authenticated = (ret == PAM_SUCCESS);
 
         if (authenticated) {
-            // Verify the account is valid (not expired, etc.)
             ret = pam_acct_mgmt(pamh, 0);
             if (ret != PAM_SUCCESS) {
                 qWarning() << "SystemManager: PAM account check failed:" << pam_strerror(pamh, ret);
@@ -113,9 +169,32 @@ public:
         return authenticated;
     }
 
+    // ASYNC authentication — runs PAM in a worker thread, emits authResult
+    Q_INVOKABLE void authenticateAsync(const QString &username, const QString &password) {
+        if (username.isEmpty() || password.isEmpty()) {
+            emit authResult(false);
+            return;
+        }
+
+        QThread *thread = new QThread();
+        AuthWorker *worker = new AuthWorker(username, password);
+        worker->moveToThread(thread);
+
+        connect(thread, &QThread::started, worker, &AuthWorker::doWork);
+        connect(worker, &AuthWorker::finished, this, [this, thread, worker](bool success) {
+            emit authResult(success);
+            thread->quit();
+        });
+        connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+        connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+
+        thread->start();
+        qDebug() << "SystemManager: authenticateAsync started for" << username;
+    }
+
 
     // ════════════════════════════════════════════════
-    // ── User Management
+    // ── User Management (ASYNC — non-blocking)
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE QString listUsers() {
@@ -150,6 +229,58 @@ public:
         return QString::fromUtf8(QJsonDocument(users).toJson(QJsonDocument::Compact));
     }
 
+    // ASYNC addUser — non-blocking
+    Q_INVOKABLE void addUserAsync(const QString &username, const QString &password) {
+        if (username.isEmpty() || password.isEmpty()) {
+            emit userOpResult("addUser", false, "Username and password required");
+            return;
+        }
+
+        QRegularExpression rx("^[a-z_][a-z0-9_-]*$");
+        if (!rx.match(username).hasMatch()) {
+            qWarning() << "SystemManager: Invalid username:" << username;
+            emit userOpResult("addUser", false, "Invalid username format");
+            return;
+        }
+
+        QProcess *proc = new QProcess(this);
+        proc->setProperty("opUser", username);
+        proc->setProperty("opPass", password);
+
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, username, password](int exitCode, QProcess::ExitStatus) {
+            if (exitCode != 0) {
+                qWarning() << "SystemManager: useradd failed:" << proc->readAllStandardError();
+                emit userOpResult("addUser", false, "useradd failed");
+                proc->deleteLater();
+                return;
+            }
+
+            // Now set password asynchronously
+            QProcess *chpasswd = new QProcess(this);
+            connect(chpasswd, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                    this, [this, chpasswd, username](int code, QProcess::ExitStatus) {
+                if (code != 0) {
+                    qWarning() << "SystemManager: chpasswd failed:" << chpasswd->readAllStandardError();
+                    emit userOpResult("addUser", false, "chpasswd failed");
+                } else {
+                    qDebug() << "SystemManager: User" << username << "created successfully";
+                    emit userOpResult("addUser", true, username);
+                }
+                chpasswd->deleteLater();
+            });
+            chpasswd->start("sudo", QStringList() << "chpasswd");
+            chpasswd->waitForStarted(1000);
+            chpasswd->write(QString("%1:%2\n").arg(username, password).toUtf8());
+            chpasswd->closeWriteChannel();
+
+            proc->deleteLater();
+        });
+
+        proc->start("sudo", QStringList() << "useradd" << "-m" << "-s" << "/bin/bash" << username);
+    }
+
+    // Legacy synchronous — kept for compat
     Q_INVOKABLE bool addUser(const QString &username, const QString &password) {
         if (username.isEmpty() || password.isEmpty()) return false;
 
@@ -182,6 +313,43 @@ public:
         return true;
     }
 
+    // ASYNC deleteUser — non-blocking
+    Q_INVOKABLE void deleteUserAsync(const QString &username) {
+        if (username.isEmpty()) {
+            emit userOpResult("deleteUser", false, "Empty username");
+            return;
+        }
+
+        // Check UID first (fast, synchronous read)
+        QProcess *idProc = new QProcess(this);
+        connect(idProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, idProc, username](int, QProcess::ExitStatus) {
+            int uid = idProc->readAllStandardOutput().trimmed().toInt();
+            idProc->deleteLater();
+
+            if (uid == 1000) {
+                qWarning() << "SystemManager: Cannot delete primary admin user";
+                emit userOpResult("deleteUser", false, "Cannot delete primary admin user");
+                return;
+            }
+
+            QProcess *delProc = new QProcess(this);
+            connect(delProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                    this, [this, delProc, username](int exitCode, QProcess::ExitStatus) {
+                if (exitCode != 0) {
+                    qWarning() << "SystemManager: userdel failed:" << delProc->readAllStandardError();
+                    emit userOpResult("deleteUser", false, "userdel failed");
+                } else {
+                    qDebug() << "SystemManager: User" << username << "deleted successfully";
+                    emit userOpResult("deleteUser", true, username);
+                }
+                delProc->deleteLater();
+            });
+            delProc->start("sudo", QStringList() << "userdel" << "-r" << username);
+        });
+        idProc->start("id", QStringList() << "-u" << username);
+    }
+
     Q_INVOKABLE bool deleteUser(const QString &username) {
         if (username.isEmpty()) return false;
 
@@ -204,6 +372,31 @@ public:
 
         qDebug() << "SystemManager: User" << username << "deleted successfully";
         return true;
+    }
+
+    // ASYNC changePassword — non-blocking
+    Q_INVOKABLE void changePasswordAsync(const QString &username, const QString &newPassword) {
+        if (username.isEmpty() || newPassword.isEmpty()) {
+            emit userOpResult("changePassword", false, "Username and password required");
+            return;
+        }
+
+        QProcess *proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, username](int exitCode, QProcess::ExitStatus) {
+            if (exitCode != 0) {
+                qWarning() << "SystemManager: Password change failed:" << proc->readAllStandardError();
+                emit userOpResult("changePassword", false, "chpasswd failed");
+            } else {
+                qDebug() << "SystemManager: Password changed for" << username;
+                emit userOpResult("changePassword", true, username);
+            }
+            proc->deleteLater();
+        });
+        proc->start("sudo", QStringList() << "chpasswd");
+        proc->waitForStarted(1000);
+        proc->write(QString("%1:%2\n").arg(username, newPassword).toUtf8());
+        proc->closeWriteChannel();
     }
 
     Q_INVOKABLE bool changePassword(const QString &username, const QString &newPassword) {
@@ -235,25 +428,46 @@ public:
 
 
     // ════════════════════════════════════════════════
-    // ── Asynchronous Shell Command Execution
+    // ── Shell Command Execution
     //
-    // runCommand()     — legacy synchronous (kept for short system queries)
-    // runCommandAsync() — non-blocking, emits commandFinished signal
+    // runCommandQuick() — fast synchronous for sub-second queries (cd, echo)
+    // runCommand()      — synchronous with 3s timeout (reduced from 10s)
+    // runCommandAsync()  — fully non-blocking, emits signals
     // ════════════════════════════════════════════════
 
-    // Synchronous — safe for sub-second system queries (lspci, pwd, etc.)
+    // Quick synchronous — for sub-second system queries only (cd, pwd, echo)
+    Q_INVOKABLE QString runCommandQuick(const QString &command, const QString &cwd) {
+        QProcess proc;
+        proc.setWorkingDirectory(cwd.isEmpty() ? currentUserHome() : cwd);
+        proc.setProcessChannelMode(QProcess::SeparateChannels);
+        proc.start("/bin/bash", QStringList() << "-c" << command);
+
+        if (!proc.waitForStarted(2000)) {
+            return buildCommandResult("", "Failed to start command", -1, cwd);
+        }
+
+        proc.waitForFinished(2000);
+
+        QString stdoutStr = QString::fromUtf8(proc.readAllStandardOutput());
+        QString stderrStr = QString::fromUtf8(proc.readAllStandardError());
+        QString newCwd = cwd.isEmpty() ? currentUserHome() : cwd;
+
+        return buildCommandResult(stdoutStr, stderrStr, proc.exitCode(), newCwd);
+    }
+
+    // Synchronous — reduced timeout from 10s to 3s
     Q_INVOKABLE QString runCommand(const QString &command, const QString &cwd) {
         QProcess proc;
         proc.setWorkingDirectory(cwd.isEmpty() ? currentUserHome() : cwd);
         proc.setProcessChannelMode(QProcess::SeparateChannels);
         proc.start("/bin/bash", QStringList() << "-c" << command);
 
-        if (!proc.waitForStarted(5000)) {
+        if (!proc.waitForStarted(2000)) {
             return buildCommandResult("", "Failed to start command", -1, cwd);
         }
 
-        // Reduced timeout: 10s max for synchronous calls
-        proc.waitForFinished(10000);
+        // Reduced timeout: 3s max for synchronous calls (was 10s)
+        proc.waitForFinished(3000);
 
         QString stdoutStr = QString::fromUtf8(proc.readAllStandardOutput());
         QString stderrStr = QString::fromUtf8(proc.readAllStandardError());
@@ -263,7 +477,7 @@ public:
             QProcess pwdProc;
             pwdProc.setWorkingDirectory(newCwd);
             pwdProc.start("/bin/bash", QStringList() << "-c" << command + " && pwd");
-            if (pwdProc.waitForFinished(3000)) {
+            if (pwdProc.waitForFinished(2000)) {
                 QString pwd = QString::fromUtf8(pwdProc.readAllStandardOutput()).trimmed();
                 if (!pwd.isEmpty()) newCwd = pwd;
             }
@@ -316,6 +530,15 @@ signals:
     void commandOutput(const QString &cmdId, const QString &data);
     void commandError(const QString &cmdId, const QString &data);
     void commandFinished(const QString &cmdId, int exitCode, const QString &cwd);
+    void authResult(bool success);
+    void userOpResult(const QString &operation, bool success, const QString &detail);
+    void displayInfoReady(const QString &xrandrOutput);
+    void clipboardReady(const QString &text);
+    void gpuInfoReady(const QString &gpuLine);
+    void timeInfoReady(const QString &timezone, bool ntpSync, bool ntpActive,
+                       const QString &localTime, const QString &utcTime);
+    void timezonesReady(const QStringList &timezones);
+    void timeOpResult(const QString &operation, bool success, const QString &detail);
 
 
     // ════════════════════════════════════════════════
@@ -445,6 +668,9 @@ public:
 
     // ════════════════════════════════════════════════
     // ── Clipboard Operations (Qt ↔ Wayland ↔ XWayland)
+    //
+    // PERF: pasteFromClipboardAsync() replaces blocking poll.
+    //       copyToClipboard() xsel path already non-blocking.
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
@@ -454,7 +680,7 @@ public:
             qDebug() << "SystemManager: copyToClipboard via Qt OK";
         }
 
-        // Also push to X11 clipboard for XWayland apps
+        // Also push to X11 clipboard for XWayland apps (async, non-blocking)
         {
             QProcess *proc = new QProcess(this);
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -471,6 +697,7 @@ public:
         return true;
     }
 
+    // Legacy synchronous paste — kept for backward compat, reduced timeout
     Q_INVOKABLE QString pasteFromClipboard() {
         // Primary: Wayland clipboard
         {
@@ -480,11 +707,10 @@ public:
             env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
             proc.setProcessEnvironment(env);
             proc.start("wl-paste", QStringList() << "--no-newline");
-            proc.waitForFinished(2000);
+            proc.waitForFinished(500);  // Reduced from 2000ms → 500ms
             if (proc.exitCode() == 0) {
                 QString result = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
                 if (!result.isEmpty() && result != "No selection") {
-                    qDebug() << "SystemManager: pasteFromClipboard via wl-paste:" << result.left(50);
                     return result;
                 }
             }
@@ -495,7 +721,6 @@ public:
         if (clipboard) {
             QString text = clipboard->text();
             if (!text.isEmpty()) {
-                qDebug() << "SystemManager: pasteFromClipboard via Qt";
                 return text;
             }
         }
@@ -503,11 +728,62 @@ public:
         return "";
     }
 
+    // ASYNC paste — emits clipboardReady(text) without blocking UI
+    Q_INVOKABLE void pasteFromClipboardAsync() {
+        QProcess *proc = new QProcess(this);
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
+        proc->setProcessEnvironment(env);
+
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int exitCode, QProcess::ExitStatus) {
+            QString text;
+            if (exitCode == 0) {
+                text = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+                if (text == "No selection") text = "";
+            }
+
+            // Fallback to Qt clipboard
+            if (text.isEmpty()) {
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                if (clipboard) text = clipboard->text();
+            }
+
+            if (!text.isEmpty()) {
+                emit clipboardReady(text);
+            }
+            proc->deleteLater();
+        });
+
+        proc->start("wl-paste", QStringList() << "--no-newline");
+    }
+
 
     // ════════════════════════════════════════════════
-    // ── Display Settings (wlr-randr / xrandr)
+    // ── Display Settings (ASYNC — non-blocking)
     // ════════════════════════════════════════════════
 
+    // ASYNC display info — emits displayInfoReady(xrandrOutput)
+    Q_INVOKABLE void getDisplayInfoAsync() {
+        QProcess *proc = new QProcess(this);
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
+        proc->setProcessEnvironment(env);
+
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int, QProcess::ExitStatus) {
+            QString output = proc->readAllStandardOutput().trimmed();
+            emit displayInfoReady(output);
+            proc->deleteLater();
+        });
+
+        proc->start("xrandr", QStringList());
+    }
+
+    // Legacy synchronous — kept for backward compat
     Q_INVOKABLE QString getDisplayInfo() {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -550,6 +826,135 @@ public:
         proc.waitForFinished(5000);
         qDebug() << "SystemManager: setDisplayScale" << scale << "exit:" << proc.exitCode();
         return proc.exitCode() == 0;
+    }
+
+    // ASYNC GPU info query — emits gpuInfoReady(gpuLine)
+    Q_INVOKABLE void getGpuInfoAsync() {
+        QProcess *proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int, QProcess::ExitStatus) {
+            QString output = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+            emit gpuInfoReady(output);
+            proc->deleteLater();
+        });
+        proc->start("/bin/bash", QStringList() << "-c"
+                     << "lspci 2>/dev/null | grep -i vga || echo 'VirtIO GPU'");
+    }
+
+
+    // ════════════════════════════════════════════════
+    // ── Time Management (timedatectl — ASYNC, no helper dependency)
+    // ════════════════════════════════════════════════
+
+    // ASYNC: Fetch timezone, NTP status, local/UTC time — emits timeInfoReady
+    Q_INVOKABLE void getTimeInfoAsync() {
+        QProcess *proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int, QProcess::ExitStatus) {
+            QString output = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+            proc->deleteLater();
+
+            // Parse timedatectl status output
+            QString timezone, localTime, utcTime;
+            bool ntpSync = false, ntpActive = false;
+
+            QStringList lines = output.split('\n');
+            for (const QString &line : lines) {
+                QString trimmed = line.trimmed();
+                if (trimmed.startsWith("Time zone:")) {
+                    timezone = trimmed.mid(10).trimmed().split(' ').first();
+                } else if (trimmed.startsWith("Local time:")) {
+                    localTime = trimmed.mid(11).trimmed();
+                } else if (trimmed.startsWith("Universal time:")) {
+                    utcTime = trimmed.mid(15).trimmed();
+                } else if (trimmed.startsWith("System clock synchronized:") || trimmed.startsWith("NTP synchronized:")) {
+                    ntpSync = trimmed.contains("yes");
+                } else if (trimmed.startsWith("NTP service:")) {
+                    ntpActive = trimmed.contains("active");
+                }
+            }
+
+            emit timeInfoReady(timezone, ntpSync, ntpActive, localTime, utcTime);
+        });
+        proc->start("timedatectl", QStringList() << "status");
+    }
+
+    // ASYNC: List all available timezones — emits timezonesReady
+    Q_INVOKABLE void getTimezonesAsync() {
+        QProcess *proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int, QProcess::ExitStatus) {
+            QString output = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+            QStringList zones = output.split('\n', Qt::SkipEmptyParts);
+            emit timezonesReady(zones);
+            proc->deleteLater();
+        });
+        proc->start("timedatectl", QStringList() << "list-timezones");
+    }
+
+    // ASYNC: Set timezone — emits timeOpResult
+    Q_INVOKABLE void setTimezoneAsync(const QString &tz) {
+        if (tz.isEmpty()) {
+            emit timeOpResult("setTimezone", false, "No timezone provided");
+            return;
+        }
+        QProcess *proc = new QProcess(this);
+        QString tzSafe = tz;
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, tzSafe](int exitCode, QProcess::ExitStatus) {
+            if (exitCode == 0) {
+                emit timeOpResult("setTimezone", true, tzSafe);
+                getTimeInfoAsync();
+            } else {
+                emit timeOpResult("setTimezone", false, QString::fromUtf8(proc->readAllStandardError()).trimmed());
+            }
+            proc->deleteLater();
+        });
+        proc->start("sudo", QStringList() << "timedatectl" << "set-timezone" << tz);
+    }
+
+    // ASYNC: Toggle NTP — emits timeOpResult
+    Q_INVOKABLE void toggleNtpAsync(bool enable) {
+        QProcess *proc = new QProcess(this);
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, enable](int exitCode, QProcess::ExitStatus) {
+            if (exitCode == 0) {
+                emit timeOpResult("toggleNtp", true, enable ? "enabled" : "disabled");
+                getTimeInfoAsync();
+            } else {
+                emit timeOpResult("toggleNtp", false, QString::fromUtf8(proc->readAllStandardError()).trimmed());
+            }
+            proc->deleteLater();
+        });
+        proc->start("sudo", QStringList() << "timedatectl" << "set-ntp" << (enable ? "true" : "false"));
+    }
+
+    // ASYNC: Set manual time — emits timeOpResult
+    Q_INVOKABLE void setManualTimeAsync(const QString &timeStr) {
+        if (timeStr.isEmpty()) {
+            emit timeOpResult("setTime", false, "No time provided");
+            return;
+        }
+        // Must disable NTP first, then set time
+        QProcess *ntpProc = new QProcess(this);
+        QString timeSafe = timeStr;
+        connect(ntpProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, ntpProc, timeSafe](int, QProcess::ExitStatus) {
+            ntpProc->deleteLater();
+            QProcess *setProc = new QProcess(this);
+            connect(setProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                    this, [this, setProc, timeSafe](int exitCode, QProcess::ExitStatus) {
+                if (exitCode == 0) {
+                    emit timeOpResult("setTime", true, timeSafe);
+                    getTimeInfoAsync();
+                } else {
+                    emit timeOpResult("setTime", false, QString::fromUtf8(setProc->readAllStandardError()).trimmed());
+                }
+                setProc->deleteLater();
+            });
+            setProc->start("sudo", QStringList() << "timedatectl" << "set-time" << timeSafe);
+        });
+        ntpProc->start("sudo", QStringList() << "timedatectl" << "set-ntp" << "false");
     }
 
 
@@ -616,9 +1021,21 @@ public:
         return true;
     }
 
+    // ════════════════════════════════════════════════
+    // ── Cached Home Directory (avoids repeated process spawns)
+    // ════════════════════════════════════════════════
+
+    Q_INVOKABLE QString getCachedHome() {
+        if (m_cachedHome.isEmpty()) {
+            m_cachedHome = currentUserHome();
+        }
+        return m_cachedHome;
+    }
+
 
 private:
     QQuickWindow *m_mainWindow;
+    QString m_cachedHome;
 
     // ── Helpers ──
 

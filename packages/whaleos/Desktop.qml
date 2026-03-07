@@ -475,7 +475,27 @@ Rectangle {
                                 if (ok) {
                                     root.showToast("Resolution set to " + modelData.label, "success");
                                 } else {
-                                    root.showToast("Cannot change resolution (may need to add mode first)", "error");
+                                    // Mode doesn't exist — add it via cvt + xrandr --newmode/--addmode
+                                    var modeName = w + "x" + h + "_60.00";
+                                    try {
+                                        var runFn = (typeof sysManager.runCommandQuick === "function") ? "runCommandQuick" : "runCommand";
+                                        var cvtResult = JSON.parse(sysManager[runFn](
+                                            "cvt " + w + " " + h + " 60 2>/dev/null | grep Modeline | sed 's/Modeline //'", "/"
+                                        ));
+                                        var modeline = (cvtResult.stdout || "").trim();
+                                        if (modeline) {
+                                            sysManager[runFn](
+                                                "xrandr --newmode " + modeline + " 2>/dev/null; " +
+                                                "xrandr --addmode XWAYLAND0 '" + modeName + "' 2>/dev/null; " +
+                                                "xrandr --output XWAYLAND0 --mode '" + modeName + "' 2>/dev/null", "/"
+                                            );
+                                            root.showToast("Resolution set to " + modelData.label + " (mode added)", "success");
+                                        } else {
+                                            root.showToast("Cannot change resolution (mode not supported)", "error");
+                                        }
+                                    } catch(e) {
+                                        root.showToast("Cannot change resolution (may need to add mode first)", "error");
+                                    }
                                 }
                                 contextMenu.visible = false;
                             }

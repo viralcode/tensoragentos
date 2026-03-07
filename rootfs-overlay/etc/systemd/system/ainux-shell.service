@@ -20,6 +20,13 @@ Environment=WLR_NO_HARDWARE_CURSORS=1
 Environment=XDG_SESSION_TYPE=wayland
 Environment=GDK_BACKEND=wayland
 
+# PERF: Threaded QML rendering — offloads scene graph to separate thread
+Environment=QSG_RENDER_LOOP=threaded
+# PERF: Cache compiled QML to disk — faster startup on subsequent boots
+Environment=QML_DISK_CACHE=1
+# PERF: Software backend as safe fallback (switch to default if virgl works)
+Environment=QT_QUICK_BACKEND=software
+
 # Restart if the compositor crashes
 Restart=on-failure
 RestartSec=3

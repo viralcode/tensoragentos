@@ -69,8 +69,8 @@ exec qemu-system-aarch64 \
     -machine virt \
     -accel hvf \
     -cpu host \
-    -m 4G \
-    -smp 4 \
+    -m 6G \
+    -smp 6 \
     -drive if=pflash,format=raw,file="${UEFI_FW}",readonly=on \
     -drive if=pflash,format=raw,file="${UEFI_VARS}" \
     -drive file="${DISK}",if=none,id=hd0,format=qcow2 \
@@ -85,4 +85,5 @@ exec qemu-system-aarch64 \
     -device virtio-net-pci,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::7777-:7777,hostfwd=tcp::2222-:22 \
     -device virtio-rng-pci \
+    -rtc base=utc,clock=host \
     -serial mon:stdio

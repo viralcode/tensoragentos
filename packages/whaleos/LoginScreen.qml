@@ -362,30 +362,54 @@ Rectangle {
         }
     }
 
+    // ── Async Auth Signal Handler (activates after C++ recompile) ──
+    Connections {
+        target: sysManager
+        function onAuthResult(success) {
+            if (!loginBusy) return;  // Ignore stale signals
+
+            if (!success) {
+                loginBusy = false;
+                errorText.text = "Invalid username or password";
+                return;
+            }
+            proceedAfterAuth();
+        }
+    }
+
     function doLogin() {
         if (loginBusy) return;
         loginBusy = true;
         errorText.text = "";
 
-        // Authenticate against Linux kernel (PAM/shadow)
-        var ok = sysManager.authenticate(userField.text, passField.text);
-        if (!ok) {
-            loginBusy = false;
-            errorText.text = "Invalid username or password";
-            return;
+        // Try async authenticate first (available after C++ rebuild),
+        // fall back to sync authenticate (always available in compiled binary)
+        var hasAsync = (typeof sysManager.authenticateAsync === "function");
+        if (hasAsync) {
+            sysManager.authenticateAsync(userField.text, passField.text);
+        } else {
+            // Sync fallback — works with current compiled binary
+            var ok = sysManager.authenticate(userField.text, passField.text);
+            if (!ok) {
+                loginBusy = false;
+                errorText.text = "Invalid username or password";
+                return;
+            }
+            // Auth succeeded — proceed to API login
+            proceedAfterAuth();
         }
+    }
 
-        // Start timeout — if API never responds, we'll still log in
+    function proceedAfterAuth() {
         xhrTimeout.pendingUser = userField.text;
         xhrTimeout.restart();
 
-        // Now get a real API session token from OpenWhale
         var xhr = new XMLHttpRequest();
         xhr.open("POST", root.apiBase + "/auth/login");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
-                xhrTimeout.stop();  // Cancel timeout — we got a response
+                xhrTimeout.stop();
                 loginBusy = false;
                 if (xhr.status === 200) {
                     try {
@@ -396,7 +420,6 @@ Rectangle {
                         }
                     } catch(e) {}
                 }
-                // API login failed — fall back to "system" session (local mode)
                 root.onLoginSuccess(userField.text, "system");
             }
         };

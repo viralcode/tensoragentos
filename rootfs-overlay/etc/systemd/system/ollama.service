@@ -1,0 +1,22 @@
+[Unit]
+Description=Ollama Local LLM Runtime
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ainux
+ExecStart=/usr/local/bin/ollama serve
+Environment=HOME=/home/ainux OLLAMA_HOST=0.0.0.0
+Restart=always
+RestartSec=3
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ollama
+
+[Install]
+WantedBy=multi-user.target

@@ -13,15 +13,21 @@ Rectangle {
     property int historyIndex: -1
     property string savedInput: ""
     property string activeCommandId: ""
+    property string cachedHome: ""  // PERF: cache home dir to avoid subprocess spawns
 
     Component.onCompleted: {
-        // Dynamically resolve the user's home directory
-        try {
-            var result = JSON.parse(sysManager.runCommand("echo $HOME", ""));
-            currentCwd = (result.stdout || "").trim() || "/home";
-        } catch(e) {
-            currentCwd = "/home";
+        // PERF: Use cached home dir if available (after C++ rebuild), else sync fallback
+        if (typeof sysManager.getCachedHome === "function") {
+            cachedHome = sysManager.getCachedHome() || "/home";
+        } else {
+            try {
+                var result = JSON.parse(sysManager.runCommand("echo $HOME", ""));
+                cachedHome = (result.stdout || "").trim() || "/home";
+            } catch(e) {
+                cachedHome = "/home";
+            }
         }
+        currentCwd = cachedHome;
         appendLine("TensorAgent OS — Terminal");
         appendLine("System shell access. Type commands and press Enter.");
         appendLine("Type 'help' for available shortcuts.");
@@ -69,13 +75,15 @@ Rectangle {
 
     function getPrompt() {
         var dir = currentCwd;
-        // Replace home dir with ~ for display
-        try {
-            var home = JSON.parse(sysManager.runCommand("echo $HOME", "")).stdout.trim();
-            if (home && dir.indexOf(home) === 0) {
-                dir = "~" + dir.substring(home.length);
-            }
-        } catch(e) {
+        // PERF: Use cached home dir instead of spawning a process
+        var home = cachedHome;
+        if (!home && typeof sysManager.getCachedHome === "function") {
+            home = sysManager.getCachedHome() || "";
+        }
+        if (home && dir.indexOf(home) === 0) {
+            dir = "~" + dir.substring(home.length);
+        }
+        if (!dir.startsWith("~")) {
             dir = dir.replace(/^\/home\/[^/]+/, "~");
         }
         var user = root.currentUser || "user";
@@ -359,9 +367,10 @@ Rectangle {
             return;
         }
 
-        // ── Handle 'cd' locally (synchronous, instant) ──
+        // ── Handle 'cd' locally (synchronous, instant — uses quick 2s timeout) ──
         if (cmd.trim().startsWith("cd ") || cmd.trim() === "cd") {
-            var cdResult = sysManager.runCommand(cmd + " && pwd", currentCwd);
+            var runFn = (typeof sysManager.runCommandQuick === "function") ? "runCommandQuick" : "runCommand";
+            var cdResult = sysManager[runFn](cmd + " && pwd", currentCwd);
             try {
                 var d = JSON.parse(cdResult);
                 if (d.exitCode === 0 && d.stdout) {
