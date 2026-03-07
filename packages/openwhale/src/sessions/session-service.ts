@@ -105,7 +105,7 @@ function ensureDbInit(): void {
     dbInitialized = true;
 
     try {
-        // Create table if not exists
+        // Create all tables
         db.exec(`
             CREATE TABLE IF NOT EXISTS dashboard_messages (
                 id TEXT PRIMARY KEY,
@@ -115,22 +115,53 @@ function ensureDbInit(): void {
                 model TEXT,
                 input_tokens INTEGER,
                 output_tokens INTEGER,
+                conversation_id TEXT,
                 created_at INTEGER DEFAULT (unixepoch())
-            )
+            );
+            CREATE TABLE IF NOT EXISTS conversations (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL DEFAULT 'New Chat',
+                created_at INTEGER DEFAULT (unixepoch()),
+                updated_at INTEGER DEFAULT (unixepoch())
+            );
+            CREATE TABLE IF NOT EXISTS os_config (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at INTEGER DEFAULT (unixepoch())
+            );
         `);
 
-        // Load existing messages into memory
+        // Migration: add conversation_id column if missing
+        try { db.exec("ALTER TABLE dashboard_messages ADD COLUMN conversation_id TEXT"); } catch { /* already exists */ }
+
+        // Load latest conversation or create one
+        const latestConv = db.prepare(
+            "SELECT id FROM conversations ORDER BY updated_at DESC LIMIT 1"
+        ).get() as { id: string } | undefined;
+
+        if (latestConv) {
+            currentConversationId = latestConv.id;
+        } else {
+            db.prepare("INSERT INTO conversations (id, title) VALUES (?, ?)").run(currentConversationId, "New Chat");
+        }
+
+        // Tag untagged messages with current conversation
+        db.prepare("UPDATE dashboard_messages SET conversation_id = ? WHERE conversation_id IS NULL").run(currentConversationId);
+
+        // Load messages for current conversation
         const rows = db.prepare(`
-            SELECT id, role, content, tool_calls, model, created_at 
+            SELECT id, role, content, tool_calls, model, conversation_id, created_at 
             FROM dashboard_messages 
+            WHERE conversation_id = ?
             ORDER BY created_at ASC 
-            LIMIT 100
-        `).all() as Array<{
+            LIMIT 200
+        `).all(currentConversationId) as Array<{
             id: string;
             role: string;
             content: string;
             tool_calls: string | null;
             model: string | null;
+            conversation_id: string | null;
             created_at: number;
         }>;
 
@@ -141,11 +172,12 @@ function ensureDbInit(): void {
                 content: row.content,
                 toolCalls: row.tool_calls ? JSON.parse(row.tool_calls) : undefined,
                 model: row.model || undefined,
+                conversationId: row.conversation_id || currentConversationId,
                 createdAt: new Date(row.created_at * 1000).toISOString(),
             });
         }
 
-        console.log(`[SessionService] Loaded ${rows.length} messages from database`);
+        console.log(`[SessionService] Loaded ${rows.length} messages for conversation ${currentConversationId}`);
     } catch (e) {
         console.warn("[SessionService] Failed to init DB:", e);
     }
@@ -155,18 +187,32 @@ function ensureDbInit(): void {
 function persistMessage(msg: ChatMessage): void {
     try {
         ensureDbInit();
+        const convId = msg.conversationId || currentConversationId;
         db.prepare(`
-            INSERT OR REPLACE INTO dashboard_messages (id, role, content, tool_calls, model, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO dashboard_messages (id, role, content, tool_calls, model, conversation_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(
             msg.id,
             msg.role,
             msg.content,
             msg.toolCalls ? JSON.stringify(msg.toolCalls) : null,
             msg.model || null,
+            convId,
             Math.floor(new Date(msg.createdAt).getTime() / 1000)
         );
-        console.log(`[SessionService] Persisted message ${msg.id} (${msg.role})`);
+
+        // Update conversation title from first user message
+        if (msg.role === "user") {
+            try {
+                const conv = db.prepare("SELECT title FROM conversations WHERE id = ?").get(convId) as { title: string } | undefined;
+                if (conv && conv.title === "New Chat") {
+                    const title = msg.content.substring(0, 60).replace(/\n/g, " ");
+                    db.prepare("UPDATE conversations SET title = ?, updated_at = unixepoch() WHERE id = ?").run(title, convId);
+                } else {
+                    db.prepare("UPDATE conversations SET updated_at = unixepoch() WHERE id = ?").run(convId);
+                }
+            } catch { /* ignore */ }
+        }
     } catch (e) {
         console.warn("[SessionService] Failed to persist message:", e);
     }
@@ -206,7 +252,7 @@ export function clearChatHistory(): void {
     dashboardMessages.length = 0;
 
     try {
-        db.prepare("DELETE FROM dashboard_messages").run();
+        db.prepare("DELETE FROM dashboard_messages WHERE conversation_id = ?").run(currentConversationId);
     } catch (e) {
         console.warn("[SessionService] Failed to clear DB messages:", e);
     }
@@ -563,8 +609,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
             model,
             createdAt: new Date().toISOString(),
-        conversationId: currentConversationId,
-    };
+            conversationId: currentConversationId,
+        };
         dashboardMessages.push(assistantMsg);
         persistMessage(assistantMsg);
 
@@ -582,8 +628,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             role: "assistant",
             content: `Error: ${error instanceof Error ? error.message : String(error)}`,
             createdAt: new Date().toISOString(),
-        conversationId: currentConversationId,
-    };
+            conversationId: currentConversationId,
+        };
         dashboardMessages.push(errorMsg);
         persistMessage(errorMsg);
         return errorMsg;
@@ -950,8 +996,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
             model,
             createdAt: new Date().toISOString(),
-        conversationId: currentConversationId,
-    };
+            conversationId: currentConversationId,
+        };
         dashboardMessages.push(assistantMsg);
         persistMessage(assistantMsg);
 
@@ -970,8 +1016,8 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
             role: "assistant",
             content: errorContent,
             createdAt: new Date().toISOString(),
-        conversationId: currentConversationId,
-    };
+            conversationId: currentConversationId,
+        };
         dashboardMessages.push(errorMsg);
         persistMessage(errorMsg);
         return errorMsg;
@@ -1099,7 +1145,7 @@ export function deleteConversation(conversationId: string): boolean {
     try {
         db.prepare("DELETE FROM dashboard_messages WHERE conversation_id = ?").run(conversationId);
         db.prepare("DELETE FROM conversations WHERE id = ?").run(conversationId);
-        
+
         if (currentConversationId === conversationId) {
             const next = db.prepare("SELECT id FROM conversations ORDER BY updated_at DESC LIMIT 1").get() as { id: string } | undefined;
             if (next) {
