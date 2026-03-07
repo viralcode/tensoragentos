@@ -171,8 +171,7 @@ PAMName=login
 Environment=WLR_LIBINPUT_NO_DEVICES=1
 Environment=WLR_NO_HARDWARE_CURSORS=1
 Environment=QT_QPA_PLATFORM=wayland
-Environment=QSG_RENDER_LOOP=basic
-Environment=QT_QUICK_BACKEND=software
+Environment=QSG_RENDER_LOOP=threaded
 ExecStartPre=/bin/sleep 3
 ExecStart=/usr/bin/cage -- /opt/ainux/whaleos/whaleos
 Restart=on-failure

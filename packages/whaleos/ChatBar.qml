@@ -10,14 +10,12 @@ Rectangle {
     clip: true
     z: 10
 
-    // Short height animation to spread rendering cost across frames
-    Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    // PERF: No height animation — instant snap to avoid continuous repainting
 
     property bool chatExpanded: false
     property bool chatFullScreen: false
     // Fade in content when expanding (cheap — only affects opacity, not layout)
     property real chatContentOpacity: chatExpanded ? 1.0 : 0.0
-    Behavior on chatContentOpacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
     property bool isSending: false
     property var messages: []
     property string selectedAgent: "main"
@@ -102,7 +100,7 @@ Rectangle {
 
     // Poll active model every 10s
     Timer {
-        interval: 10000; running: true; repeat: true
+        interval: 30000; running: true; repeat: true
         onTriggered: loadActiveModel()
     }
 
@@ -210,24 +208,7 @@ Rectangle {
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
 
-            Canvas {
-                width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
-                property real s: root.sf
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                    ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
-                    ctx.beginPath(); ctx.arc(9, 9, 7, 0, Math.PI * 2); ctx.stroke();
-                    ctx.fillStyle = "#60a5fa";
-                    ctx.beginPath(); ctx.arc(6, 7, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(12, 7, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(9, 11, 1.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.8;
-                    ctx.beginPath(); ctx.moveTo(6, 7); ctx.lineTo(9, 11); ctx.lineTo(12, 7); ctx.stroke();
-                    ctx.restore();
-                }
-                onSChanged: requestPaint()
-            }
+            Text { text: "◉"; font.pixelSize: Math.round(16 * root.sf); color: "#60a5fa"; Layout.alignment: Qt.AlignVCenter }
 
             Text {
                 text: getAgentName()
@@ -285,21 +266,7 @@ Rectangle {
                 color: clearMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 visible: !isSending
 
-                Canvas {
-                    anchors.centerIn: parent; width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = "#c0cfe0"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
-                        ctx.beginPath(); ctx.moveTo(1, 3); ctx.lineTo(11, 3); ctx.stroke();
-                        ctx.strokeRect(3, 3, 6, 8);
-                        ctx.beginPath(); ctx.moveTo(5, 5); ctx.lineTo(5, 9); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(7, 5); ctx.lineTo(7, 9); ctx.stroke();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
-                }
+                Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: "#c0cfe0" }
 
                 MouseArea {
                     id: clearMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -319,28 +286,7 @@ Rectangle {
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
                 color: fsMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
 
-                Canvas {
-                    anchors.centerIn: parent; width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
-                    property bool fs: chatFullScreen
-                    property real s: root.sf
-                    onFsChanged: requestPaint()
-                    onSChanged: requestPaint()
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = chatFullScreen ? "#60a5fa" : "#c0cfe0"; ctx.lineWidth = 1.2; ctx.lineCap = "round";
-                        if (chatFullScreen) {
-                            ctx.strokeRect(2, 2, 8, 8);
-                            ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(8, 4); ctx.lineTo(8, 8); ctx.stroke();
-                        } else {
-                            ctx.beginPath(); ctx.moveTo(1, 4); ctx.lineTo(1, 1); ctx.lineTo(4, 1); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(11, 1); ctx.lineTo(11, 4); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(1, 8); ctx.lineTo(1, 11); ctx.lineTo(4, 11); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(8, 11); ctx.lineTo(11, 11); ctx.lineTo(11, 8); ctx.stroke();
-                        }
-                        ctx.restore();
-                    }
-                }
+                Text { anchors.centerIn: parent; text: chatFullScreen ? "▣" : "□"; font.pixelSize: Math.round(13 * root.sf); color: chatFullScreen ? "#60a5fa" : "#c0cfe0" }
 
                 MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (chatFullScreen) { chatFullScreen = false; chatExpanded = false; } else { chatFullScreen = true; } } }
             }
@@ -967,27 +913,7 @@ Rectangle {
                 visible: !chatExpanded
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
                 color: expandIconMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(0.35, 0.55, 1.0, 0.08)
-
-                Canvas {
-                    anchors.centerIn: parent
-                    width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
-                        ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI * 2); ctx.stroke();
-                        ctx.fillStyle = "#60a5fa";
-                        ctx.beginPath(); ctx.arc(5.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(10.5, 7, 1.2, 0, Math.PI * 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(8, 10, 1.2, 0, Math.PI * 2); ctx.fill();
-                        ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 0.6;
-                        ctx.beginPath(); ctx.moveTo(5.5, 7); ctx.lineTo(8, 10); ctx.lineTo(10.5, 7); ctx.stroke();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
-                }
-
+                Text { anchors.centerIn: parent; text: "◉"; font.pixelSize: Math.round(14 * root.sf); color: "#60a5fa" }
                 MouseArea {
                     id: expandIconMa; anchors.fill: parent; hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
@@ -1081,20 +1007,7 @@ Rectangle {
                 color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.06)
                 // PERF: Removed color Behavior on send button
 
-                Canvas {
-                    anchors.centerIn: parent; width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
-                    property real s: root.sf
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
-                        ctx.save(); ctx.scale(s, s);
-                        ctx.fillStyle = chatInput.text.trim() ? "#fff" : "#666";
-                        ctx.beginPath(); ctx.moveTo(7, 1); ctx.lineTo(12, 7); ctx.lineTo(8, 7);
-                        ctx.lineTo(8, 13); ctx.lineTo(6, 13); ctx.lineTo(6, 7); ctx.lineTo(2, 7);
-                        ctx.closePath(); ctx.fill();
-                        ctx.restore();
-                    }
-                    onSChanged: requestPaint()
-                }
+                Text { anchors.centerIn: parent; text: "↑"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: chatInput.text.trim() ? "#fff" : "#666" }
 
                 // PERF: Removed SequentialAnimation on border.color — was repainting every 1200ms
                 // even while idle. Static glow is visually equivalent and costs nothing.

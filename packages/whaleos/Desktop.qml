@@ -603,7 +603,6 @@ Rectangle {
         width: Math.round(72 * root.sf); height: Math.round(78 * root.sf)
         radius: root.radiusMd; z: 10
         color: worksIconMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-        Behavior on color { ColorAnimation { duration: 150 } }
 
         Column {
             anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -732,7 +731,6 @@ Rectangle {
         height: Math.round(200 * root.sf)
         visible: chatBarItem.chatExpanded
         opacity: (chatBarItem.isSending || chatBarItem.isStreaming) ? 1.0 : 0.45
-        Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
 
         property real phase: 0
         property bool active: chatBarItem.isSending || chatBarItem.isStreaming
@@ -744,145 +742,17 @@ Rectangle {
             wasActive = active;
         }
 
-        // PERF: Fixed 150ms interval (safe with QSG_RENDER_LOOP=basic)
-        // Dynamic interval bindings on running Timers can cause QML instability
-        Timer {
-            running: siriGlow.visible
-            interval: 150; repeat: true
-            onTriggered: {
-                siriGlow.phase += siriGlow.active ? 0.06 : 0.012;
-                orbCanvas.requestPaint();
-            }
+        // PERF: Replaced heavy Canvas orb + 150ms timer + pulse animation
+        // with a simple static radial glow rectangle
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.round(100 * root.sf); height: width; radius: width / 2
+            color: siriGlow.active ? Qt.rgba(0.35, 0.45, 1.0, 0.15) : Qt.rgba(0.3, 0.35, 0.8, 0.08)
         }
-
-        // Pulsating scale — more dramatic when active
-        property real pulseScale: 1.0
-        SequentialAnimation on pulseScale {
-            running: siriGlow.visible; loops: Animation.Infinite
-            NumberAnimation { to: 1.12; duration: 1800; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 0.90; duration: 1800; easing.type: Easing.InOutSine }
-        }
-
-        transform: Scale {
-            origin.x: siriGlow.width / 2; origin.y: siriGlow.height / 2
-            xScale: siriGlow.pulseScale; yScale: siriGlow.pulseScale
-        }
-
-        Canvas {
-            id: orbCanvas
-            anchors.fill: parent
-            onPaint: {
-                var ctx = getContext("2d");
-                var w = width, h = height;
-                ctx.clearRect(0, 0, w, h);
-
-                var cx = w / 2, cy = h / 2;
-                var p = siriGlow.phase;
-                var isActive = siriGlow.active;
-                var baseR = w * 0.24;
-
-                // ── Layer 1: Outer ambient glow halo ──
-                var outerR = baseR * (isActive ? 2.5 : 2.0);
-                var outerGrad = ctx.createRadialGradient(cx, cy, baseR * 0.3, cx, cy, outerR);
-                if (isActive) {
-                    outerGrad.addColorStop(0, "rgba(100,140,255,0.20)");
-                    outerGrad.addColorStop(0.3, "rgba(140,80,240,0.12)");
-                    outerGrad.addColorStop(0.6, "rgba(60,200,170,0.06)");
-                } else {
-                    outerGrad.addColorStop(0, "rgba(100,120,255,0.10)");
-                    outerGrad.addColorStop(0.4, "rgba(130,80,220,0.04)");
-                    outerGrad.addColorStop(0.7, "rgba(50,200,160,0.02)");
-                }
-                outerGrad.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = outerGrad;
-                ctx.fillRect(0, 0, w, h);
-
-                // ── Layer 2: Swirling color bands (aurora) ──
-                var numBands = isActive ? 7 : 5;
-                for (var b = 0; b < numBands; b++) {
-                    var speed = isActive ? (0.8 + b * 0.2) : (0.5 + b * 0.12);
-                    var angle = p * speed + b * (6.2832 / numBands);
-                    var swirlR = isActive ? 0.4 : 0.25;
-                    var bandR = baseR * (0.9 + 0.35 * Math.sin(p * 0.8 + b * 0.9));
-
-                    var ox = cx + Math.cos(angle) * baseR * swirlR;
-                    var oy = cy + Math.sin(angle) * baseR * swirlR * 0.85;
-
-                    var bandGrad = ctx.createRadialGradient(ox, oy, 0, ox, oy, bandR);
-
-                    var colors = [
-                        [90, 140, 255],   // blue
-                        [160, 80, 245],   // purple
-                        [50, 210, 170],   // teal
-                        [220, 100, 255],  // magenta
-                        [80, 180, 255],   // cyan
-                        [255, 120, 180],  // pink (active only)
-                        [120, 255, 200],  // mint (active only)
-                    ];
-                    var c = colors[b % colors.length];
-
-                    var intensity = isActive ? 0.65 : 0.30;
-                    var midIntensity = isActive ? 0.30 : 0.10;
-
-                    bandGrad.addColorStop(0, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + intensity + ")");
-                    bandGrad.addColorStop(0.5, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + midIntensity + ")");
-                    bandGrad.addColorStop(1, "rgba(0,0,0,0)");
-
-                    ctx.globalCompositeOperation = "screen";
-                    ctx.fillStyle = bandGrad;
-                    ctx.beginPath();
-                    ctx.arc(ox, oy, bandR, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                ctx.globalCompositeOperation = "source-over";
-
-                // ── Layer 3: Core orb — bright center ──
-                var coreR = baseR * (isActive ? 0.85 : 0.65);
-                var coreGrad = ctx.createRadialGradient(cx, cy - coreR * 0.12, 0, cx, cy, coreR);
-                var coreAlpha = isActive ? 0.95 : 0.45;
-                coreGrad.addColorStop(0, "rgba(230,240,255," + coreAlpha + ")");
-                coreGrad.addColorStop(0.25, "rgba(160,180,255," + (coreAlpha * 0.65) + ")");
-                coreGrad.addColorStop(0.6, "rgba(110,80,220," + (coreAlpha * 0.25) + ")");
-                coreGrad.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = coreGrad;
-                ctx.beginPath();
-                ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
-                ctx.fill();
-
-                // ── Layer 4: Specular highlight ──
-                var specX = cx - coreR * 0.25;
-                var specY = cy - coreR * 0.3;
-                var specR = coreR * 0.45;
-                var specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, specR);
-                specGrad.addColorStop(0, "rgba(255,255,255," + (isActive ? 0.6 : 0.20) + ")");
-                specGrad.addColorStop(0.5, "rgba(200,220,255," + (isActive ? 0.20 : 0.05) + ")");
-                specGrad.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = specGrad;
-                ctx.beginPath();
-                ctx.arc(specX, specY, specR, 0, Math.PI * 2);
-                ctx.fill();
-
-                // ── Layer 5: Sparkle particles ──
-                var numSparks = isActive ? 14 : 6;
-                ctx.globalCompositeOperation = "screen";
-                for (var s = 0; s < numSparks; s++) {
-                    var sparkSpeed = isActive ? (0.4 + s * 0.08) : (0.2 + s * 0.1);
-                    var sparkAngle = p * sparkSpeed + s * (6.2832 / numSparks);
-                    var sparkDist = baseR * (0.5 + 0.5 * Math.sin(p * 0.6 + s * 1.2));
-                    var sx = cx + Math.cos(sparkAngle) * sparkDist;
-                    var sy = cy + Math.sin(sparkAngle) * sparkDist;
-                    var sparkAlpha = 0.3 + 0.6 * Math.abs(Math.sin(p * 1.8 + s * 0.7));
-                    if (!isActive) sparkAlpha *= 0.35;
-                    var sparkSize = isActive ? (2.5 + Math.sin(p * 2.5 + s) * 1.5) : (1.5 + Math.sin(p * 2 + s) * 0.8);
-
-                    ctx.fillStyle = "rgba(220,240,255," + sparkAlpha + ")";
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, sparkSize, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.globalCompositeOperation = "source-over";
-            }
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.round(50 * root.sf); height: width; radius: width / 2
+            color: siriGlow.active ? Qt.rgba(0.6, 0.7, 1.0, 0.3) : Qt.rgba(0.5, 0.55, 0.9, 0.12)
         }
     }
 

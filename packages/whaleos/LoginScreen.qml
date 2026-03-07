@@ -8,12 +8,7 @@ Rectangle {
     color: "#050510"
 
     property bool loginBusy: false
-    property real glowPhase: 0
-
-    Timer {
-        running: true; repeat: true; interval: 60
-        onTriggered: glowPhase += 0.04
-    }
+    // PERF: Removed glowPhase timer (was 60ms = 16 repaints/sec, ran even after login)
 
     // ── Background: Aurora (original style) ──
     Rectangle {
@@ -61,19 +56,7 @@ Rectangle {
         }
     }
 
-    // ── Horizontal scan line (futuristic) ──
-    Rectangle {
-        id: scanLine
-        width: parent.width; height: Math.round(1 * root.sf)
-        color: Qt.rgba(0.35, 0.55, 1.0, 0.06)
-        y: 0
-
-        SequentialAnimation on y {
-            running: true; loops: Animation.Infinite
-            NumberAnimation { to: loginScreen.height; duration: 6000; easing.type: Easing.Linear }
-            NumberAnimation { to: 0; duration: 0 }
-        }
-    }
+    // PERF: Removed scan line animation (was causing continuous repaints)
 
     // ── Clock (top center) ──
     Column {
@@ -132,11 +115,7 @@ Rectangle {
                 border.color: Qt.rgba(0.35, 0.55, 1.0, 0.12)
                 border.width: Math.round(1 * root.sf)
                 rotation: 0
-
-                NumberAnimation on rotation {
-                    from: 0; to: 360; duration: 20000
-                    running: true; loops: Animation.Infinite
-                }
+                // PERF: Removed infinite rotation animation
 
                 // Accent dot on ring
                 Rectangle {
@@ -155,12 +134,7 @@ Rectangle {
                 color: "transparent"
                 border.color: Qt.rgba(0.4, 0.5, 1.0, 0.1)
                 border.width: Math.round(1 * root.sf)
-
-                SequentialAnimation on border.color {
-                    running: true; loops: Animation.Infinite
-                    ColorAnimation { to: Qt.rgba(0.4, 0.5, 1.0, 0.25); duration: 2000; easing.type: Easing.InOutSine }
-                    ColorAnimation { to: Qt.rgba(0.4, 0.5, 1.0, 0.08); duration: 2000; easing.type: Easing.InOutSine }
-                }
+                // PERF: Removed infinite pulsing color animation
             }
 
             // Inner circle (glass)
