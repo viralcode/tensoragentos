@@ -10,9 +10,8 @@ Rectangle {
     clip: true
     z: 10
 
-    // PERF: No height animation — height change repaints the entire panel on every frame
-    // on the software renderer (pixman). Use instant snap instead.
-    // Visual smoothness comes from the content fading in (see chatContentOpacity below).
+    // Short height animation to spread rendering cost across frames
+    Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
     property bool chatExpanded: false
     property bool chatFullScreen: false
