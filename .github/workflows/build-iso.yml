@@ -7,21 +7,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      arch:
-        description: 'Target architecture'
-        required: true
-        default: 'x86_64'
-        type: choice
-        options:
-          - x86_64
-          - aarch64
 
 jobs:
   build-iso:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
 
     steps:
       - name: Checkout
@@ -35,20 +30,19 @@ jobs:
             grub-pc-bin grub-efi-amd64-bin \
             qemu-user-static binfmt-support
 
-      - name: Build ISO
+      - name: Build ISO (${{ matrix.arch }})
         run: |
-          ARCH="${{ github.event.inputs.arch || 'x86_64' }}"
           chmod +x ./scripts/build-iso.sh
-          sudo bash ./scripts/build-iso.sh --arch=$ARCH --skip-chromium
+          sudo bash ./scripts/build-iso.sh --arch=${{ matrix.arch }} --skip-chromium
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tensoragent-os-iso
+          name: tensoragent-os-${{ matrix.arch }}
           path: tensoragent-os-*.iso
           retention-days: 30
 
-      - name: Create Release
+      - name: Upload ISO for release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -57,18 +51,28 @@ jobs:
           body: |
             ## TensorAgent OS ${{ github.ref_name }}
 
+            ### Downloads
+            | Architecture | File |
+            |-------------|------|
+            | x86_64 (Intel/AMD) | `tensoragent-os-x86_64.iso` |
+            | aarch64 (ARM64 / Apple Silicon) | `tensoragent-os-aarch64.iso` |
+
             ### Quick Start
             ```bash
             # Flash to USB
             sudo dd if=tensoragent-os-x86_64.iso of=/dev/sdX bs=4M status=progress
 
-            # Or boot in QEMU
+            # VMware Fusion (Apple Silicon) — use the aarch64 ISO
+            # UTM (macOS) — use the aarch64 ISO
+            # QEMU
             ./scripts/run-qemu.sh
             ```
 
             ### What's included
-            - OpenWhale AI engine
-            - WhaleOS Qt6 desktop shell
-            - Debian Bookworm base
-            - Node.js 22, Python 3, SQLite
-            - Chromium, terminal, and system tools
+            - 🐋 OpenWhale AI engine (multi-agent, MCP, tools)
+            - 🖥️ WhaleOS Qt6 desktop shell
+            - 📦 Debian Bookworm base
+            - ⚡ Node.js 22, Python 3, SQLite
+            - 🌐 Chromium, terminal, and system tools
+
+            **Login:** `ainux` / `ainux`
