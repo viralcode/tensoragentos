@@ -38,7 +38,8 @@ jobs:
       - name: Build ISO
         run: |
           ARCH="${{ github.event.inputs.arch || 'x86_64' }}"
-          sudo ./scripts/build-iso.sh --arch=$ARCH --skip-chromium
+          chmod +x ./scripts/build-iso.sh
+          sudo bash ./scripts/build-iso.sh --arch=$ARCH --skip-chromium
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
