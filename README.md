@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="packages/whaleos/whale_logo.png" alt="TensorAgent OS" width="100" />
+  <img src="packages/whaleos/assets/whale_logo.png" alt="TensorAgent OS" width="100" />
 </p>
 
 <h1 align="center">TensorAgent OS</h1>
