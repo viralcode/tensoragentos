@@ -4,7 +4,7 @@ import "api.js" as API
 
 Rectangle {
     id: chatBar
-    height: chatExpanded ? (chatFullScreen ? parent.height : Math.min(Math.round(450 * root.sf), parent.height - Math.round(70 * root.sf))) : Math.round(60 * root.sf)
+    height: chatExpanded ? (chatFullScreen ? parent.height : Math.min(Math.round(450 * root.sf), parent.height - Math.round(100 * root.sf))) : Math.round(60 * root.sf)
     radius: root.radiusLg
     color: "transparent"
     clip: true
@@ -195,7 +195,7 @@ Rectangle {
         anchors.fill: parent; radius: parent.radius
         visible: chatExpanded
         opacity: chatContentOpacity
-        color: Qt.rgba(0.07, 0.07, 0.11, 0.92)
+        color: Qt.rgba(0.07, 0.07, 0.11, 0.98)
         border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
     }
 
