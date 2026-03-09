@@ -142,6 +142,6 @@ export { sharedContextWriteTool, sharedContextReadTool, sharedContextDeleteTool 
 export { fileLockTool, conflictsTool } from "./conflict-tools.js";
 
 // MCP Manager — dynamic MCP server tool injection
-import { mcpManager } from "./mcp-manager.js";
+import { mcpManager as _mcpManager } from "./mcp-manager.js";
 export { mcpManager } from "./mcp-manager.js";
 

@@ -32,7 +32,6 @@ import {
     getCurrentConversationId,
     getOsConfig,
     setOsConfig,
-    setOsConfigs,
 } from "../sessions/session-service.js";
 import { registry } from "../providers/index.js";
 import { createAnthropicProvider } from "../providers/anthropic.js";

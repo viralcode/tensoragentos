@@ -29,7 +29,8 @@ export type LogCategory =
     | "extension"
     | "auth"
     | "codebase"
-    | "heartbeat";
+    | "heartbeat"
+    | "mcp";
 
 export interface LogEntry {
     timestamp: string;

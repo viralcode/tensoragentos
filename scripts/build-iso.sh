@@ -135,11 +135,12 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
     apt-get update -qq
 
-    # Core system
+    # Core system + build tools
     apt-get install -y -qq \
+        build-essential pkg-config g++ \
         linux-image-'"$KERNEL_ARCH"' grub-efi-'"$DEB_ARCH"' \
         systemd-boot firmware-linux \
-        2>/dev/null || apt-get install -y -qq linux-image-'"$KERNEL_ARCH"' grub-efi
+        2>/dev/null || apt-get install -y -qq build-essential pkg-config g++ linux-image-'"$KERNEL_ARCH"' grub-efi
 
     # Graphics & Wayland
     apt-get install -y -qq \

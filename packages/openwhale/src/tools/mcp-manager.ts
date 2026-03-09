@@ -235,7 +235,7 @@ class McpManager {
             const transport = new StdioClientTransport({
                 command: config.command,
                 args: config.args,
-                env,
+                env: env as Record<string, string>,
             });
 
             const client = new Client(
@@ -265,7 +265,7 @@ class McpManager {
                                 name: mcpTool.name,
                                 arguments: params as Record<string, unknown>,
                             });
-                            const content = result.content
+                            const content = (result.content as any[])
                                 ?.map((c: any) => c.type === "text" ? c.text : JSON.stringify(c))
                                 .join("\n") || "";
                             return { success: !result.isError, content, error: result.isError ? content : undefined };
