@@ -175,6 +175,9 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         pipewire pipewire-alsa wireplumber \
         xsel wl-clipboard
 
+    # VMware guest tools (for VMware Fusion/Workstation support)
+    apt-get install -y -qq open-vm-tools open-vm-tools-desktop 2>/dev/null || true
+
     # Flatpak (dynamic package management)
     apt-get install -y -qq flatpak
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
@@ -252,6 +255,61 @@ RestartSec=5
 WantedBy=multi-user.target
 OWSERVICE
 
+# Hypervisor-aware GUI startup script
+sudo tee "${ROOTFS_DIR}/opt/ainux/start-gui.sh" > /dev/null << 'STARTGUI'
+#!/bin/bash
+# TensorAgent OS — smart display startup
+# Detects hypervisor and configures display backend accordingly
+
+export XDG_RUNTIME_DIR=/run/user/1000
+export WLR_LIBINPUT_NO_DEVICES=1
+export WLR_NO_HARDWARE_CURSORS=1
+export QT_QPA_PLATFORM=wayland
+export QSG_RENDER_LOOP=basic
+
+# Detect hypervisor
+HYPERVISOR=$(systemd-detect-virt 2>/dev/null || echo "none")
+echo "[TensorAgent] Detected hypervisor: $HYPERVISOR"
+
+case "$HYPERVISOR" in
+    vmware)
+        echo "[TensorAgent] VMware detected — using software renderer"
+        export WLR_RENDERER=pixman
+        export WLR_BACKENDS=drm
+        export GALLIUM_DRIVER=llvmpipe
+        export LIBGL_ALWAYS_SOFTWARE=1
+        # Load VMware GPU module
+        modprobe vmwgfx 2>/dev/null || true
+        ;;
+    qemu|kvm)
+        echo "[TensorAgent] QEMU/KVM detected — using virtio-gpu"
+        ;;
+    *)
+        echo "[TensorAgent] Bare metal or unknown — auto-detecting display"
+        ;;
+esac
+
+# Wait for DRM device (up to 10 seconds)
+for i in $(seq 1 20); do
+    if ls /dev/dri/card* 2>/dev/null; then
+        echo "[TensorAgent] DRM device found"
+        break
+    fi
+    echo "[TensorAgent] Waiting for DRM device... ($i/20)"
+    sleep 0.5
+done
+
+# If no DRM device, force headless + VNC fallback
+if ! ls /dev/dri/card* 2>/dev/null; then
+    echo "[TensorAgent] No DRM device — using headless backend with VNC"
+    export WLR_BACKENDS=headless
+    export WLR_RENDERER=pixman
+fi
+
+exec /usr/bin/cage -- /opt/ainux/whaleos/whaleos
+STARTGUI
+sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
+
 # WhaleOS GUI service (Cage compositor running WhaleOS)
 sudo tee "${ROOTFS_DIR}/etc/systemd/system/ainux-gui.service" > /dev/null << 'GUISERVICE'
 [Unit]
@@ -263,13 +321,8 @@ Wants=openwhale.service
 Type=simple
 User=ainux
 PAMName=login
-Environment=XDG_RUNTIME_DIR=/run/user/1000
-Environment=WLR_LIBINPUT_NO_DEVICES=1
-Environment=WLR_NO_HARDWARE_CURSORS=1
-Environment=QT_QPA_PLATFORM=wayland
-Environment=QSG_RENDER_LOOP=basic
 ExecStartPre=/bin/sleep 3
-ExecStart=/usr/bin/cage -- /opt/ainux/whaleos/whaleos
+ExecStart=/opt/ainux/start-gui.sh
 Restart=on-failure
 RestartSec=3
 
