@@ -203,16 +203,23 @@ echo "  ✓ User created (ainux/ainux)"
 # ─── Integrate OpenWhale + WhaleOS ─────────────────────────────
 echo "[6/8] Installing OpenWhale + WhaleOS..."
 
-# Copy OpenWhale
+# Build OpenWhale on the HOST (native speed) — TypeScript produces platform-independent JS
+echo "  → Building OpenWhale on host..."
+cd "${AINUX_ROOT}/packages/openwhale"
+npm install 2>/dev/null || true
+npm run build 2>/dev/null || true
+cd "${AINUX_ROOT}"
+
+# Copy built OpenWhale into rootfs
 sudo mkdir -p "${ROOTFS_DIR}/opt/ainux"
 sudo cp -r "${AINUX_ROOT}/packages/openwhale" "${ROOTFS_DIR}/opt/ainux/"
 sudo cp -r "${AINUX_ROOT}/packages/whaleos"   "${ROOTFS_DIR}/opt/ainux/"
 
-# Install OpenWhale dependencies and build
+# Install native dependencies inside chroot (for better-sqlite3 etc.)
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     cd /opt/ainux/openwhale
-    npm install 2>/dev/null || true
-    npm run build 2>/dev/null || true
+    npm install --omit=dev 2>/dev/null || true
+    npm rebuild better-sqlite3 2>/dev/null || true
 '
 
 # Build WhaleOS shell
