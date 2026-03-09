@@ -378,8 +378,40 @@ fi
 
 # Copy kernel and initrd for live boot
 sudo mkdir -p "${ISO_DIR}/live"
-sudo cp "${ROOTFS_DIR}/boot/vmlinuz-"*  "${ISO_DIR}/live/vmlinuz"  2>/dev/null || true
-sudo cp "${ROOTFS_DIR}/boot/initrd.img-"* "${ISO_DIR}/live/initrd"  2>/dev/null || true
+
+# Find and copy kernel
+KERNEL=$(find "${ROOTFS_DIR}/boot" -name "vmlinuz-*" -type f 2>/dev/null | sort -V | tail -1)
+if [ -z "$KERNEL" ]; then
+    # Try symlink
+    KERNEL="${ROOTFS_DIR}/boot/vmlinuz"
+fi
+if [ -f "$KERNEL" ]; then
+    sudo cp "$KERNEL" "${ISO_DIR}/live/vmlinuz"
+    echo "  ✓ Kernel: $(basename $KERNEL)"
+else
+    echo "  ✗ ERROR: No kernel found in ${ROOTFS_DIR}/boot/"
+    ls -la "${ROOTFS_DIR}/boot/" || true
+fi
+
+# Find and copy initrd
+INITRD=$(find "${ROOTFS_DIR}/boot" -name "initrd.img-*" -type f 2>/dev/null | sort -V | tail -1)
+if [ -z "$INITRD" ]; then
+    INITRD="${ROOTFS_DIR}/boot/initrd.img"
+fi
+if [ -f "$INITRD" ]; then
+    sudo cp "$INITRD" "${ISO_DIR}/live/initrd"
+    echo "  ✓ Initrd: $(basename $INITRD)"
+else
+    echo "  ✗ ERROR: No initrd found in ${ROOTFS_DIR}/boot/"
+    ls -la "${ROOTFS_DIR}/boot/" || true
+fi
+
+# Verify both files exist before proceeding
+if [ ! -f "${ISO_DIR}/live/vmlinuz" ] || [ ! -f "${ISO_DIR}/live/initrd" ]; then
+    echo "FATAL: Kernel or initrd missing from ISO live directory!"
+    echo "Contents of ${ISO_DIR}/live/:"
+    ls -la "${ISO_DIR}/live/" || true
+fi
 
 # Create GRUB config
 sudo mkdir -p "${ISO_DIR}/boot/grub"
@@ -463,18 +495,18 @@ if [ "$ARCH" = "x86_64" ]; then
         -append_partition 2 0xef "${EFI_IMG}" \
         "$ISO_DIR"
 else
-    # aarch64: EFI-only boot
+    # aarch64: EFI-only boot (no -boot-info-table, it corrupts EFI image)
     xorriso -as mkisofs \
         -iso-level 3 \
         -o "$FINAL_ISO" \
         -full-iso9660-filenames \
         -volid "TENSORAGENT" \
-        -eltorito-boot boot/grub/efi.img \
-        -no-emul-boot -boot-load-size 4 -boot-info-table \
-        --eltorito-catalog boot/grub/boot.cat \
+        -e boot/grub/efi.img \
+        -no-emul-boot \
         -append_partition 2 0xef "${EFI_IMG}" \
         "$ISO_DIR" 2>/dev/null || \
     xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" \
+        -e boot/grub/efi.img -no-emul-boot \
         -append_partition 2 0xef "${EFI_IMG}" \
         "$ISO_DIR"
 fi
