@@ -352,19 +352,33 @@ echo "  ✓ Services configured"
 # ─── Generate Bootable ISO ────────────────────────────────────
 echo "[8/8] Generating bootable ISO..."
 
+# Install live-boot in chroot (required for boot=live kernel parameter)
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    apt-get update -qq 2>/dev/null
+    apt-get install -y -qq live-boot 2>/dev/null || true
+    apt-get clean
+'
+
 # Create squashfs from rootfs
 sudo umount "${ROOTFS_DIR}/dev"  2>/dev/null || true
 sudo umount "${ROOTFS_DIR}/proc" 2>/dev/null || true
 sudo umount "${ROOTFS_DIR}/sys"  2>/dev/null || true
 
-sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/filesystem.squashfs" \
-    -comp xz -Xbcj x86 -b 1M -no-exports -noappend 2>/dev/null || \
-sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/filesystem.squashfs" \
-    -comp gzip -b 1M -no-exports -noappend
+if [ "$ARCH" = "x86_64" ]; then
+    sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
+        -comp xz -Xbcj x86 -b 1M -no-exports -noappend 2>/dev/null || \
+    sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
+        -comp gzip -b 1M -no-exports -noappend
+else
+    sudo mkdir -p "${ISO_DIR}/live"
+    sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
+        -comp gzip -b 1M -no-exports -noappend
+fi
 
 # Copy kernel and initrd for live boot
-sudo cp "${ROOTFS_DIR}/boot/vmlinuz-"*  "${ISO_DIR}/vmlinuz"  2>/dev/null || true
-sudo cp "${ROOTFS_DIR}/boot/initrd.img-"* "${ISO_DIR}/initrd"  2>/dev/null || true
+sudo mkdir -p "${ISO_DIR}/live"
+sudo cp "${ROOTFS_DIR}/boot/vmlinuz-"*  "${ISO_DIR}/live/vmlinuz"  2>/dev/null || true
+sudo cp "${ROOTFS_DIR}/boot/initrd.img-"* "${ISO_DIR}/live/initrd"  2>/dev/null || true
 
 # Create GRUB config
 sudo mkdir -p "${ISO_DIR}/boot/grub"
@@ -373,30 +387,81 @@ set timeout=3
 set default=0
 
 menuentry "TensorAgent OS" {
-    linux /vmlinuz boot=live quiet splash
-    initrd /initrd
+    linux /live/vmlinuz boot=live quiet splash
+    initrd /live/initrd
 }
 
 menuentry "TensorAgent OS (Safe Mode)" {
-    linux /vmlinuz boot=live nomodeset
-    initrd /initrd
+    linux /live/vmlinuz boot=live nomodeset
+    initrd /live/initrd
 }
 GRUB
 
+# Create architecture-specific EFI boot image
+echo "  → Creating EFI boot image for ${ARCH}..."
+EFI_IMG="${ISO_DIR}/boot/grub/efi.img"
+sudo mkdir -p "${ISO_DIR}/EFI/BOOT"
+
+if [ "$ARCH" = "x86_64" ]; then
+    GRUB_TARGET="x86_64-efi"
+    EFI_BINARY="BOOTX64.EFI"
+    GRUB_PREFIX="/usr/lib/grub/x86_64-efi"
+else
+    GRUB_TARGET="arm64-efi"
+    EFI_BINARY="BOOTAA64.EFI"
+    GRUB_PREFIX="/usr/lib/grub/arm64-efi"
+fi
+
+# Build standalone GRUB EFI binary
+grub-mkstandalone \
+    --format="${GRUB_TARGET}" \
+    --output="${ISO_DIR}/EFI/BOOT/${EFI_BINARY}" \
+    --locales="" \
+    --fonts="" \
+    "boot/grub/grub.cfg=${ISO_DIR}/boot/grub/grub.cfg"
+
+# Create FAT EFI partition image
+dd if=/dev/zero of="${EFI_IMG}" bs=1M count=8
+mkfs.vfat "${EFI_IMG}"
+mmd -i "${EFI_IMG}" ::/EFI ::/EFI/BOOT
+mcopy -i "${EFI_IMG}" "${ISO_DIR}/EFI/BOOT/${EFI_BINARY}" "::/EFI/BOOT/${EFI_BINARY}"
+
 # Build ISO with xorriso
 FINAL_ISO="${AINUX_ROOT}/tensoragent-os-${ARCH}.iso"
-xorriso -as mkisofs \
-    -iso-level 3 \
-    -o "$FINAL_ISO" \
-    -full-iso9660-filenames \
-    -volid "TENSORAGENT" \
-    --grub2-boot-info \
-    --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
-    -eltorito-boot boot/grub/grub.img \
-    -no-emul-boot -boot-load-size 4 -boot-info-table \
-    --eltorito-catalog boot/grub/boot.cat \
-    "$ISO_DIR" 2>/dev/null || \
-xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" "$ISO_DIR"
+
+if [ "$ARCH" = "x86_64" ]; then
+    # x86_64: hybrid BIOS + EFI boot
+    xorriso -as mkisofs \
+        -iso-level 3 \
+        -o "$FINAL_ISO" \
+        -full-iso9660-filenames \
+        -volid "TENSORAGENT" \
+        --grub2-boot-info \
+        --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+        -eltorito-boot boot/grub/efi.img \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        --eltorito-catalog boot/grub/boot.cat \
+        -append_partition 2 0xef "${EFI_IMG}" \
+        "$ISO_DIR" 2>/dev/null || \
+    xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" \
+        -append_partition 2 0xef "${EFI_IMG}" \
+        "$ISO_DIR"
+else
+    # aarch64: EFI-only boot
+    xorriso -as mkisofs \
+        -iso-level 3 \
+        -o "$FINAL_ISO" \
+        -full-iso9660-filenames \
+        -volid "TENSORAGENT" \
+        -eltorito-boot boot/grub/efi.img \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        --eltorito-catalog boot/grub/boot.cat \
+        -append_partition 2 0xef "${EFI_IMG}" \
+        "$ISO_DIR" 2>/dev/null || \
+    xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" \
+        -append_partition 2 0xef "${EFI_IMG}" \
+        "$ISO_DIR"
+fi
 
 SIZE=$(du -h "$FINAL_ISO" | cut -f1)
 echo ""
@@ -412,3 +477,4 @@ echo "  🐋  Flash to USB:"
 echo "  🐋    sudo dd if=${FINAL_ISO} of=/dev/sdX bs=4M status=progress"
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo ""
+

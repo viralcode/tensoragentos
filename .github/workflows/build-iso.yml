@@ -27,8 +27,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             debootstrap xorriso mtools squashfs-tools \
-            grub-pc-bin grub-efi-amd64-bin \
-            qemu-user-static binfmt-support
+            grub-pc-bin grub-efi-amd64-bin grub-efi-arm64-bin \
+            qemu-user-static binfmt-support dosfstools
 
       - name: Build ISO (${{ matrix.arch }})
         run: |
