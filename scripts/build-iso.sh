@@ -413,12 +413,27 @@ else
 fi
 
 # Build standalone GRUB EFI binary
-grub-mkstandalone \
-    --format="${GRUB_TARGET}" \
-    --output="${ISO_DIR}/EFI/BOOT/${EFI_BINARY}" \
-    --locales="" \
-    --fonts="" \
-    "boot/grub/grub.cfg=${ISO_DIR}/boot/grub/grub.cfg"
+if [ "$ARCH" = "x86_64" ]; then
+    # x86_64: build on host (grub-efi-amd64-bin is installed)
+    grub-mkstandalone \
+        --format="${GRUB_TARGET}" \
+        --output="${ISO_DIR}/EFI/BOOT/${EFI_BINARY}" \
+        --locales="" \
+        --fonts="" \
+        "boot/grub/grub.cfg=${ISO_DIR}/boot/grub/grub.cfg"
+else
+    # aarch64: build inside chroot (host doesn't have arm64 grub modules)
+    sudo cp "${ISO_DIR}/boot/grub/grub.cfg" "${ROOTFS_DIR}/tmp/grub.cfg"
+    sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+        grub-mkstandalone \
+            --format=arm64-efi \
+            --output=/tmp/BOOTAA64.EFI \
+            --locales="" \
+            --fonts="" \
+            "boot/grub/grub.cfg=/tmp/grub.cfg"
+    '
+    sudo cp "${ROOTFS_DIR}/tmp/BOOTAA64.EFI" "${ISO_DIR}/EFI/BOOT/BOOTAA64.EFI"
+fi
 
 # Create FAT EFI partition image
 dd if=/dev/zero of="${EFI_IMG}" bs=1M count=8
