@@ -28,25 +28,30 @@ jobs:
           sudo apt-get install -y \
             debootstrap xorriso mtools squashfs-tools \
             grub-pc-bin grub-efi-amd64-bin \
-            qemu-user-static binfmt-support dosfstools
+            qemu-user-static binfmt-support dosfstools xz-utils
 
       - name: Build ISO (${{ matrix.arch }})
         run: |
           chmod +x ./scripts/build-iso.sh
           sudo bash ./scripts/build-iso.sh --arch=${{ matrix.arch }} --skip-chromium
 
+      - name: Compress ISO
+        run: |
+          xz -T0 -9 tensoragent-os-${{ matrix.arch }}.iso
+          ls -lh tensoragent-os-${{ matrix.arch }}.iso.xz
+
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
           name: tensoragent-os-${{ matrix.arch }}
-          path: tensoragent-os-*.iso
+          path: tensoragent-os-*.iso.xz
           retention-days: 30
 
       - name: Upload ISO for release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: tensoragent-os-*.iso
+          files: tensoragent-os-*.iso.xz
           generate_release_notes: true
           body: |
             ## TensorAgent OS ${{ github.ref_name }}
@@ -54,18 +59,21 @@ jobs:
             ### Downloads
             | Architecture | File |
             |-------------|------|
-            | x86_64 (Intel/AMD) | `tensoragent-os-x86_64.iso` |
-            | aarch64 (ARM64 / Apple Silicon) | `tensoragent-os-aarch64.iso` |
+            | x86_64 (Intel/AMD) | `tensoragent-os-x86_64.iso.xz` |
+            | aarch64 (ARM64 / Apple Silicon) | `tensoragent-os-aarch64.iso.xz` |
+
+            > **Decompress after download:** `xz -d tensoragent-os-*.iso.xz`
 
             ### Quick Start
             ```bash
+            # Decompress
+            xz -d tensoragent-os-x86_64.iso.xz
+
             # Flash to USB
             sudo dd if=tensoragent-os-x86_64.iso of=/dev/sdX bs=4M status=progress
 
             # VMware Fusion (Apple Silicon) — use the aarch64 ISO
             # UTM (macOS) — use the aarch64 ISO
-            # QEMU
-            ./scripts/run-qemu.sh
             ```
 
             ### What's included
