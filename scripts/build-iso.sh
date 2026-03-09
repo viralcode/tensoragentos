@@ -364,13 +364,14 @@ sudo umount "${ROOTFS_DIR}/dev"  2>/dev/null || true
 sudo umount "${ROOTFS_DIR}/proc" 2>/dev/null || true
 sudo umount "${ROOTFS_DIR}/sys"  2>/dev/null || true
 
+sudo mkdir -p "${ISO_DIR}/live"
+
 if [ "$ARCH" = "x86_64" ]; then
     sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
         -comp xz -Xbcj x86 -b 1M -no-exports -noappend 2>/dev/null || \
     sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
         -comp gzip -b 1M -no-exports -noappend
 else
-    sudo mkdir -p "${ISO_DIR}/live"
     sudo mksquashfs "$ROOTFS_DIR" "${ISO_DIR}/live/filesystem.squashfs" \
         -comp gzip -b 1M -no-exports -noappend
 fi
