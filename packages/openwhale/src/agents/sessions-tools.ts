@@ -85,6 +85,7 @@ async function executeSessionsSpawn(
                 ? [`Available capabilities: ${agentConfig.capabilities.join(", ")}`]
                 : undefined,
         });
+        void _subAgentPrompt; // Will be used for real AI execution
 
         // Mark as running
         updateRunStatus(run.runId, "running");
