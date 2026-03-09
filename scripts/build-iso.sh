@@ -416,6 +416,15 @@ fi
 # Create GRUB config
 sudo mkdir -p "${ISO_DIR}/boot/grub"
 sudo tee "${ISO_DIR}/boot/grub/grub.cfg" > /dev/null << 'GRUB'
+insmod all_video
+insmod gzio
+insmod part_gpt
+insmod part_msdos
+insmod iso9660
+insmod search_label
+
+search --no-floppy --set=root --label TENSORAGENT
+
 set timeout=3
 set default=0
 
