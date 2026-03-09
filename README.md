@@ -157,26 +157,6 @@ ssh -p 2222 ainux@localhost "journalctl -u openwhale -u ainux-gui -f"
 
 ---
 
-## Architecture
-
-```
-USER (Browser / Desktop / iOS)
-        │
-WhaleOS (Qt6 QML) ← Cage Wayland Compositor
-        │
-OpenWhale (Agents, Skills, Extensions, MCP, Memory, Sessions)
-        │
-Node.js 22 + SQLite
-        │
-systemd (openwhale.service + ainux-gui.service)
-        │
-Linux Kernel (DRM/KMS, Mesa, PipeWire, virtio)
-        │
-QEMU (HVF/KVM) · UTM · Bare Metal
-```
-
----
-
 ## License
 
 MIT — see [LICENSE](LICENSE)
