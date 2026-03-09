@@ -24,11 +24,6 @@ No file manager. No app launcher. Just you and an AI with native access to the e
 |-------|------|
 | AI Engine | [OpenWhale](https://github.com/viralcode/openwhale) (multi-agent, MCP, tools) |
 | Desktop | WhaleOS — Qt6 QML native shell |
-| Compositor | Cage (Wayland kiosk) |
-| Base | Debian Bookworm (ARM64) / Buildroot (x86_64) |
-| Runtime | Node.js 22, Python 3, SQLite, systemd |
-
----
 
 ## Quick Start — UTM (macOS, Recommended)
 
