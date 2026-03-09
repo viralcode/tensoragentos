@@ -207,10 +207,11 @@ sudo mkdir -p "${ROOTFS_DIR}/opt/ainux"
 sudo cp -r "${AINUX_ROOT}/packages/openwhale" "${ROOTFS_DIR}/opt/ainux/"
 sudo cp -r "${AINUX_ROOT}/packages/whaleos"   "${ROOTFS_DIR}/opt/ainux/"
 
-# Install OpenWhale dependencies
+# Install OpenWhale dependencies and build
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     cd /opt/ainux/openwhale
-    npm install --omit=dev 2>/dev/null || true
+    npm install 2>/dev/null || true
+    npm run build 2>/dev/null || true
 '
 
 # Build WhaleOS shell
