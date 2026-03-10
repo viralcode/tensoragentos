@@ -703,7 +703,7 @@ public:
         {
             QProcess proc;
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("WAYLAND_DISPLAY", "wayland-0");
+            env.insert("WAYLAND_DISPLAY", "whaleos-0");
             env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
             proc.setProcessEnvironment(env);
             proc.start("wl-paste", QStringList() << "--no-newline");
@@ -732,7 +732,7 @@ public:
     Q_INVOKABLE void pasteFromClipboardAsync() {
         QProcess *proc = new QProcess(this);
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc->setProcessEnvironment(env);
 
@@ -769,7 +769,7 @@ public:
         QProcess *proc = new QProcess(this);
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc->setProcessEnvironment(env);
 
@@ -788,7 +788,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
         proc.start("xrandr", QStringList());
@@ -800,7 +800,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
 
@@ -817,7 +817,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("WAYLAND_DISPLAY", "whaleos-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
 
@@ -980,8 +980,8 @@ public:
         QString runtimeDir = QString("/run/user/%1").arg(uid);
 
         // Read the Wayland display from our current environment
-        // (Cage sets WAYLAND_DISPLAY when it starts WhaleOS)
-        QString waylandDisplay = qEnvironmentVariable("WAYLAND_DISPLAY", "wayland-0");
+        // WhaleOS compositor socket is "whaleos-0" (see main.qml socketName)
+        QString waylandDisplay = qEnvironmentVariable("WAYLAND_DISPLAY", "whaleos-0");
 
         // Tell native apps to connect to our Wayland compositor
         QString fullCmd = QString(

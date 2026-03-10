@@ -199,7 +199,7 @@ class AInuxKernel extends EventEmitter {
             env: {
                 ...process.env,
                 DISPLAY: process.env.DISPLAY || ':0',
-                WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-0',
+                WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'whaleos-0',
             },
             readyCheck: async () => {
                 try {
