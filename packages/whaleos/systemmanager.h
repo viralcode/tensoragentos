@@ -703,7 +703,7 @@ public:
         {
             QProcess proc;
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("WAYLAND_DISPLAY", "whaleos-0");
+            env.insert("WAYLAND_DISPLAY", "wayland-0");
             env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
             proc.setProcessEnvironment(env);
             proc.start("wl-paste", QStringList() << "--no-newline");
@@ -732,7 +732,7 @@ public:
     Q_INVOKABLE void pasteFromClipboardAsync() {
         QProcess *proc = new QProcess(this);
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc->setProcessEnvironment(env);
 
@@ -769,7 +769,7 @@ public:
         QProcess *proc = new QProcess(this);
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc->setProcessEnvironment(env);
 
@@ -788,7 +788,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
         proc.start("xrandr", QStringList());
@@ -800,7 +800,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
 
@@ -817,7 +817,7 @@ public:
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("DISPLAY", ":0");
-        env.insert("WAYLAND_DISPLAY", "whaleos-0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
         env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
         proc.setProcessEnvironment(env);
 
@@ -979,14 +979,29 @@ public:
         QString home = pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
         QString runtimeDir = QString("/run/user/%1").arg(uid);
 
-        // WhaleOS compositor socket (see main.qml socketName)
-        QString waylandDisplay = qEnvironmentVariable("WAYLAND_DISPLAY", "whaleos-0");
+        // WhaleOS compositor socket (see main.qml socketName: "whaleos-0")
+        // Native apps MUST connect here, not to Cage's wayland-0
+        QString waylandDisplay = "whaleos-0";
 
-        // Build environment for native apps to connect to WhaleOS compositor
-        // Native GTK apps need GDK_BACKEND=wayland
-        // Native Qt apps need QT_QPA_PLATFORM=wayland
-        // Chromium needs --ozone-platform=wayland (passed in command)
+        // Check if our compositor socket exists
+        QString socketPath = runtimeDir + "/" + waylandDisplay;
+        if (!QFileInfo::exists(socketPath)) {
+            qWarning() << "SystemManager: compositor socket NOT FOUND at" << socketPath;
+            // List what's in the runtime dir for debugging
+            QDir dir(runtimeDir);
+            if (dir.exists()) {
+                qWarning() << "SystemManager: files in" << runtimeDir << ":"
+                           << dir.entryList(QDir::AllEntries | QDir::Hidden | QDir::System);
+            } else {
+                qWarning() << "SystemManager: runtime dir does not exist:" << runtimeDir;
+            }
+        } else {
+            qDebug() << "SystemManager: compositor socket OK:" << socketPath;
+        }
+
+        // Ensure runtime dir exists and launch with correct Wayland env
         QString fullCmd = QString(
+            "mkdir -p %2; "
             "export WAYLAND_DISPLAY=%1; "
             "export XDG_RUNTIME_DIR=%2; "
             "export HOME=%3; "
@@ -994,27 +1009,27 @@ public:
             "export DISPLAY=:0; "
             "export GDK_BACKEND=wayland; "
             "export QT_QPA_PLATFORM=wayland; "
-            "export LIBGL_ALWAYS_SOFTWARE=1; "
-            "exec %4"
+            "exec %4 2>&1"
         ).arg(waylandDisplay, runtimeDir, home, command);
 
         QProcess *proc = new QProcess(this);
         proc->setProgram("/bin/bash");
         proc->setArguments(QStringList() << "-c" << fullCmd);
 
-        // Log errors when the process exits abnormally
+        // Log stdout/stderr for debugging
         connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                this, [this, proc, command](int exitCode, QProcess::ExitStatus status) {
+                this, [proc, command](int exitCode, QProcess::ExitStatus status) {
+            QString out = QString::fromUtf8(proc->readAllStandardOutput()).left(500);
+            QString err = QString::fromUtf8(proc->readAllStandardError()).left(500);
             if (exitCode != 0 || status == QProcess::CrashExit) {
-                QString err = QString::fromUtf8(proc->readAllStandardError());
                 qWarning() << "SystemManager: native app FAILED:" << command
-                           << "exit:" << exitCode << "stderr:" << err.left(500);
+                           << "exit:" << exitCode << "stdout:" << out << "stderr:" << err;
+            } else {
+                qDebug() << "SystemManager: native app exited OK:" << command;
             }
             proc->deleteLater();
         });
-
-        // Log if the process fails to start at all
-        connect(proc, &QProcess::errorOccurred, this, [this, command](QProcess::ProcessError error) {
+        connect(proc, &QProcess::errorOccurred, this, [command](QProcess::ProcessError error) {
             qWarning() << "SystemManager: native app ERROR:" << command << "error:" << error;
         });
 
@@ -1023,6 +1038,7 @@ public:
         qDebug() << "SystemManager: launchNativeApp" << command
                  << "WAYLAND_DISPLAY=" << waylandDisplay
                  << "XDG_RUNTIME_DIR=" << runtimeDir
+                 << "socket=" << socketPath
                  << "started:" << proc->processId();
         return true;
     }

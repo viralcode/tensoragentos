@@ -93,7 +93,7 @@ WaylandCompositor {
             property string settingsOpenTab: ""  // Set before opening Settings to jump to a tab
 
             // ── Open App helper (usable from Desktop, context menu, etc.) ──
-            // searchName + cmd are optional — used for native app surface matching
+            // searchName/cmd are optional — used for native app surface matching
             function openAppWindow(appId, title, icon, searchName, cmd) {
                 for (var i = 0; i < openWindows.length; i++) {
                     if (openWindows[i].appId === appId) return;
@@ -162,82 +162,34 @@ WaylandCompositor {
                 pending.push({ toplevel: toplevel, xdgSurface: xdgSurface, attempts: 0 });
                 pendingSurfaces = pending;
                 surfaceMatchTimer.start();
-
-                // Also listen for title/appId changes for instant re-matching
-                toplevel.titleChanged.connect(function() {
-                    root.retryPendingMatches();
-                });
-                if (toplevel.appIdChanged) {
-                    toplevel.appIdChanged.connect(function() {
-                        root.retryPendingMatches();
-                    });
-                }
-            }
-
-            function retryPendingMatches() {
-                var remaining = [];
-                for (var i = 0; i < root.pendingSurfaces.length; i++) {
-                    var s = root.pendingSurfaces[i];
-                    if (!root.tryMatchSurface(s.toplevel, s.xdgSurface)) {
-                        remaining.push(s);
-                    }
-                }
-                root.pendingSurfaces = remaining;
-                if (remaining.length === 0) surfaceMatchTimer.stop();
             }
 
             function tryMatchSurface(toplevel, xdgSurface) {
                 var appTitle = toplevel.title || "";
                 var appId = toplevel.appId || "";
 
-                // First try name-based matching (if title/appId available)
-                if (appTitle.length > 0 || appId.length > 0) {
-                    for (var i = 0; i < openWindows.length; i++) {
-                        var win = openWindows[i];
-                        if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
-                            var searchName = win.searchName || "";
-                            if (searchName.length > 0 &&
-                                (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
-                                 appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
-                                var wins = openWindows.slice();
-                                wins[i] = {
-                                    appId: win.appId,
-                                    title: win.title,
-                                    icon: win.icon,
-                                    cmd: win.cmd || "",
-                                    searchName: win.searchName || "",
-                                    surface: xdgSurface,
-                                    toplevel: toplevel
-                                };
-                                openWindows = wins;
-                                console.log("WhaleOS: matched surface '" + appTitle + "' to window '" + win.appId + "' by searchName");
-                                return true;
-                            }
-                        }
-                    }
-                }
+                if (appTitle.length === 0 && appId.length === 0) return false;
 
-                return false;
-            }
-
-            // Fallback: assign any unmatched surface to any native window without a surface
-            function fallbackMatchSurface(toplevel, xdgSurface) {
                 for (var i = 0; i < openWindows.length; i++) {
                     var win = openWindows[i];
                     if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
-                        var wins = openWindows.slice();
-                        wins[i] = {
-                            appId: win.appId,
-                            title: win.title,
-                            icon: win.icon,
-                            cmd: win.cmd || "",
-                            searchName: win.searchName || "",
-                            surface: xdgSurface,
-                            toplevel: toplevel
-                        };
-                        openWindows = wins;
-                        console.log("WhaleOS: FALLBACK matched surface to window '" + win.appId + "'");
-                        return true;
+                        var searchName = win.searchName || "";
+                        if (searchName.length > 0 &&
+                            (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
+                             appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
+                            var wins = openWindows.slice();
+                            wins[i] = {
+                                appId: win.appId,
+                                title: win.title,
+                                icon: win.icon,
+                                cmd: win.cmd || "",
+                                searchName: win.searchName || "",
+                                surface: xdgSurface,
+                                toplevel: toplevel
+                            };
+                            openWindows = wins;
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -255,13 +207,7 @@ WaylandCompositor {
                             continue; // matched!
                         }
                         s.attempts++;
-                        // After 40 attempts (20s), try fallback match
-                        if (s.attempts >= 40) {
-                            if (root.fallbackMatchSurface(s.toplevel, s.xdgSurface)) {
-                                continue; // fallback matched
-                            }
-                        }
-                        if (s.attempts < 60) {
+                        if (s.attempts < 20) {
                             remaining.push(s);
                         }
                     }

@@ -55,8 +55,9 @@ Rectangle {
     // (QML only allows ONE Component.onCompleted per component)
     Component.onCompleted: {
         if (windowArea) {
-            var initW = Math.round(700 * root.sf);
-            var initH = Math.round(450 * root.sf);
+            // Native apps get a larger window
+            var initW = isNative ? Math.round(900 * root.sf) : Math.round(700 * root.sf);
+            var initH = isNative ? Math.round(600 * root.sf) : Math.round(450 * root.sf);
             appWindow.width  = Math.min(initW, windowArea.width  - Math.round(20 * root.sf));
             appWindow.height = Math.min(initH, windowArea.height - Math.round(20 * root.sf));
         }
@@ -71,11 +72,28 @@ Rectangle {
     property var shellSurface: null
     property var toplevelObj: null
 
-    // When the toplevel is assigned, send a configure with our content area size
+    // When a native surface arrives, tell it to maximize (fill content area, keep app UI)
+    onShellSurfaceChanged: {
+        if (shellSurface && toplevelObj) {
+            surfaceConfigureTimer.restart();
+        }
+    }
     onToplevelObjChanged: {
-        if (toplevelObj && typeof toplevelObj.sendConfigure === "function") {
-            var sz = Qt.size(contentArea.width, contentArea.height);
-            toplevelObj.sendConfigure(sz, []);
+        if (shellSurface && toplevelObj) {
+            surfaceConfigureTimer.restart();
+        }
+    }
+    Timer {
+        id: surfaceConfigureTimer
+        interval: 250; repeat: false
+        onTriggered: {
+            if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
+                // sendMaximized keeps app chrome (tabs, address bar) visible
+                // unlike sendFullscreen which hides everything
+                if (typeof toplevelObj.sendMaximized === "function") {
+                    toplevelObj.sendMaximized(Qt.size(contentArea.width, contentArea.height));
+                }
+            }
         }
     }
 
@@ -153,9 +171,13 @@ Rectangle {
     // ── Body ──
     Item {
         id: contentArea
+        clip: true  // Prevent native app surface from overflowing
         anchors.top: titleBar.bottom; anchors.left: parent.left
         anchors.right: parent.right; anchors.bottom: parent.bottom
-        clip: true
+
+        // Re-send configure when window is resized so native app fills properly
+        onWidthChanged: if (isNative && toplevelObj) surfaceConfigureTimer.restart()
+        onHeightChanged: if (isNative && toplevelObj) surfaceConfigureTimer.restart()
 
         MouseArea {
             anchors.fill: parent
@@ -190,7 +212,6 @@ Rectangle {
             anchors.fill: parent
             visible: shellSurface !== null
             shellSurface: appWindow.shellSurface
-            sizeFollowsSurface: false
             autoCreatePopupItems: true
 
             onSurfaceDestroyed: {

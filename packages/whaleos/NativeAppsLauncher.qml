@@ -7,7 +7,7 @@ Rectangle {
     color: "#1e1e2e"
 
     property var nativeApps: [
-        { appId: "native-chromium",   label: "Chrome",     cmd: "chromium --no-sandbox --disable-gpu --ozone-platform=wayland --enable-features=UseOzonePlatform", searchName: "Chromium",    iconType: "chrome",     accent: "#60a5fa" },
+        { appId: "native-chromium",   label: "Chrome",     cmd: "chromium --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform", searchName: "Chromium",    iconType: "chrome",     accent: "#60a5fa" },
         { appId: "native-mousepad",   label: "Editor",     cmd: "mousepad",              searchName: "Mousepad",   iconType: "editor",     accent: "#4ade80" },
         { appId: "native-galculator", label: "Calculator", cmd: "galculator",            searchName: "galculator", iconType: "calculator", accent: "#c084fc" }
     ]
@@ -149,9 +149,8 @@ Rectangle {
                         id: appMa; anchors.fill: parent; hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            // Register the window FIRST so tryMatchSurface can find it
+                            // Register the AppWindow — it will launch the native app via nativeLauncher timer
                             root.openAppWindow(modelData.appId, modelData.label, modelData.iconType, modelData.searchName, modelData.cmd);
-                            sysManager.launchNativeApp(modelData.cmd);
                             root.showToast(modelData.label + " launched", "success");
                         }
                     }

@@ -585,18 +585,28 @@ else
         "$ISO_DIR"
 fi
 
-SIZE=$(du -h "$FINAL_ISO" | cut -f1)
+# ─── Copy ISO to canonical output location ────────────────────
+if [ "$ARCH" = "x86_64" ]; then
+    ISO_OUTPUT_DIR="${AINUX_ROOT}/build/iso/x86"
+else
+    ISO_OUTPUT_DIR="${AINUX_ROOT}/build/iso/arm"
+fi
+mkdir -p "$ISO_OUTPUT_DIR"
+cp -v "$FINAL_ISO" "$ISO_OUTPUT_DIR/"
+CANONICAL_ISO="${ISO_OUTPUT_DIR}/$(basename "$FINAL_ISO")"
+
+SIZE=$(du -h "$CANONICAL_ISO" | cut -f1)
 echo ""
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo "  🐋  BUILD COMPLETE!"
-echo "  🐋  ISO: ${FINAL_ISO} (${SIZE})"
+echo "  🐋  ISO: ${CANONICAL_ISO} (${SIZE})"
 echo "  🐋  Arch: ${ARCH}"
 echo "  🐋"
 echo "  🐋  Test with QEMU:"
 echo "  🐋    ./scripts/run-qemu.sh"
 echo "  🐋"
 echo "  🐋  Flash to USB:"
-echo "  🐋    sudo dd if=${FINAL_ISO} of=/dev/sdX bs=4M status=progress"
+echo "  🐋    sudo dd if=${CANONICAL_ISO} of=/dev/sdX bs=4M status=progress"
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo ""
 

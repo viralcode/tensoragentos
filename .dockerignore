@@ -1,0 +1,11 @@
+# Exclude VM images and build artifacts from Docker context
+vm/
+build/
+*.iso
+*.qcow2
+*.vmdk
+*.img
+node_modules/
+.git/
+.gemini/
+.agents/
