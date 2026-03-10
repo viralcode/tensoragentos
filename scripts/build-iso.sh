@@ -261,6 +261,10 @@ sudo tee "${ROOTFS_DIR}/opt/ainux/start-gui.sh" > /dev/null << 'STARTGUI'
 # TensorAgent OS — smart display startup
 # Detects hypervisor and configures display backend accordingly
 
+LOGFILE=/tmp/tensoragent-gui.log
+exec > >(tee -a "$LOGFILE") 2>&1
+echo "=== TensorAgent GUI starting at $(date) ==="
+
 # Create XDG_RUNTIME_DIR if it doesn't exist
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 if [ ! -d "$XDG_RUNTIME_DIR" ]; then
@@ -272,7 +276,7 @@ export WLR_LIBINPUT_NO_DEVICES=1
 export WLR_NO_HARDWARE_CURSORS=1
 export QT_QPA_PLATFORM=wayland
 export QSG_RENDER_LOOP=basic
-export QT_LOGGING_RULES="*.debug=true"
+export QT_QUICK_BACKEND=software
 export QML2_IMPORT_PATH=/usr/lib/aarch64-linux-gnu/qt6/qml:/usr/lib/qt6/qml
 
 # Detect hypervisor
@@ -327,8 +331,14 @@ if [ ! -f /opt/ainux/whaleos/main.qml ]; then
     exit 1
 fi
 
+echo "[TensorAgent] Environment:"
+echo "  QT_QUICK_BACKEND=$QT_QUICK_BACKEND"
+echo "  QT_QPA_PLATFORM=$QT_QPA_PLATFORM"
+echo "  WLR_RENDERER=$WLR_RENDERER"
+echo "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+
 echo "[TensorAgent] Starting Cage compositor with WhaleOS..."
-exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos 2>&1
+exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
