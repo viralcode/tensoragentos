@@ -208,22 +208,33 @@ echo "  ✓ User created (ainux/ainux)"
 # ─── Integrate OpenWhale + WhaleOS ─────────────────────────────
 echo "[6/8] Installing OpenWhale + WhaleOS..."
 
-# Build OpenWhale on the HOST (native speed) — TypeScript produces platform-independent JS
-echo "  → Building OpenWhale on host..."
-cd "${AINUX_ROOT}/packages/openwhale"
-npm install 2>/dev/null || true
-npm run build 2>/dev/null || true
-cd "${AINUX_ROOT}"
-
-# Copy built OpenWhale into rootfs
+# Copy source into rootfs first (before building)
 sudo mkdir -p "${ROOTFS_DIR}/opt/ainux"
 sudo cp -r "${AINUX_ROOT}/packages/openwhale" "${ROOTFS_DIR}/opt/ainux/"
 sudo cp -r "${AINUX_ROOT}/packages/whaleos"   "${ROOTFS_DIR}/opt/ainux/"
 
-# Install native dependencies inside chroot (for better-sqlite3 etc.)
+# Build OpenWhale inside chroot where Node.js is available
+echo "  → Building OpenWhale in chroot..."
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     cd /opt/ainux/openwhale
-    npm install --omit=dev 2>/dev/null || true
+    echo "    Installing dependencies..."
+    npm install 2>&1 | tail -5
+    echo "    Building TypeScript..."
+    if npx tsc --version 2>/dev/null; then
+        npm run build 2>&1 | tail -10
+        if [ -f dist/index.js ]; then
+            echo "    ✓ TypeScript compiled — dist/index.js exists"
+            # Clean devDependencies to save space
+            npm prune --production 2>/dev/null || true
+        else
+            echo "    ⚠ tsc build failed — keeping tsx for runtime"
+        fi
+    else
+        echo "    ⚠ tsc not found — keeping tsx for runtime"
+    fi
+    # Ensure tsx is available as runtime fallback
+    npm list tsx 2>/dev/null || npm install tsx 2>&1 | tail -3
+    # Rebuild native modules for ARM64
     npm rebuild better-sqlite3 2>/dev/null || true
 '
 
