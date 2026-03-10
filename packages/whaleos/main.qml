@@ -93,12 +93,13 @@ WaylandCompositor {
             property string settingsOpenTab: ""  // Set before opening Settings to jump to a tab
 
             // ── Open App helper (usable from Desktop, context menu, etc.) ──
-            function openAppWindow(appId, title, icon) {
+            // searchName + cmd are optional — used for native app surface matching
+            function openAppWindow(appId, title, icon, searchName, cmd) {
                 for (var i = 0; i < openWindows.length; i++) {
                     if (openWindows[i].appId === appId) return;
                 }
                 var wins = openWindows.slice();
-                wins.push({ appId: appId, title: title, icon: icon });
+                wins.push({ appId: appId, title: title, icon: icon, searchName: searchName || "", cmd: cmd || "" });
                 openWindows = wins;
             }
 

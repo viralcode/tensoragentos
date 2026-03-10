@@ -149,6 +149,8 @@ Rectangle {
                         id: appMa; anchors.fill: parent; hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            // Register the window FIRST so tryMatchSurface can find it
+                            root.openAppWindow(modelData.appId, modelData.label, modelData.iconType, modelData.searchName, modelData.cmd);
                             sysManager.launchNativeApp(modelData.cmd);
                             root.showToast(modelData.label + " launched", "success");
                         }
