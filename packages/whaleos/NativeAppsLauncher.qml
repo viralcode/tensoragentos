@@ -7,7 +7,7 @@ Rectangle {
     color: "#1e1e2e"
 
     property var nativeApps: [
-        { appId: "native-chromium",   label: "Chrome",     cmd: "chromium --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform", searchName: "Chromium",    iconType: "chrome",     accent: "#60a5fa" },
+        { appId: "native-chromium",   label: "Chromium",   cmd: "chromium --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform,WaylandWindowDecorations", searchName: "Chromium",    iconType: "chrome",     accent: "#60a5fa" },
         { appId: "native-mousepad",   label: "Editor",     cmd: "mousepad",              searchName: "Mousepad",   iconType: "editor",     accent: "#4ade80" },
         { appId: "native-galculator", label: "Calculator", cmd: "galculator",            searchName: "galculator", iconType: "calculator", accent: "#c084fc" }
     ]

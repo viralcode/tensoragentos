@@ -39,9 +39,13 @@ Rectangle {
         } else {
             savedX = appWindow.x; savedY = appWindow.y;
             savedW = appWindow.width; savedH = appWindow.height;
-            appWindow.x = 0; appWindow.y = 0;
-            appWindow.width = windowArea ? windowArea.width : appWindow.width;
-            appWindow.height = windowArea ? windowArea.height : appWindow.height;
+            // Position at windowArea origin (accounts for top bar)
+            if (windowArea) {
+                appWindow.x = windowArea.x;
+                appWindow.y = windowArea.y;
+                appWindow.width = windowArea.width;
+                appWindow.height = windowArea.height;
+            }
             maximized = true;
         }
     }
@@ -72,7 +76,8 @@ Rectangle {
     property var shellSurface: null
     property var toplevelObj: null
 
-    // When a native surface arrives, tell it to maximize (fill content area, keep app UI)
+    // When a native surface arrives, configure it to fill the content area
+    // (the area below WhaleOS's title bar)
     onShellSurfaceChanged: {
         if (shellSurface && toplevelObj) {
             surfaceConfigureTimer.restart();
@@ -85,13 +90,14 @@ Rectangle {
     }
     Timer {
         id: surfaceConfigureTimer
-        interval: 250; repeat: false
+        interval: 150; repeat: false
         onTriggered: {
             if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
-                // sendMaximized keeps app chrome (tabs, address bar) visible
-                // unlike sendFullscreen which hides everything
+                var sz = Qt.size(contentArea.width, contentArea.height);
+                // sendMaximized tells Chrome to fill the given size
+                // WhaleOS provides the title bar (SSD), so Chrome won't draw its own
                 if (typeof toplevelObj.sendMaximized === "function") {
-                    toplevelObj.sendMaximized(Qt.size(contentArea.width, contentArea.height));
+                    toplevelObj.sendMaximized(sz);
                 }
             }
         }
@@ -102,11 +108,12 @@ Rectangle {
         color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.4); border.width: 2; z: -1
     }
 
-    // ── Title Bar ──
+    // ── Title Bar (always shown — compositor provides window controls) ──
     Rectangle {
         id: titleBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: Math.round(40 * root.sf); color: root.bgElevated; radius: root.radiusLg
+        height: Math.round(40 * root.sf)
+        color: root.bgElevated; radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: parent.radius; color: parent.color }
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: root.borderColor }
@@ -167,6 +174,7 @@ Rectangle {
             }
         }
     }
+
 
     // ── Body ──
     Item {

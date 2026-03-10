@@ -182,6 +182,30 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         || apt-get install -y -qq chromium-browser 2>/dev/null \
         || echo "  ⚠ Chromium not available for this architecture"
 
+    # Configure Chromium to use Client-Side Decorations (CSD)
+    # This makes Chromium show its own minimize/maximize/close buttons
+    # just like on Ubuntu/GNOME
+    echo "  Configuring Chromium CSD..."
+
+    # Method 1: Chromium flags file (loaded on startup)
+    mkdir -p /etc/chromium.d
+    cat > /etc/chromium.d/csd.conf << 'CHROMIUM_CSD'
+# Enable Client-Side Decorations (CSD) — show min/max/close buttons
+export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --enable-features=UseOzonePlatform,WaylandWindowDecorations"
+CHROMIUM_CSD
+
+    # Method 2: Default preferences for the user (custom_chrome_frame = CSD)
+    CHROMIUM_PREFS_DIR="/home/ainux/.config/chromium/Default"
+    mkdir -p "$CHROMIUM_PREFS_DIR"
+    cat > "$CHROMIUM_PREFS_DIR/Preferences" << 'CHROMIUM_PREFS'
+{
+    "browser": {
+        "custom_chrome_frame": true
+    }
+}
+CHROMIUM_PREFS
+    chown -R 1000:1000 /home/ainux/.config
+
     # Verify native app binaries
     echo "  Verifying native app binaries..."
     for bin in chromium mousepad galculator; do

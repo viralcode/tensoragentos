@@ -307,6 +307,13 @@ WaylandCompositor {
         }
     }
 
+    // ── XDG Decoration — tells clients that the compositor draws window buttons ──
+    // WhaleOS provides its own title bar with maximize/close for ALL windows.
+    // ServerSideDecoration tells apps NOT to draw their own buttons.
+    XdgDecorationManagerV1 {
+        preferredMode: XdgToplevel.ServerSideDecoration
+    }
+
     // ── WlShell — fallback for older/simpler clients ──
     WlShell {
         onWlShellSurfaceCreated: function(shellSurface) {

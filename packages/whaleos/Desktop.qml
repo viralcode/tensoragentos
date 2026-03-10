@@ -691,13 +691,13 @@ Rectangle {
         z: 20
     }
 
-    // ── Window Area ──
+    // ── Window Area (full height — dock/chatbar float on top) ──
     Item {
         id: winArea
         anchors.top: topBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: appDock.top
+        anchors.bottom: parent.bottom
     }
 
     // ── App Windows ──
