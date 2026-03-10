@@ -332,37 +332,9 @@ exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos 2>&1
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
-# WhaleOS GUI service (Cage compositor running WhaleOS)
-sudo tee "${ROOTFS_DIR}/etc/systemd/system/ainux-gui.service" > /dev/null << 'GUISERVICE'
-[Unit]
-Description=TensorAgent OS Desktop Shell
-After=openwhale.service systemd-logind.service
-Wants=openwhale.service
-Conflicts=getty@tty1.service
-
-[Service]
-Type=simple
-User=ainux
-PAMName=login
-StandardOutput=journal
-StandardError=journal
-ExecStartPre=/bin/sleep 3
-ExecStart=/opt/ainux/start-gui.sh
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=graphical.target
-GUISERVICE
-
-# Enable services
-sudo chroot "$ROOTFS_DIR" /bin/bash -c '
-    systemctl enable openwhale.service
-    systemctl enable ainux-gui.service
-    systemctl set-default graphical.target
-    # Enable loginctl for multi-seat support
-    systemctl enable systemd-logind
-'
+# ── GUI Launch via Getty Autologin (Kiosk Mode) ──
+# Standard Cage kiosk setup: getty autologin → PAM session → logind seat → Cage gets DRM
+# This gives Cage proper seat access that a standalone systemd service cannot provide.
 
 # Auto-login on tty1
 sudo mkdir -p "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
@@ -371,6 +343,27 @@ sudo tee "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf" 
 ExecStart=
 ExecStart=-/sbin/agetty --autologin ainux --noclear %I $TERM
 AUTOLOGIN
+
+# Launch GUI from .bash_profile on tty1 (only runs on console login, not SSH)
+sudo tee "${ROOTFS_DIR}/home/ainux/.bash_profile" > /dev/null << 'BASHPROFILE'
+# TensorAgent OS — Auto-launch GUI on tty1
+if [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+    echo "[TensorAgent] Starting desktop environment..."
+    exec /opt/ainux/start-gui.sh
+fi
+
+# Normal shell for other TTYs and SSH
+[ -f ~/.bashrc ] && source ~/.bashrc
+BASHPROFILE
+sudo chown 1000:1000 "${ROOTFS_DIR}/home/ainux/.bash_profile"
+
+# Keep OpenWhale as a service (backend)
+# Enable services
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    systemctl enable openwhale.service
+    systemctl set-default graphical.target
+    systemctl enable systemd-logind
+'
 
 echo "  ✓ Services configured"
 
