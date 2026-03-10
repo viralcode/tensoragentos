@@ -261,11 +261,14 @@ OWSERVICE
 sudo tee "${ROOTFS_DIR}/opt/ainux/start-gui.sh" > /dev/null << 'STARTGUI'
 #!/bin/bash
 # TensorAgent OS — smart display startup
-# Detects hypervisor and configures display backend accordingly
+# WhaleOS IS a Wayland compositor — no need for Cage.
+# Runs directly on the framebuffer via EGLFS.
 
 LOGFILE=/tmp/tensoragent-gui.log
-exec > >(tee -a "$LOGFILE") 2>&1
-echo "=== TensorAgent GUI starting at $(date) ==="
+
+# Simple logging — no process substitution pipes that block VT
+log() { echo "[TensorAgent] $*" | tee -a "$LOGFILE"; }
+log "=== TensorAgent GUI starting at $(date) ==="
 
 # Create XDG_RUNTIME_DIR if it doesn't exist
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -274,73 +277,78 @@ if [ ! -d "$XDG_RUNTIME_DIR" ]; then
     chmod 0700 "$XDG_RUNTIME_DIR"
 fi
 
-export WLR_LIBINPUT_NO_DEVICES=1
-export WLR_NO_HARDWARE_CURSORS=1
-export QT_QPA_PLATFORM=wayland
+# Qt rendering config — software rendering for VM compatibility
+export QT_QPA_PLATFORM=eglfs
 export QSG_RENDER_LOOP=basic
 export QT_QUICK_BACKEND=software
 export QML2_IMPORT_PATH=/usr/lib/aarch64-linux-gnu/qt6/qml:/usr/lib/qt6/qml
 
+# EGLFS config — use linuxfb fallback if no working EGL
+export QT_QPA_EGLFS_INTEGRATION=eglfs_kms
+export QT_QPA_EGLFS_ALWAYS_SET_MODE=1
+export LIBGL_ALWAYS_SOFTWARE=1
+
 # Detect hypervisor
 HYPERVISOR=$(systemd-detect-virt 2>/dev/null || echo "none")
-echo "[TensorAgent] Detected hypervisor: $HYPERVISOR"
+log "Detected hypervisor: $HYPERVISOR"
 
 case "$HYPERVISOR" in
     vmware)
-        echo "[TensorAgent] VMware detected — using software renderer"
-        export WLR_RENDERER=pixman
-        export WLR_BACKENDS=drm
+        log "VMware detected — using software renderer with linuxfb fallback"
         export GALLIUM_DRIVER=llvmpipe
-        export LIBGL_ALWAYS_SOFTWARE=1
         modprobe vmwgfx 2>/dev/null || true
+        # Try eglfs first, fall back to linuxfb if it fails
+        export QT_QPA_EGLFS_KMS_CONFIG=""
         ;;
     qemu|kvm)
-        echo "[TensorAgent] QEMU/KVM detected — using virtio-gpu"
+        log "QEMU/KVM detected — using virtio-gpu"
         ;;
     *)
-        echo "[TensorAgent] Bare metal or unknown — auto-detecting display"
+        log "Bare metal or unknown — auto-detecting display"
         ;;
 esac
 
 # Wait for DRM device (up to 10 seconds)
 for i in $(seq 1 20); do
     if ls /dev/dri/card* 2>/dev/null; then
-        echo "[TensorAgent] DRM device found"
+        log "DRM device found"
+        ls /dev/dri/ >> "$LOGFILE" 2>&1
         break
     fi
-    echo "[TensorAgent] Waiting for DRM device... ($i/20)"
+    log "Waiting for DRM device... ($i/20)"
     sleep 0.5
 done
 
-# If no DRM device, force headless + VNC fallback
+# If no DRM device, fall back to linuxfb
 if ! ls /dev/dri/card* 2>/dev/null; then
-    echo "[TensorAgent] No DRM device — using headless backend with VNC"
-    export WLR_BACKENDS=headless
-    export WLR_RENDERER=pixman
+    log "No DRM device — falling back to linuxfb"
+    export QT_QPA_PLATFORM=linuxfb
 fi
 
 # Pre-flight checks
-echo "[TensorAgent] Checking WhaleOS binary..."
+log "Checking WhaleOS binary..."
 if [ ! -x /opt/ainux/whaleos/whaleos ]; then
-    echo "[TensorAgent] ERROR: WhaleOS binary not found or not executable"
-    ls -la /opt/ainux/whaleos/ 2>/dev/null || echo "  whaleos directory missing"
+    log "ERROR: WhaleOS binary not found or not executable"
+    ls -la /opt/ainux/whaleos/ >> "$LOGFILE" 2>&1 || echo "  whaleos directory missing" >> "$LOGFILE"
     exit 1
 fi
 
-echo "[TensorAgent] Checking main.qml..."
+log "Checking main.qml..."
 if [ ! -f /opt/ainux/whaleos/main.qml ]; then
-    echo "[TensorAgent] ERROR: main.qml not found"
+    log "ERROR: main.qml not found"
     exit 1
 fi
 
-echo "[TensorAgent] Environment:"
-echo "  QT_QUICK_BACKEND=$QT_QUICK_BACKEND"
-echo "  QT_QPA_PLATFORM=$QT_QPA_PLATFORM"
-echo "  WLR_RENDERER=$WLR_RENDERER"
-echo "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+log "Environment:"
+log "  QT_QPA_PLATFORM=$QT_QPA_PLATFORM"
+log "  QT_QUICK_BACKEND=$QT_QUICK_BACKEND"
+log "  QSG_RENDER_LOOP=$QSG_RENDER_LOOP"
+log "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
-echo "[TensorAgent] Starting Cage compositor with WhaleOS..."
-exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos
+# Launch WhaleOS directly — it IS a Wayland compositor
+# No Cage needed. WhaleOS renders via EGLFS to the DRM device.
+log "Starting WhaleOS compositor directly..."
+exec /opt/ainux/whaleos/whaleos >> "$LOGFILE" 2>&1
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
