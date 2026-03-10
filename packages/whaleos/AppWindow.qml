@@ -71,6 +71,14 @@ Rectangle {
     property var shellSurface: null
     property var toplevelObj: null
 
+    // When the toplevel is assigned, send a configure with our content area size
+    onToplevelObjChanged: {
+        if (toplevelObj && typeof toplevelObj.sendConfigure === "function") {
+            var sz = Qt.size(contentArea.width, contentArea.height);
+            toplevelObj.sendConfigure(sz, []);
+        }
+    }
+
     Rectangle {
         anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
         color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.4); border.width: 2; z: -1
@@ -182,6 +190,7 @@ Rectangle {
             anchors.fill: parent
             visible: shellSurface !== null
             shellSurface: appWindow.shellSurface
+            sizeFollowsSurface: false
             autoCreatePopupItems: true
 
             onSurfaceDestroyed: {

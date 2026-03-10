@@ -162,34 +162,82 @@ WaylandCompositor {
                 pending.push({ toplevel: toplevel, xdgSurface: xdgSurface, attempts: 0 });
                 pendingSurfaces = pending;
                 surfaceMatchTimer.start();
+
+                // Also listen for title/appId changes for instant re-matching
+                toplevel.titleChanged.connect(function() {
+                    root.retryPendingMatches();
+                });
+                if (toplevel.appIdChanged) {
+                    toplevel.appIdChanged.connect(function() {
+                        root.retryPendingMatches();
+                    });
+                }
+            }
+
+            function retryPendingMatches() {
+                var remaining = [];
+                for (var i = 0; i < root.pendingSurfaces.length; i++) {
+                    var s = root.pendingSurfaces[i];
+                    if (!root.tryMatchSurface(s.toplevel, s.xdgSurface)) {
+                        remaining.push(s);
+                    }
+                }
+                root.pendingSurfaces = remaining;
+                if (remaining.length === 0) surfaceMatchTimer.stop();
             }
 
             function tryMatchSurface(toplevel, xdgSurface) {
                 var appTitle = toplevel.title || "";
                 var appId = toplevel.appId || "";
 
-                if (appTitle.length === 0 && appId.length === 0) return false;
+                // First try name-based matching (if title/appId available)
+                if (appTitle.length > 0 || appId.length > 0) {
+                    for (var i = 0; i < openWindows.length; i++) {
+                        var win = openWindows[i];
+                        if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
+                            var searchName = win.searchName || "";
+                            if (searchName.length > 0 &&
+                                (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
+                                 appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
+                                var wins = openWindows.slice();
+                                wins[i] = {
+                                    appId: win.appId,
+                                    title: win.title,
+                                    icon: win.icon,
+                                    cmd: win.cmd || "",
+                                    searchName: win.searchName || "",
+                                    surface: xdgSurface,
+                                    toplevel: toplevel
+                                };
+                                openWindows = wins;
+                                console.log("WhaleOS: matched surface '" + appTitle + "' to window '" + win.appId + "' by searchName");
+                                return true;
+                            }
+                        }
+                    }
+                }
 
+                return false;
+            }
+
+            // Fallback: assign any unmatched surface to any native window without a surface
+            function fallbackMatchSurface(toplevel, xdgSurface) {
                 for (var i = 0; i < openWindows.length; i++) {
                     var win = openWindows[i];
                     if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
-                        var searchName = win.searchName || "";
-                        if (searchName.length > 0 &&
-                            (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
-                             appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
-                            var wins = openWindows.slice();
-                            wins[i] = {
-                                appId: win.appId,
-                                title: win.title,
-                                icon: win.icon,
-                                cmd: win.cmd || "",
-                                searchName: win.searchName || "",
-                                surface: xdgSurface,
-                                toplevel: toplevel
-                            };
-                            openWindows = wins;
-                            return true;
-                        }
+                        var wins = openWindows.slice();
+                        wins[i] = {
+                            appId: win.appId,
+                            title: win.title,
+                            icon: win.icon,
+                            cmd: win.cmd || "",
+                            searchName: win.searchName || "",
+                            surface: xdgSurface,
+                            toplevel: toplevel
+                        };
+                        openWindows = wins;
+                        console.log("WhaleOS: FALLBACK matched surface to window '" + win.appId + "'");
+                        return true;
                     }
                 }
                 return false;
@@ -207,7 +255,13 @@ WaylandCompositor {
                             continue; // matched!
                         }
                         s.attempts++;
-                        if (s.attempts < 20) {
+                        // After 40 attempts (20s), try fallback match
+                        if (s.attempts >= 40) {
+                            if (root.fallbackMatchSurface(s.toplevel, s.xdgSurface)) {
+                                continue; // fallback matched
+                            }
+                        }
+                        if (s.attempts < 60) {
                             remaining.push(s);
                         }
                     }
