@@ -269,9 +269,8 @@ Rectangle {
         Column {
             id: mainCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
-            Text { text: "AI Providers"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
-            Text { text: "Configure cloud and local AI model providers"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-            Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
+            // ═══════════════════════════════════════════════════
+            // ── Ollama Local Provider ──
 
             // ═══════════════════════════════════════════════════
             // ── Ollama Local Provider ──

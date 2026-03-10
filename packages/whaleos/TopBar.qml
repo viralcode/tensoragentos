@@ -27,7 +27,179 @@ Rectangle {
     property bool timeLoading: false
     property bool timeOpPending: false
 
-    Component.onCompleted: { checkOwHealth(); sysManager.getTimeInfoAsync(); }
+    // ── Network/WiFi state ──
+    property bool netPanelVisible: false
+    property bool wifiEnabled: true
+    property bool wifiScanning: false
+    property bool wifiConnecting: false
+    property string wifiConnectingSSID: ""
+    property string currentSSID: ""
+    property int currentSignal: 0
+    property string currentIP: ""
+    property string connectionType: "none"  // "wifi", "ethernet", "none"
+    property var wifiNetworks: []  // [{ssid, signal, security, connected}]
+    property string wifiError: ""
+    property bool showPasswordDialog: false
+    property string passwordSSID: ""
+    property string passwordInput: ""
+
+    Component.onCompleted: { checkOwHealth(); sysManager.getTimeInfoAsync(); refreshNetworkStatus(); }
+
+    // ── Network Functions (via whaleos-helper /exec POST) ──
+    function helperExec(cmd, callback, timeout) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://127.0.0.1:7778/exec");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.timeout = timeout || 10000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (callback) callback(xhr.status, xhr.responseText);
+            }
+        };
+        xhr.ontimeout = function() {
+            if (callback) callback(0, "");
+        };
+        xhr.send(JSON.stringify({command: cmd}));
+    }
+
+    function refreshNetworkStatus() {
+        helperExec(
+            "nmcli -t -f TYPE,NAME,DEVICE connection show --active 2>/dev/null; echo '---IP---'; " +
+            "ip -4 addr show | grep 'inet ' | grep -v '127.0.0.1' | head -1 | awk '{print $2}' 2>/dev/null; echo '---WIFI---'; " +
+            "nmcli -t -f WIFI general 2>/dev/null",
+            function(status, body) {
+                if (status === 200) {
+                    try {
+                        var d = JSON.parse(body);
+                        var out = d.stdout || "";
+                        var parts = out.split("---IP---");
+                        var connPart = parts[0] || "";
+                        var rest = (parts[1] || "").split("---WIFI---");
+                        var ipPart = (rest[0] || "").trim();
+                        var wifiPart = (rest[1] || "").trim();
+
+                        currentIP = ipPart.split("/")[0] || "";
+                        wifiEnabled = (wifiPart.toLowerCase() === "enabled");
+
+                        // Parse active connection
+                        var lines = connPart.trim().split("\n");
+                        connectionType = "none";
+                        currentSSID = "";
+                        for (var i = 0; i < lines.length; i++) {
+                            var cols = lines[i].split(":");
+                            if (cols.length >= 2) {
+                                if (cols[0] === "802-11-wireless" || cols[0] === "wifi") {
+                                    connectionType = "wifi";
+                                    currentSSID = cols[1];
+                                } else if (cols[0] === "802-3-ethernet" || cols[0] === "ethernet") {
+                                    connectionType = "ethernet";
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }, 5000
+        );
+    }
+
+    function scanWifi() {
+        wifiScanning = true;
+        wifiError = "";
+        helperExec(
+            "nmcli -t -f SSID,SIGNAL,SECURITY,ACTIVE device wifi list --rescan yes 2>/dev/null",
+            function(status, body) {
+                wifiScanning = false;
+                if (status === 200) {
+                    try {
+                        var d = JSON.parse(body);
+                        var out = d.stdout || "";
+                        var lines = out.trim().split("\n");
+                        var nets = [];
+                        var seen = {};
+                        for (var i = 0; i < lines.length; i++) {
+                            var cols = lines[i].split(":");
+                            if (cols.length >= 3 && cols[0].trim() !== "" && cols[0] !== "--") {
+                                var ssid = cols[0].trim();
+                                if (seen[ssid]) continue;
+                                seen[ssid] = true;
+                                nets.push({
+                                    ssid: ssid,
+                                    signal: parseInt(cols[1]) || 0,
+                                    security: cols[2] || "Open",
+                                    connected: (cols.length >= 4 && cols[3].trim() === "yes")
+                                });
+                            }
+                        }
+                        nets.sort(function(a, b) {
+                            if (a.connected !== b.connected) return a.connected ? -1 : 1;
+                            return b.signal - a.signal;
+                        });
+                        wifiNetworks = nets;
+                        if (nets.length === 0 && out.trim() === "") {
+                            wifiError = "No WiFi adapter found (VM has ethernet only)";
+                        }
+                    } catch(e) {
+                        wifiError = "Failed to parse WiFi scan results";
+                    }
+                } else {
+                    wifiError = "WiFi scan failed. Is NetworkManager running?";
+                }
+            }, 15000
+        );
+    }
+
+    function connectWifi(ssid, password) {
+        wifiConnecting = true;
+        wifiConnectingSSID = ssid;
+        wifiError = "";
+        var cmd = password
+            ? "nmcli device wifi connect '" + ssid.replace(/'/g, "'\\''") + "' password '" + password.replace(/'/g, "'\\''") + "' 2>&1"
+            : "nmcli device wifi connect '" + ssid.replace(/'/g, "'\\''") + "' 2>&1";
+        helperExec(cmd, function(status, body) {
+            wifiConnecting = false;
+            wifiConnectingSSID = "";
+            if (status === 200) {
+                try {
+                    var d = JSON.parse(body);
+                    var out = (d.stdout || "").toLowerCase();
+                    if (out.indexOf("error") !== -1 || out.indexOf("failed") !== -1) {
+                        wifiError = d.stdout || "Connection failed";
+                    } else {
+                        showPasswordDialog = false;
+                        passwordInput = "";
+                        refreshNetworkStatus();
+                        scanWifi();
+                    }
+                } catch(e) {
+                    wifiError = "Connection error";
+                }
+            }
+        }, 30000);
+    }
+
+    function disconnectWifi() {
+        helperExec(
+            "nmcli device disconnect $(nmcli -t -f DEVICE,TYPE device | grep wifi | cut -d: -f1 | head -1) 2>/dev/null",
+            function() { refreshNetworkStatus(); scanWifi(); }
+        );
+    }
+
+    function toggleWifi(enable) {
+        helperExec(
+            "nmcli radio wifi " + (enable ? "on" : "off") + " 2>/dev/null",
+            function() {
+                wifiEnabled = enable;
+                if (enable) { scanWifi(); }
+                refreshNetworkStatus();
+            }
+        );
+    }
+
+    // Refresh network status periodically
+    Timer {
+        interval: 15000; running: true; repeat: true
+        onTriggered: refreshNetworkStatus()
+    }
 
     function fetchTimeInfo() {
         timeLoading = true;
@@ -300,7 +472,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     owPanelVisible = !owPanelVisible;
-                    userMenu.visible = false;
+                    userMenu.visible = false; netPanelVisible = false; timePanelVisible = false;
                     if (owPanelVisible) { checkOwHealth(); }
                 }
             }
@@ -401,7 +573,7 @@ Rectangle {
                 id: clockMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     timePanelVisible = !timePanelVisible;
-                    owPanelVisible = false;
+                    owPanelVisible = false; netPanelVisible = false;
                     userMenu.visible = false;
                     if (timePanelVisible) {
                         fetchTimeInfo();
@@ -496,6 +668,88 @@ Rectangle {
                     }
                 }
 
+                // WiFi/Network indicator
+                Rectangle {
+                    width: Math.round(26 * root.sf)
+                    height: Math.round(26 * root.sf)
+                    radius: Math.round(13 * root.sf)
+                    color: wifiMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+                    anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    scale: wifiMouse.containsMouse ? 1.12 : 1.0
+                    Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+
+                    Canvas {
+                        id: wifiCanvas
+                        anchors.centerIn: parent
+                        width: Math.round(14 * root.sf); height: Math.round(14 * root.sf)
+                        property real s: root.sf
+                        property string connType: connectionType
+                        property bool enabled: wifiEnabled
+
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+
+                            if (connType === "ethernet") {
+                                // Ethernet icon — monitor with cable
+                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3;
+                                ctx.strokeRect(2, 1, 10, 7);
+                                ctx.beginPath(); ctx.moveTo(7, 8); ctx.lineTo(7, 11); ctx.stroke();
+                                ctx.beginPath(); ctx.moveTo(4, 11); ctx.lineTo(10, 11); ctx.stroke();
+                            } else if (connType === "wifi" && enabled) {
+                                // WiFi connected — signal arcs
+                                var cx = 7, cy = 12;
+                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                                // Three arcs
+                                ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(cx, cy, 3, -Math.PI * 0.75, -Math.PI * 0.25); ctx.stroke();
+                                // Center dot
+                                ctx.fillStyle = "#34d399";
+                                ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, Math.PI * 2); ctx.fill();
+                            } else if (!enabled) {
+                                // WiFi disabled — crossed out
+                                var cx2 = 7, cy2 = 12;
+                                ctx.strokeStyle = "#6b7280"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                                ctx.beginPath(); ctx.arc(cx2, cy2, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(cx2, cy2, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
+                                // Slash through
+                                ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5;
+                                ctx.beginPath(); ctx.moveTo(2, 2); ctx.lineTo(12, 12); ctx.stroke();
+                            } else {
+                                // No connection — gray wifi
+                                var cx3 = 7, cy3 = 12;
+                                ctx.strokeStyle = "#6b7280"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                                ctx.beginPath(); ctx.arc(cx3, cy3, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(cx3, cy3, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
+                                ctx.beginPath(); ctx.arc(cx3, cy3, 3, -Math.PI * 0.75, -Math.PI * 0.25); ctx.stroke();
+                                ctx.fillStyle = "#6b7280";
+                                ctx.beginPath(); ctx.arc(cx3, cy3, 1.2, 0, Math.PI * 2); ctx.fill();
+                            }
+                            ctx.restore();
+                        }
+                        onConnTypeChanged: requestPaint()
+                        onEnabledChanged: requestPaint()
+                        onSChanged: requestPaint()
+                        property bool hov: wifiMouse.containsMouse
+                        onHovChanged: requestPaint()
+                    }
+
+                    MouseArea {
+                        id: wifiMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            netPanelVisible = !netPanelVisible;
+                            owPanelVisible = false; timePanelVisible = false; userMenu.visible = false;
+                            if (netPanelVisible) { refreshNetworkStatus(); scanWifi(); }
+                        }
+                    }
+                }
+
                 // Animated separator
                 Rectangle {
                     width: 1; height: Math.round(16 * root.sf)
@@ -568,7 +822,7 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; }
+                            onClicked: { userMenu.visible = !userMenu.visible; owPanelVisible = false; netPanelVisible = false; timePanelVisible = false; }
                         }
                     }
                 }
@@ -903,6 +1157,477 @@ Rectangle {
                         onClicked: sysManager.runCommandAsync("sudo shutdown -h now", "")
                     }
                 }
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // ── Network / WiFi Panel (Dropdown) ──
+    // ════════════════════════════════════════════
+    Rectangle {
+        id: netPanel
+        visible: netPanelVisible
+        parent: topBar.parent
+        x: topBar.width - width - Math.round(10 * root.sf)
+        y: topBar.height + Math.round(6 * root.sf)
+        width: Math.round(340 * root.sf)
+        height: netPanelCol.height + Math.round(20 * root.sf)
+        radius: root.radiusMd
+        color: root.bgElevated
+        border.color: root.borderColor; border.width: 1
+        z: 1001
+
+        Column {
+            id: netPanelCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Math.round(10 * root.sf)
+            spacing: Math.round(10 * root.sf)
+
+            // ── Header ──
+            RowLayout {
+                width: parent.width
+                spacing: Math.round(8 * root.sf)
+
+                Canvas {
+                    Layout.preferredWidth: Math.round(20 * root.sf)
+                    Layout.preferredHeight: Math.round(20 * root.sf)
+                    property real s: root.sf
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s * 1.4, s * 1.4);
+                        var cx = 7, cy = 12;
+                        ctx.strokeStyle = connectionType !== "none" ? "#34d399" : "#94a3b8";
+                        ctx.lineWidth = 1.4; ctx.lineCap = "round";
+                        ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(cx, cy, 3, -Math.PI * 0.75, -Math.PI * 0.25); ctx.stroke();
+                        ctx.fillStyle = ctx.strokeStyle;
+                        ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
+                    }
+                    onSChanged: requestPaint()
+                }
+
+                Column {
+                    Layout.fillWidth: true
+                    spacing: 1
+                    Text {
+                        text: "Network"
+                        font.pixelSize: Math.round(14 * root.sf)
+                        font.weight: Font.DemiBold
+                        color: "#ffffff"
+                    }
+                    Text {
+                        text: connectionType === "wifi" ? "Connected to " + currentSSID
+                            : connectionType === "ethernet" ? "Wired Connection"
+                            : "Not Connected"
+                        font.pixelSize: Math.round(10 * root.sf)
+                        color: root.textMuted
+                        elide: Text.ElideRight
+                        width: parent.width
+                    }
+                }
+
+                // Close button
+                Rectangle {
+                    Layout.preferredWidth: Math.round(24 * root.sf)
+                    Layout.preferredHeight: Math.round(24 * root.sf)
+                    radius: Math.round(12 * root.sf)
+                    color: netCloseMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+                    Text {
+                        anchors.centerIn: parent; text: "✕"
+                        font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                    }
+                    MouseArea { id: netCloseMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: netPanelVisible = false }
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
+
+            // ── Connection Status ──
+            Rectangle {
+                width: parent.width
+                height: Math.round(44 * root.sf)
+                radius: root.radiusSm
+                color: connectionType !== "none"
+                    ? Qt.rgba(0.13, 0.77, 0.37, 0.06)
+                    : Qt.rgba(0.42, 0.46, 0.50, 0.06)
+                border.color: connectionType !== "none"
+                    ? Qt.rgba(0.13, 0.77, 0.37, 0.15)
+                    : Qt.rgba(0.42, 0.46, 0.50, 0.15)
+                border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(10 * root.sf)
+                    spacing: Math.round(8 * root.sf)
+
+                    Rectangle {
+                        width: Math.round(9 * root.sf); height: width; radius: width/2
+                        color: connectionType !== "none" ? root.accentGreen : "#6b7280"
+                    }
+
+                    Column {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                            text: connectionType === "wifi" ? currentSSID
+                                : connectionType === "ethernet" ? "Ethernet"
+                                : "Disconnected"
+                            font.pixelSize: Math.round(12 * root.sf)
+                            font.weight: Font.Medium
+                            color: connectionType !== "none" ? root.accentGreen : "#9ca3af"
+                        }
+                        Text {
+                            visible: currentIP !== ""
+                            text: currentIP
+                            font.pixelSize: Math.round(9 * root.sf)
+                            color: root.textMuted
+                        }
+                    }
+
+                    // Disconnect button (for WiFi)
+                    Rectangle {
+                        visible: connectionType === "wifi"
+                        width: Math.round(70 * root.sf); height: Math.round(24 * root.sf)
+                        radius: Math.round(12 * root.sf)
+                        color: disconnMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1,1,1,0.05)
+                        border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                        Text {
+                            anchors.centerIn: parent; text: "Disconnect"
+                            font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium
+                            color: disconnMa.containsMouse ? "#ef4444" : root.textMuted
+                        }
+                        MouseArea { id: disconnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: disconnectWifi() }
+                    }
+                }
+            }
+
+            // ── WiFi Toggle ──
+            Rectangle {
+                width: parent.width
+                height: Math.round(40 * root.sf)
+                radius: root.radiusSm
+                color: Qt.rgba(1, 1, 1, 0.03)
+                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(10 * root.sf)
+                    spacing: Math.round(8 * root.sf)
+
+                    Text {
+                        text: "Wi-Fi"
+                        font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium
+                        color: "#e2e8f0"; Layout.fillWidth: true
+                    }
+
+                    // Toggle switch
+                    Rectangle {
+                        width: Math.round(40 * root.sf); height: Math.round(22 * root.sf)
+                        radius: Math.round(11 * root.sf)
+                        color: wifiEnabled ? "#34d399" : "#374151"
+                        Behavior on color { ColorAnimation { duration: 200 } }
+
+                        Rectangle {
+                            width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
+                            radius: Math.round(9 * root.sf)
+                            color: "#ffffff"
+                            x: wifiEnabled ? parent.width - width - Math.round(2 * root.sf) : Math.round(2 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                            onClicked: toggleWifi(!wifiEnabled)
+                        }
+                    }
+                }
+            }
+
+            // ── WiFi Networks Header ──
+            RowLayout {
+                visible: wifiEnabled
+                width: parent.width
+                spacing: Math.round(6 * root.sf)
+
+                Text {
+                    text: "Available Networks"
+                    font.pixelSize: Math.round(10 * root.sf)
+                    font.weight: Font.DemiBold
+                    color: root.textMuted
+                    Layout.fillWidth: true
+                    font.letterSpacing: 0.5
+                }
+
+                // Scan/refresh
+                Rectangle {
+                    Layout.preferredWidth: Math.round(24 * root.sf)
+                    Layout.preferredHeight: Math.round(24 * root.sf)
+                    radius: Math.round(12 * root.sf)
+                    color: scanMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+
+                    Canvas {
+                        anchors.centerIn: parent
+                        width: Math.round(12 * root.sf); height: Math.round(12 * root.sf)
+                        property real s: root.sf
+                        rotation: wifiScanning ? 360 : 0
+                        Behavior on rotation { RotationAnimation { duration: 1000; loops: Animation.Infinite } }
+                        onPaint: {
+                            var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                            ctx.save(); ctx.scale(s, s);
+                            ctx.strokeStyle = wifiScanning ? "#3b82f6" : "#999"; ctx.lineWidth = 1.5;
+                            ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
+                            ctx.restore();
+                        }
+                        onSChanged: requestPaint()
+                    }
+                    MouseArea { id: scanMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: scanWifi() }
+                }
+            }
+
+            // ── Error message ──
+            Text {
+                visible: wifiError !== ""
+                width: parent.width
+                text: wifiError
+                font.pixelSize: Math.round(10 * root.sf)
+                color: "#ef4444"
+                wrapMode: Text.WordWrap
+            }
+
+            // ── Scanning indicator ──
+            Text {
+                visible: wifiScanning && wifiNetworks.length === 0
+                width: parent.width
+                text: "Scanning for networks..."
+                font.pixelSize: Math.round(11 * root.sf)
+                color: root.textMuted
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            // ── Network List ──
+            Rectangle {
+                visible: wifiEnabled && wifiNetworks.length > 0
+                width: parent.width
+                height: Math.min(Math.round(240 * root.sf), netListCol.height + Math.round(4 * root.sf))
+                radius: root.radiusSm
+                color: Qt.rgba(0, 0, 0, 0.2)
+                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                clip: true
+
+                Flickable {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(2 * root.sf)
+                    contentHeight: netListCol.height
+                    clip: true; boundsBehavior: Flickable.StopAtBounds
+
+                    Column {
+                        id: netListCol
+                        width: parent.width
+                        spacing: Math.round(2 * root.sf)
+
+                        Repeater {
+                            model: wifiNetworks
+
+                            Rectangle {
+                                width: netListCol.width
+                                height: Math.round(42 * root.sf)
+                                radius: root.radiusSm
+                                color: netItemMa.containsMouse
+                                    ? Qt.rgba(1, 1, 1, 0.08)
+                                    : modelData.connected ? Qt.rgba(0.13, 0.77, 0.37, 0.05) : "transparent"
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: Math.round(10 * root.sf)
+                                    anchors.rightMargin: Math.round(10 * root.sf)
+                                    spacing: Math.round(8 * root.sf)
+
+                                    // Signal strength bars
+                                    Row {
+                                        spacing: Math.round(1.5 * root.sf)
+                                        Layout.alignment: Qt.AlignVCenter
+
+                                        Repeater {
+                                            model: 4
+                                            Rectangle {
+                                                width: Math.round(3 * root.sf)
+                                                height: Math.round((4 + index * 3) * root.sf)
+                                                radius: Math.round(1 * root.sf)
+                                                anchors.bottom: parent.bottom
+                                                color: {
+                                                    var sig = modelData.signal;
+                                                    var threshold = [0, 25, 50, 75][index];
+                                                    if (sig > threshold) {
+                                                        return modelData.connected ? "#34d399" : "#94a3b8";
+                                                    }
+                                                    return Qt.rgba(1,1,1,0.1);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // SSID + security
+                                    Column {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Text {
+                                            text: modelData.ssid
+                                            font.pixelSize: Math.round(11.5 * root.sf)
+                                            font.weight: modelData.connected ? Font.DemiBold : Font.Normal
+                                            color: modelData.connected ? "#34d399" : "#e2e8f0"
+                                            elide: Text.ElideRight
+                                            width: parent.width
+                                        }
+
+                                        Text {
+                                            text: modelData.connected ? "Connected"
+                                                : modelData.security !== "" && modelData.security !== "--" ? "🔒 " + modelData.security
+                                                : "Open"
+                                            font.pixelSize: Math.round(9 * root.sf)
+                                            color: modelData.connected ? Qt.rgba(0.2, 0.83, 0.6, 0.6) : root.textMuted
+                                        }
+                                    }
+
+                                    // Connect button
+                                    Rectangle {
+                                        visible: !modelData.connected && !(wifiConnecting && wifiConnectingSSID === modelData.ssid)
+                                        width: Math.round(60 * root.sf); height: Math.round(24 * root.sf)
+                                        radius: Math.round(12 * root.sf)
+                                        color: Qt.rgba(0.23, 0.51, 0.96, netConnMa.containsMouse ? 0.25 : 0.10)
+                                        border.color: Qt.rgba(0.23, 0.51, 0.96, 0.3); border.width: 1
+                                        Text {
+                                            anchors.centerIn: parent; text: "Connect"
+                                            font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium
+                                            color: "#60a5fa"
+                                        }
+                                        MouseArea {
+                                            id: netConnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                var sec = modelData.security || "";
+                                                if (sec !== "" && sec !== "--" && sec.toLowerCase() !== "open") {
+                                                    passwordSSID = modelData.ssid;
+                                                    passwordInput = "";
+                                                    showPasswordDialog = true;
+                                                } else {
+                                                    connectWifi(modelData.ssid, "");
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Connecting spinner text
+                                    Text {
+                                        visible: wifiConnecting && wifiConnectingSSID === modelData.ssid
+                                        text: "Connecting..."
+                                        font.pixelSize: Math.round(9 * root.sf)
+                                        color: "#60a5fa"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: netItemMa; anchors.fill: parent; hoverEnabled: true
+                                    // Just hover effect, clicking is via Connect button
+                                    acceptedButtons: Qt.NoButton
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Password Dialog ──
+            Rectangle {
+                visible: showPasswordDialog
+                width: parent.width
+                height: pwdCol.height + Math.round(16 * root.sf)
+                radius: root.radiusSm
+                color: Qt.rgba(0.23, 0.51, 0.96, 0.06)
+                border.color: Qt.rgba(0.23, 0.51, 0.96, 0.2); border.width: 1
+
+                Column {
+                    id: pwdCol
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.top: parent.top; anchors.margins: Math.round(8 * root.sf)
+                    spacing: Math.round(8 * root.sf)
+
+                    Text {
+                        text: "Enter password for \"" + passwordSSID + "\""
+                        font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
+                        color: "#e2e8f0"; wrapMode: Text.WordWrap; width: parent.width
+                    }
+
+                    Rectangle {
+                        width: parent.width; height: Math.round(34 * root.sf)
+                        radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.3)
+                        border.color: pwdInput.activeFocus ? "#60a5fa" : Qt.rgba(1,1,1,0.1)
+                        border.width: 1
+
+                        TextInput {
+                            id: pwdInput
+                            anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+                            font.pixelSize: Math.round(12 * root.sf)
+                            color: "#ffffff"; echoMode: TextInput.Password
+                            clip: true
+                            onTextChanged: passwordInput = text
+                            onAccepted: { if (passwordInput.length > 0) connectWifi(passwordSSID, passwordInput); }
+
+                            Text {
+                                visible: parent.text === ""
+                                text: "Password"
+                                font.pixelSize: Math.round(12 * root.sf)
+                                color: Qt.rgba(1,1,1,0.3)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        width: parent.width
+                        spacing: Math.round(6 * root.sf)
+
+                        Rectangle {
+                            Layout.fillWidth: true; height: Math.round(30 * root.sf)
+                            radius: root.radiusSm
+                            color: cancelPwdMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.04)
+                            border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                            Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
+                            MouseArea { id: cancelPwdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: { showPasswordDialog = false; passwordInput = ""; }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true; height: Math.round(30 * root.sf)
+                            radius: root.radiusSm
+                            color: connectPwdMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.3) : Qt.rgba(0.23, 0.51, 0.96, 0.15)
+                            border.color: Qt.rgba(0.23, 0.51, 0.96, 0.4); border.width: 1
+                            Text { anchors.centerIn: parent; text: wifiConnecting ? "Connecting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#60a5fa" }
+                            MouseArea { id: connectPwdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                enabled: passwordInput.length > 0 && !wifiConnecting
+                                onClicked: connectWifi(passwordSSID, passwordInput)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── No WiFi networks found ──
+            Text {
+                visible: wifiEnabled && !wifiScanning && wifiNetworks.length === 0 && wifiError === ""
+                width: parent.width
+                text: "No WiFi networks found"
+                font.pixelSize: Math.round(11 * root.sf)
+                color: root.textMuted
+                horizontalAlignment: Text.AlignHCenter
             }
         }
     }

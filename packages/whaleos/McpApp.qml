@@ -179,13 +179,10 @@ Rectangle {
             // ─── Header ───
             RowLayout {
                 width: parent.width
-                Column {
-                    Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                    Text { text: "MCP Apps"; font.pixelSize: Math.round(20 * root.sf); font.bold: true; color: root.textPrimary }
-                    Text {
-                        text: loading ? "Loading..." : allServers.length + " servers available · " + allServers.filter(function(s){return s.running}).length + " running"
-                        font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary
-                    }
+                Text {
+                    text: loading ? "Loading..." : allServers.length + " servers available · " + allServers.filter(function(s){return s.running}).length + " running"
+                    font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary
+                    Layout.fillWidth: true
                 }
                 Rectangle {
                     width: Math.round(220 * root.sf); height: Math.round(32 * root.sf)

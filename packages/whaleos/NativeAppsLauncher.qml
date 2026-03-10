@@ -17,19 +17,6 @@ Rectangle {
         anchors.margins: 24
         spacing: 16
 
-        Text {
-            text: "Applications"
-            font.pixelSize: 18
-            font.weight: Font.DemiBold
-            color: "#e2e8f0"
-        }
-
-        Text {
-            text: "Native Linux applications installed on this system"
-            font.pixelSize: 13
-            color: "#94a3b8"
-        }
-
         GridLayout {
             width: parent.width
             columns: 3

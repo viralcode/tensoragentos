@@ -1010,6 +1010,9 @@ public:
             "export GDK_BACKEND=wayland; "
             "export QT_QPA_PLATFORM=wayland; "
             "export LIBGL_ALWAYS_SOFTWARE=1; "
+            "export GTK_CSD=0; "
+            "export XDG_CURRENT_DESKTOP=WhaleOS; "
+            "export SSD_PREFER=1; "
             "exec %4 2>&1"
         ).arg(waylandDisplay, runtimeDir, home, command);
 

@@ -241,9 +241,6 @@ Rectangle {
         Column {
             id: skillsCol; width: parent.width; spacing: Math.round(18 * root.sf)
 
-            Text { text: "Skills"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
-            Text { text: "API integrations and markdown-based skills"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-
             // Tab bar
             Rectangle {
                 width: tabRow.width + Math.round(6 * root.sf); height: Math.round(40 * root.sf)

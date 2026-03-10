@@ -387,8 +387,6 @@ Rectangle {
                 id: cCol; width: parent.width - 32; x: Math.round(16 * root.sf); y: Math.round(16 * root.sf); spacing: Math.round(14 * root.sf)
                 // PROFILE
                 Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "profile"
-                    Text { text: "Profile"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                    Text { text: "Manage your account settings"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                     Rectangle { width: parent.width; height: pI.height + 24; radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: pI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
                             RowLayout { spacing: Math.round(10 * root.sf)
@@ -418,10 +416,7 @@ Rectangle {
                 // USERS
                 Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "users"
                     RowLayout { width: parent.width
-                        Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                        Text { text: "User Management"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                        Text { text: "Manage who can access this system"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-                    }
+                        Item { Layout.fillWidth: true }
                         Rectangle { width: Math.round(90 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: root.accentBlue
                         Text { anchors.centerIn: parent; text: "+ Add User"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: showAddUser = true }
@@ -481,8 +476,6 @@ Rectangle {
                 }
                 // CHANNELS
                 Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "channels"
-                    Text { text: "Channels"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                    Text { text: "Connect messaging platforms"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                     Rectangle { width: parent.width; height: wI.height + 24; radius: root.radiusMd; color: root.bgCard; border.color: waConnected ? Qt.rgba(0.13,0.77,0.37,0.35) : root.borderColor; border.width: waConnected ? 2 : 1
                         // Connected glow effect
                         Rectangle { visible: waConnected; anchors.fill: parent; radius: parent.radius; color: Qt.rgba(0.13,0.77,0.37,0.04) }
@@ -570,8 +563,6 @@ Rectangle {
                 }
                 // DISPLAY
                 Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "display"
-                    Text { text: "Display Settings"; font.pixelSize: Math.round(18 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
-                    Text { text: "Configure screen resolution, scaling, and graphics"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
 
                     // ── Current Resolution Card ──
                     Rectangle { width: parent.width; height: curResCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1

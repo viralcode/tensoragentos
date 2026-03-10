@@ -22,25 +22,6 @@ Rectangle {
             width: parent.width
             spacing: Math.round(18 * root.sf)
 
-            RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    text: "Extensions"
-                    font.pixelSize: Math.round(18 * root.sf)
-                    font.weight: Font.DemiBold
-                    color: root.textPrimary
-                }
-
-                Item { Layout.fillWidth: true }
-            }
-
-            Text {
-                text: "Extensions and automations installed on this system"
-                font.pixelSize: Math.round(13 * root.sf)
-                color: root.textSecondary
-            }
-
             // Extensions grid
             GridLayout {
                 Layout.fillWidth: true

@@ -123,11 +123,7 @@ Rectangle {
             RowLayout {
                 width: parent.width
 
-                Column {
-                    Layout.fillWidth: true; spacing: Math.round(4 * root.sf)
-                    Text { text: "Agents"; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
-                    Text { text: "Configure and manage AI agents for multi-agent coordination"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
-                }
+                Item { Layout.fillWidth: true }
 
                 // Coordination Button
                 Rectangle {

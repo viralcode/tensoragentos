@@ -189,15 +189,15 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
     # Method 1: Chromium flags file (loaded on startup)
     mkdir -p /etc/chromium.d
-    cat > /etc/chromium.d/csd.conf << 'CHROMIUM_CSD'
+    cat > /etc/chromium.d/csd.conf << CHROMIUM_CSD
 # Enable Client-Side Decorations (CSD) — show min/max/close buttons
-export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --enable-features=UseOzonePlatform,WaylandWindowDecorations"
+export CHROMIUM_FLAGS="\$CHROMIUM_FLAGS --enable-features=UseOzonePlatform,WaylandWindowDecorations"
 CHROMIUM_CSD
 
     # Method 2: Default preferences for the user (custom_chrome_frame = CSD)
     CHROMIUM_PREFS_DIR="/home/ainux/.config/chromium/Default"
     mkdir -p "$CHROMIUM_PREFS_DIR"
-    cat > "$CHROMIUM_PREFS_DIR/Preferences" << 'CHROMIUM_PREFS'
+    cat > "$CHROMIUM_PREFS_DIR/Preferences" << CHROMIUM_PREFS
 {
     "browser": {
         "custom_chrome_frame": true
@@ -219,8 +219,37 @@ CHROMIUM_PREFS
     # VMware guest tools (for VMware Fusion/Workstation support)
     apt-get install -y -qq open-vm-tools open-vm-tools-desktop 2>/dev/null || true
 
-    # Flatpak (dynamic package management)
-    apt-get install -y -qq flatpak
+    # Network management (WiFi + wired)
+    apt-get install -y -qq network-manager wpasupplicant wireless-tools iw
+
+    # CRITICAL: NetworkManager ignores interfaces in /etc/network/interfaces
+    # Strip it to loopback-only so NM manages everything (ethernet, wifi)
+    cat > /etc/network/interfaces << NETIF
+# This file is intentionally minimal.
+# Network interfaces are managed by NetworkManager.
+auto lo
+iface lo inet loopback
+NETIF
+
+    # Tell NetworkManager to manage all devices (even if in /etc/network/interfaces)
+    mkdir -p /etc/NetworkManager/conf.d
+    cat > /etc/NetworkManager/conf.d/10-manage-all.conf << NMCONF
+[main]
+plugins=ifupdown,keyfile
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=no
+NMCONF
+
+    systemctl enable NetworkManager 2>/dev/null || true
+    # Disable ifupdown networking service so it does not conflict
+    systemctl disable networking 2>/dev/null || true
+
+    # Flatpak (dynamic package management) — optional, skip if unavailable
+    apt-get install -y -qq flatpak 2>/dev/null || echo "  [SKIP] flatpak not available in repos"
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
 
     # Clean apt cache
@@ -243,6 +272,42 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 '
 
 echo "  ✓ User created (ainux/ainux)"
+
+# Fix home directory ownership (useradd -m with existing dir leaves root:root)
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    chown -R ainux:ainux /home/ainux
+'
+echo "  ✓ Home directory ownership fixed"
+
+# ─── Install Ollama ────────────────────────────────────────────
+echo "  → Installing Ollama..."
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    curl -fsSL https://ollama.com/install.sh | sh 2>&1 | tail -3
+'
+echo "  ✓ Ollama installed"
+
+# Create Ollama systemd service
+sudo tee "${ROOTFS_DIR}/etc/systemd/system/ollama.service" > /dev/null << 'OLLAMA_EOF'
+[Unit]
+Description=Ollama AI Model Server
+After=network.target
+
+[Service]
+Type=simple
+User=ainux
+ExecStart=/usr/local/bin/ollama serve
+Environment=HOME=/home/ainux OLLAMA_HOST=0.0.0.0
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+OLLAMA_EOF
+
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    systemctl enable ollama 2>/dev/null || true
+'
+echo "  ✓ Ollama service enabled"
 
 # ─── Integrate OpenWhale + WhaleOS ─────────────────────────────
 echo "[6/8] Installing OpenWhale + WhaleOS..."
@@ -310,6 +375,28 @@ RestartSec=5
 WantedBy=multi-user.target
 OWSERVICE
 
+# WhaleOS helper service (port 7778 — system exec for QML)
+sudo tee "${ROOTFS_DIR}/etc/systemd/system/whaleos-helper.service" > /dev/null << 'HELPERSERVICE'
+[Unit]
+Description=WhaleOS System Helper
+After=network.target
+
+[Service]
+Type=simple
+User=ainux
+WorkingDirectory=/opt/ainux/whaleos
+ExecStart=/usr/bin/node /opt/ainux/whaleos/whaleos-helper.mjs
+Environment=NODE_ENV=production HOME=/home/ainux
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+HELPERSERVICE
+
+sudo chroot "$ROOTFS_DIR" systemctl enable whaleos-helper 2>/dev/null || true
+echo "  ✓ WhaleOS helper service enabled (port 7778)"
+
 # Hypervisor-aware GUI startup script
 sudo tee "${ROOTFS_DIR}/opt/ainux/start-gui.sh" > /dev/null << 'STARTGUI'
 #!/bin/bash
@@ -340,6 +427,10 @@ export QML2_IMPORT_PATH=/usr/lib/aarch64-linux-gnu/qt6/qml:/usr/lib/qt6/qml
 export QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 export QT_QPA_EGLFS_ALWAYS_SET_MODE=1
 export LIBGL_ALWAYS_SOFTWARE=1
+
+# Disable GTK client-side decorations — WhaleOS provides server-side title bars
+export GTK_CSD=0
+export XDG_CURRENT_DESKTOP=WhaleOS
 
 # Detect hypervisor
 HYPERVISOR=$(systemd-detect-virt 2>/dev/null || echo "none")

@@ -134,12 +134,6 @@ Rectangle {
             anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
 
             Text {
-                text: appWindow.windowIcon
-                font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(14 * root.sf)
-                color: root.accentBlue
-            }
-
-            Text {
                 text: appWindow.windowTitle
                 font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold
                 color: root.textPrimary; Layout.fillWidth: true
