@@ -339,19 +339,14 @@ Description=TensorAgent OS Desktop Shell
 After=openwhale.service systemd-logind.service
 Wants=openwhale.service
 Conflicts=getty@tty1.service
-After=getty@tty1.service
 
 [Service]
 Type=simple
 User=ainux
 PAMName=login
-TTYPath=/dev/tty7
-StandardInput=tty
 StandardOutput=journal
 StandardError=journal
-UtmpIdentifier=tty7
 ExecStartPre=/bin/sleep 3
-ExecStartPre=/bin/chvt 7
 ExecStart=/opt/ainux/start-gui.sh
 Restart=on-failure
 RestartSec=5
