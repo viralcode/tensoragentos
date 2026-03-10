@@ -194,7 +194,7 @@ echo "[5/8] Creating default user..."
 
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     if ! id ainux 2>/dev/null; then
-        useradd -m -s /bin/bash -G sudo,video,audio,input,render ainux
+        useradd -m -s /bin/bash -G sudo,video,audio,input,render,systemd-journal ainux
         echo "ainux:ainux" | chpasswd
         echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/nopasswd
         chmod 440 /etc/sudoers.d/nopasswd
@@ -336,17 +336,25 @@ sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 sudo tee "${ROOTFS_DIR}/etc/systemd/system/ainux-gui.service" > /dev/null << 'GUISERVICE'
 [Unit]
 Description=TensorAgent OS Desktop Shell
-After=openwhale.service
+After=openwhale.service systemd-logind.service
 Wants=openwhale.service
+Conflicts=getty@tty1.service
+After=getty@tty1.service
 
 [Service]
 Type=simple
 User=ainux
 PAMName=login
+TTYPath=/dev/tty7
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty7
 ExecStartPre=/bin/sleep 3
+ExecStartPre=/bin/chvt 7
 ExecStart=/opt/ainux/start-gui.sh
 Restart=on-failure
-RestartSec=3
+RestartSec=5
 
 [Install]
 WantedBy=graphical.target
