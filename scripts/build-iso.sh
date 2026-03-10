@@ -261,11 +261,19 @@ sudo tee "${ROOTFS_DIR}/opt/ainux/start-gui.sh" > /dev/null << 'STARTGUI'
 # TensorAgent OS — smart display startup
 # Detects hypervisor and configures display backend accordingly
 
-export XDG_RUNTIME_DIR=/run/user/1000
+# Create XDG_RUNTIME_DIR if it doesn't exist
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    mkdir -p "$XDG_RUNTIME_DIR"
+    chmod 0700 "$XDG_RUNTIME_DIR"
+fi
+
 export WLR_LIBINPUT_NO_DEVICES=1
 export WLR_NO_HARDWARE_CURSORS=1
 export QT_QPA_PLATFORM=wayland
 export QSG_RENDER_LOOP=basic
+export QT_LOGGING_RULES="*.debug=true"
+export QML2_IMPORT_PATH=/usr/lib/aarch64-linux-gnu/qt6/qml:/usr/lib/qt6/qml
 
 # Detect hypervisor
 HYPERVISOR=$(systemd-detect-virt 2>/dev/null || echo "none")
@@ -278,7 +286,6 @@ case "$HYPERVISOR" in
         export WLR_BACKENDS=drm
         export GALLIUM_DRIVER=llvmpipe
         export LIBGL_ALWAYS_SOFTWARE=1
-        # Load VMware GPU module
         modprobe vmwgfx 2>/dev/null || true
         ;;
     qemu|kvm)
@@ -306,7 +313,22 @@ if ! ls /dev/dri/card* 2>/dev/null; then
     export WLR_RENDERER=pixman
 fi
 
-exec /usr/bin/cage -- /opt/ainux/whaleos/whaleos
+# Pre-flight checks
+echo "[TensorAgent] Checking WhaleOS binary..."
+if [ ! -x /opt/ainux/whaleos/whaleos ]; then
+    echo "[TensorAgent] ERROR: WhaleOS binary not found or not executable"
+    ls -la /opt/ainux/whaleos/ 2>/dev/null || echo "  whaleos directory missing"
+    exit 1
+fi
+
+echo "[TensorAgent] Checking main.qml..."
+if [ ! -f /opt/ainux/whaleos/main.qml ]; then
+    echo "[TensorAgent] ERROR: main.qml not found"
+    exit 1
+fi
+
+echo "[TensorAgent] Starting Cage compositor with WhaleOS..."
+exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos 2>&1
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
