@@ -979,27 +979,50 @@ public:
         QString home = pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
         QString runtimeDir = QString("/run/user/%1").arg(uid);
 
-        // Read the Wayland display from our current environment
-        // WhaleOS compositor socket is "whaleos-0" (see main.qml socketName)
+        // WhaleOS compositor socket (see main.qml socketName)
         QString waylandDisplay = qEnvironmentVariable("WAYLAND_DISPLAY", "whaleos-0");
 
-        // Tell native apps to connect to our Wayland compositor
+        // Build environment for native apps to connect to WhaleOS compositor
+        // Native GTK apps need GDK_BACKEND=wayland
+        // Native Qt apps need QT_QPA_PLATFORM=wayland
+        // Chromium needs --ozone-platform=wayland (passed in command)
         QString fullCmd = QString(
             "export WAYLAND_DISPLAY=%1; "
             "export XDG_RUNTIME_DIR=%2; "
             "export HOME=%3; "
             "export DBUS_SESSION_BUS_ADDRESS=unix:path=%2/bus; "
             "export DISPLAY=:0; "
+            "export GDK_BACKEND=wayland; "
+            "export QT_QPA_PLATFORM=wayland; "
+            "export LIBGL_ALWAYS_SOFTWARE=1; "
             "exec %4"
         ).arg(waylandDisplay, runtimeDir, home, command);
 
         QProcess *proc = new QProcess(this);
         proc->setProgram("/bin/bash");
         proc->setArguments(QStringList() << "-c" << fullCmd);
+
+        // Log errors when the process exits abnormally
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc, command](int exitCode, QProcess::ExitStatus status) {
+            if (exitCode != 0 || status == QProcess::CrashExit) {
+                QString err = QString::fromUtf8(proc->readAllStandardError());
+                qWarning() << "SystemManager: native app FAILED:" << command
+                           << "exit:" << exitCode << "stderr:" << err.left(500);
+            }
+            proc->deleteLater();
+        });
+
+        // Log if the process fails to start at all
+        connect(proc, &QProcess::errorOccurred, this, [this, command](QProcess::ProcessError error) {
+            qWarning() << "SystemManager: native app ERROR:" << command << "error:" << error;
+        });
+
         proc->start();
 
         qDebug() << "SystemManager: launchNativeApp" << command
                  << "WAYLAND_DISPLAY=" << waylandDisplay
+                 << "XDG_RUNTIME_DIR=" << runtimeDir
                  << "started:" << proc->processId();
         return true;
     }

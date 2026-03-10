@@ -171,11 +171,26 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
     # Multimedia & utilities
     apt-get install -y -qq \
-        ffmpeg chromium mousepad galculator \
+        ffmpeg mousepad galculator \
         htop tmux ripgrep jq tree \
         fonts-dejavu fonts-noto fontconfig \
         pipewire pipewire-alsa wireplumber \
         xsel wl-clipboard
+
+    # Chromium — package name varies by architecture
+    apt-get install -y -qq chromium 2>/dev/null \
+        || apt-get install -y -qq chromium-browser 2>/dev/null \
+        || echo "  ⚠ Chromium not available for this architecture"
+
+    # Verify native app binaries
+    echo "  Verifying native app binaries..."
+    for bin in chromium mousepad galculator; do
+        if which "$bin" 2>/dev/null; then
+            echo "    ✓ $bin found: $(which $bin)"
+        else
+            echo "    ✗ $bin NOT FOUND"
+        fi
+    done
 
     # VMware guest tools (for VMware Fusion/Workstation support)
     apt-get install -y -qq open-vm-tools open-vm-tools-desktop 2>/dev/null || true
