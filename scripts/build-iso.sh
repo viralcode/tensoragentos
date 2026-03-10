@@ -155,6 +155,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         qml6-module-qtquick qml6-module-qtquick-controls \
         qml6-module-qtquick-window qml6-module-qtquick-templates \
         qml6-module-qtquick-layouts qml6-module-qtwayland-compositor \
+        qml6-module-qtqml-workerscript qml6-module-qtqml \
         libqt6waylandcompositor6 \
         2>/dev/null || echo "  ⚠ Some Qt6 packages unavailable, will build from source"
 
@@ -516,20 +517,18 @@ mcopy -i "${EFI_IMG}" "${ISO_DIR}/EFI/BOOT/${EFI_BINARY}" "::/EFI/BOOT/${EFI_BIN
 FINAL_ISO="${AINUX_ROOT}/tensoragent-os-${ARCH}.iso"
 
 if [ "$ARCH" = "x86_64" ]; then
-    # x86_64: hybrid BIOS + EFI boot
+    # x86_64: EFI-only boot (removes legacy BIOS flags that corrupted efi.img)
     xorriso -as mkisofs \
         -iso-level 3 \
         -o "$FINAL_ISO" \
         -full-iso9660-filenames \
         -volid "TENSORAGENT" \
-        --grub2-boot-info \
-        --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
-        -eltorito-boot boot/grub/efi.img \
-        -no-emul-boot -boot-load-size 4 -boot-info-table \
-        --eltorito-catalog boot/grub/boot.cat \
+        -e boot/grub/efi.img \
+        -no-emul-boot \
         -append_partition 2 0xef "${EFI_IMG}" \
         "$ISO_DIR" 2>/dev/null || \
     xorriso -as mkisofs -o "$FINAL_ISO" -J -R -V "TENSORAGENT" \
+        -e boot/grub/efi.img -no-emul-boot \
         -append_partition 2 0xef "${EFI_IMG}" \
         "$ISO_DIR"
 else
