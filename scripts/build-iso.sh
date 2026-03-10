@@ -290,7 +290,6 @@ case "$HYPERVISOR" in
         echo "[TensorAgent] VMware detected — using software renderer"
         export WLR_RENDERER=pixman
         export WLR_BACKENDS=drm
-        export WLR_DRM_NO_MODIFIERS=1
         export GALLIUM_DRIVER=llvmpipe
         export LIBGL_ALWAYS_SOFTWARE=1
         modprobe vmwgfx 2>/dev/null || true
@@ -341,7 +340,7 @@ echo "  WLR_RENDERER=$WLR_RENDERER"
 echo "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
 echo "[TensorAgent] Starting Cage compositor with WhaleOS..."
-exec /usr/bin/cage -s -- /bin/sh -c '/opt/ainux/whaleos/whaleos >/tmp/whaleos.log 2>&1'
+exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
