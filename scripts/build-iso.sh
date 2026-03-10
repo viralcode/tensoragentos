@@ -153,6 +153,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         qt6-base-dev qt6-declarative-dev \
         qt6-wayland-dev qt6-wayland \
         qml6-module-qtquick qml6-module-qtquick-controls \
+        qml6-module-qtquick-window qml6-module-qtquick-templates \
         qml6-module-qtquick-layouts qml6-module-qtwayland-compositor \
         libqt6waylandcompositor6 \
         2>/dev/null || echo "  ⚠ Some Qt6 packages unavailable, will build from source"
@@ -338,7 +339,7 @@ echo "  WLR_RENDERER=$WLR_RENDERER"
 echo "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
 echo "[TensorAgent] Starting Cage compositor with WhaleOS..."
-exec /usr/bin/cage -s -- /opt/ainux/whaleos/whaleos
+exec /usr/bin/cage -s -- /bin/sh -c '/opt/ainux/whaleos/whaleos 2>&1 | tee /tmp/whaleos.log'
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
 
