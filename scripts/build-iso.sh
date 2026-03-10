@@ -236,6 +236,9 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     npm list tsx 2>/dev/null || npm install tsx 2>&1 | tail -3
     # Rebuild native modules for ARM64
     npm rebuild better-sqlite3 2>/dev/null || true
+    # Create data directory and fix ownership so ainux user can write
+    mkdir -p /opt/ainux/openwhale/data
+    chown -R 1000:1000 /opt/ainux/openwhale
 '
 
 # Build WhaleOS shell
