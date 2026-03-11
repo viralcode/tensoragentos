@@ -31,6 +31,7 @@ import {
     deleteConversation,
     getCurrentConversationId,
     getOsConfig,
+    getWorkspaceDir,
     setOsConfig,
 } from "../sessions/session-service.js";
 import { registry } from "../providers/index.js";
@@ -2945,7 +2946,7 @@ echo "Hello from ${name}"
             const context = {
                 sessionId: extensionName || "extension",
                 userId: "extension",
-                workspaceDir: process.cwd(),
+                workspaceDir: getWorkspaceDir(),
                 sandboxed: false
             };
 

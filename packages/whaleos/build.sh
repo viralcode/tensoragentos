@@ -7,16 +7,20 @@ cd /opt/ainux/whaleos
 
 echo "Building WhaleOS..."
 
-# ── Run Qt6 MOC on SystemManager (Q_OBJECT requires it) ──
+# ── Run Qt6 MOC on all Q_OBJECT headers ──
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) systemmanager.h -o moc_systemmanager.cpp
+/usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) ptyprocess.h -o moc_ptyprocess.cpp
+/usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) terminalemulator.h -o moc_terminalemulator.cpp
 
 # ── Run MOC on main.cpp (ClipboardFilter has Q_OBJECT) ──
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) main.cpp -o main.moc
 
-# ── Compile with Wayland Compositor + PAM support ──
-# -lpam: PAM authentication (replaces insecure /etc/shadow direct reading)
-g++ -o whaleos main.cpp moc_systemmanager.cpp \
+# ── Compile with Wayland Compositor + PAM + PTY support ──
+# -lpam: PAM authentication
+# -lutil: forkpty() for real pseudo-terminal support
+g++ -o whaleos main.cpp moc_systemmanager.cpp moc_ptyprocess.cpp moc_terminalemulator.cpp \
     $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Core Qt6Gui Qt6WaylandCompositor) \
-    -lpam -fPIC
+    -lpam -lutil -fPIC
 
 echo "WhaleOS built successfully"
+

@@ -26,7 +26,7 @@ Environment=HOME=/home/ainux
 # Allow OpenWhale to execute commands and access files
 NoNewPrivileges=false
 ProtectSystem=false
-ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp
+ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp /home/ainux/Works
 
 # Logging
 StandardOutput=journal

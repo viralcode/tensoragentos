@@ -72,7 +72,7 @@ export class AgentRunner {
                     role: m.role as Message["role"],
                     content: m.content,
                 })),
-                workspaceDir: options.workspaceDir ?? process.cwd(),
+                workspaceDir: options.workspaceDir ?? (await import("../sessions/session-service.js")).getWorkspaceDir(),
                 sandboxed: false,
                 createdAt: existing.createdAt,
             };
@@ -98,7 +98,7 @@ export class AgentRunner {
                 agentId: options.agentId ?? "default",
                 model,
                 messages: [],
-                workspaceDir: options.workspaceDir ?? process.cwd(),
+                workspaceDir: options.workspaceDir ?? (await import("../sessions/session-service.js")).getWorkspaceDir(),
                 sandboxed: false,
                 createdAt: new Date(),
             };

@@ -22,7 +22,10 @@ Rectangle {
     property string selectedRes: ""
     property bool resApplied: false
     property int revertCountdown: 0
-    Component.onCompleted: { loadUsers(); checkChannelStatus(); loadDisplayInfo(); }
+    // Storage settings
+    property string workspaceDir: "/home/ainux/Works"
+    property bool workspaceDirSaving: false
+    Component.onCompleted: { loadUsers(); checkChannelStatus(); loadDisplayInfo(); loadWorkspaceDir(); }
 
     // Watch for settingsOpenTab — context menu sets this to jump to Display tab
     Connections {
@@ -359,6 +362,50 @@ Rectangle {
             if (revertCountdown <= 0) { revertResolution(); }
         }
     }
+
+    function loadWorkspaceDir() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", root.apiBase + "/os-config");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.config && data.config.workspace_dir) {
+                        workspaceDir = data.config.workspace_dir;
+                    }
+                } catch(e) { /* use default */ }
+            }
+        };
+        xhr.send();
+    }
+
+    function saveWorkspaceDir(path) {
+        if (!path || path.trim() === "") {
+            root.showToast("Workspace path cannot be empty", "error");
+            return;
+        }
+        workspaceDirSaving = true;
+        // Create the directory first
+        sysManager.createDir(path.trim());
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", root.apiBase + "/os-config");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", "Bearer " + root.sessionId);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                workspaceDirSaving = false;
+                if (xhr.status === 200) {
+                    root.showToast("Workspace directory updated to: " + path.trim(), "success");
+                } else {
+                    root.showToast("Failed to save workspace setting", "error");
+                }
+            }
+        };
+        xhr.send(JSON.stringify({ workspace_dir: path.trim() }));
+    }
+
     RowLayout {
         anchors.fill: parent; spacing: Math.round(0 * root.sf)
         Rectangle {
@@ -367,7 +414,7 @@ Rectangle {
             Column {
                 anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); anchors.topMargin: Math.round(10 * root.sf); spacing: Math.round(2 * root.sf)
                 Repeater {
-                    model: [{ id: "profile", icon: "\uf007", label: "Profile" }, { id: "users", icon: "\uf0c0", label: "Users" }, { id: "channels", icon: "\uf1e6", label: "Channels" }, { id: "display", icon: "\uf108", label: "Display" }]
+                    model: [{ id: "profile", icon: "\uf007", label: "Profile" }, { id: "users", icon: "\uf0c0", label: "Users" }, { id: "channels", icon: "\uf1e6", label: "Channels" }, { id: "storage", icon: "\uf07b", label: "Storage" }, { id: "display", icon: "\uf108", label: "Display" }]
                     delegate: Rectangle {
                         width: parent ? parent.width : 150; height: Math.round(34 * root.sf); radius: root.radiusSm
                         color: activeTab === modelData.id ? Qt.rgba(1,1,1,0.08) : sMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
@@ -741,6 +788,84 @@ Rectangle {
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
                                 Text { text: "Modules"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
                                 Text { text: gfxInfo.modules || "None detected"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; wrapMode: Text.Wrap; Layout.fillWidth: true }
+                            }
+                        }
+                    }
+                }
+
+                // STORAGE
+                Column { width: parent.width; spacing: Math.round(12 * root.sf); visible: activeTab === "storage"
+
+                    // ── Workspace Directory Card ──
+                    Rectangle { width: parent.width; height: wsCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: wsCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(12 * root.sf)
+                            Text { text: "Agent Workspace Directory"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                            Text { text: "This is the folder where OpenWhale saves all its work — files, code, projects, and artifacts created by the AI agent."; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; wrapMode: Text.Wrap; width: parent.width }
+
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+
+                            // Current path label
+                            Text { text: "Current workspace path"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
+
+                            // Path input + Save button
+                            RowLayout { width: parent.width; spacing: Math.round(8 * root.sf)
+                                Rectangle { Layout.fillWidth: true; height: Math.round(36 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.12); border.width: 1
+                                    TextInput { id: wsDirInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); color: "#fff"; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; clip: true
+                                        text: workspaceDir
+                                        onTextChanged: workspaceDir = text
+                                    }
+                                    Text { visible: wsDirInput.text === ""; anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); text: "/home/ainux/Works"; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf) }
+                                }
+                                Rectangle { width: Math.round(70 * root.sf); height: Math.round(36 * root.sf); radius: root.radiusSm
+                                    color: wsSaveMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.35) : root.accentBlue
+                                    opacity: workspaceDirSaving ? 0.5 : 1.0
+                                    Text { anchors.centerIn: parent; text: workspaceDirSaving ? "Saving..." : "Save"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+                                    MouseArea { id: wsSaveMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: !workspaceDirSaving
+                                        onClicked: saveWorkspaceDir(workspaceDir)
+                                    }
+                                }
+                            }
+
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+
+                            // Reset to default
+                            RowLayout { width: parent.width; spacing: Math.round(8 * root.sf)
+                                Text { text: "Default: /home/" + root.currentUser + "/Works"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted; Layout.fillWidth: true }
+                                Rectangle { width: Math.round(80 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm
+                                    color: resetMa.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
+                                    border.color: Qt.rgba(1,1,1,0.12); border.width: 1
+                                    Text { anchors.centerIn: parent; text: "Reset"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                                    MouseArea { id: resetMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { workspaceDir = "/home/" + root.currentUser + "/Works"; saveWorkspaceDir(workspaceDir); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Storage Info Card ──
+                    Rectangle { width: parent.width; height: storCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        Column { id: storCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
+                            Text { text: "Storage Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
+
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Data directory"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(100 * root.sf) }
+                                Text { text: "/opt/ainux/openwhale/data"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; font.family: "monospace" }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Workspace"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(100 * root.sf) }
+                                Text { text: workspaceDir; font.pixelSize: Math.round(11 * root.sf); color: root.accentBlue; font.family: "monospace" }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Logs"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(100 * root.sf) }
+                                Text { text: "/opt/ainux/openwhale/data/openwhale.log"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; font.family: "monospace" }
+                            }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
+                            RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
+                                Text { text: "Database"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(100 * root.sf) }
+                                Text { text: "/opt/ainux/openwhale/data/openwhale.db"; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; font.family: "monospace" }
                             }
                         }
                     }

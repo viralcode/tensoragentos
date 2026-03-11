@@ -437,11 +437,12 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
         ? systemPrompt + "\n\n" + memoryContext
         : systemPrompt;
 
-    const sandboxConfig = createSandboxConfig(process.cwd(), false);
+    const wsDir = getWorkspaceDir();
+    const sandboxConfig = createSandboxConfig(wsDir, false);
 
     const context: ToolCallContext = {
         sessionId,
-        workspaceDir: process.cwd(),
+        workspaceDir: wsDir,
         sandboxed: sandboxConfig.enabled,
     };
 
@@ -793,10 +794,11 @@ Do NOT apologize for previous errors or claim you lack access. Just execute the 
         ? systemPrompt + "\n\n" + memoryContext
         : systemPrompt;
 
-    const sandboxConfig = createSandboxConfig(process.cwd(), false);
+    const wsDir = getWorkspaceDir();
+    const sandboxConfig = createSandboxConfig(wsDir, false);
     const context: ToolCallContext = {
         sessionId,
-        workspaceDir: process.cwd(),
+        workspaceDir: wsDir,
         sandboxed: sandboxConfig.enabled,
     };
 
@@ -1198,4 +1200,24 @@ export function setOsConfigs(configs: Record<string, string>): void {
     } catch (e) {
         console.warn("[SessionService] Failed to set OS configs:", e);
     }
+}
+
+// ============== WORKSPACE DIRECTORY ==============
+
+/**
+ * Get the configured workspace directory for the OpenWhale agent.
+ * Reads from OS config (key: workspace_dir), falls back to ~/Works.
+ * This is the directory where the agent creates files, runs commands, etc.
+ */
+export function getWorkspaceDir(): string {
+    try {
+        const config = getOsConfig();
+        if (config.workspace_dir && config.workspace_dir.trim()) {
+            return config.workspace_dir.trim();
+        }
+    } catch { /* fallback below */ }
+
+    // Default: /home/ainux/Works (AINUX_MODE) or ~/Works
+    const home = process.env.HOME || process.env.USERPROFILE || "/home/ainux";
+    return `${home}/Works`;
 }

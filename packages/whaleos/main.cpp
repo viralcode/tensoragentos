@@ -17,6 +17,8 @@
 #include <QInputMethodEvent>
 #include <QFontDatabase>
 #include "systemmanager.h"
+#include "ptyprocess.h"
+#include "terminalemulator.h"
 
 
 // ════════════════════════════════════════════════════════════════
@@ -107,6 +109,10 @@ int main(int argc, char *argv[]) {
 
     // ── QML Engine ──
     QQmlApplicationEngine engine;
+
+    // Register PTY terminal types for real Linux terminal support
+    qmlRegisterType<PtyProcess>("TensorAgent.Terminal", 1, 0, "PtyProcess");
+    qmlRegisterType<TerminalEmulator>("TensorAgent.Terminal", 1, 0, "TerminalEmulator");
 
     // Register SystemManager for kernel-level OS operations
     SystemManager sysManager;

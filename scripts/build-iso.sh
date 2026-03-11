@@ -287,8 +287,19 @@ echo "  ✓ User created (ainux/ainux)"
 # Fix home directory ownership (useradd -m with existing dir leaves root:root)
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     chown -R ainux:ainux /home/ainux
+    # Create Works directory for agent workspace
+    mkdir -p /home/ainux/Works
+    chown ainux:ainux /home/ainux/Works
 '
 echo "  ✓ Home directory ownership fixed"
+echo "  ✓ Works directory created"
+
+# Deploy ainux.conf
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/ainux/ainux.conf" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/ainux"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/ainux/ainux.conf" "${ROOTFS_DIR}/etc/ainux/ainux.conf"
+    echo "  ✓ ainux.conf deployed"
+fi
 
 # ─── Install Ollama ────────────────────────────────────────────
 echo "  → Installing Ollama..."
@@ -378,9 +389,19 @@ Type=simple
 User=ainux
 WorkingDirectory=/opt/ainux/openwhale
 ExecStart=/usr/bin/node openwhale.mjs
-Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux
+Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux AINUX_MODE=true
 Restart=on-failure
 RestartSec=5
+
+# Security
+NoNewPrivileges=false
+ProtectSystem=false
+ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp /home/ainux/Works
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openwhale
 
 [Install]
 WantedBy=multi-user.target

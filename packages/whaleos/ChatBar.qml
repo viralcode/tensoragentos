@@ -195,8 +195,16 @@ Rectangle {
         anchors.fill: parent; radius: parent.radius
         visible: chatExpanded
         opacity: chatContentOpacity
-        color: Qt.rgba(0.07, 0.07, 0.11, 0.92)
-        border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+        color: Qt.rgba(0.05, 0.05, 0.09, 0.94)
+        border.color: Qt.rgba(1, 1, 1, 0.07); border.width: 1
+    }
+    // Inner top highlight for glass depth
+    Rectangle {
+        anchors.top: parent.top; anchors.topMargin: 1
+        anchors.left: parent.left; anchors.leftMargin: Math.round(20 * root.sf)
+        anchors.right: parent.right; anchors.rightMargin: Math.round(20 * root.sf)
+        height: 1; radius: 1; visible: chatExpanded; opacity: chatContentOpacity
+        color: Qt.rgba(1, 1, 1, 0.05)
     }
 
     // ── Chat Header (expanded) ──
@@ -205,10 +213,21 @@ Rectangle {
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
         height: Math.round(52 * root.sf); visible: chatExpanded
         opacity: chatContentOpacity
-        color: Qt.rgba(0.06, 0.06, 0.10, 0.98); radius: root.radiusLg
+        color: Qt.rgba(0.04, 0.04, 0.08, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+        // Accent gradient line at bottom of header
+        Rectangle {
+            anchors.bottom: parent.bottom; width: parent.width; height: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.2; color: Qt.rgba(0.35, 0.55, 1.0, 0.2) }
+                GradientStop { position: 0.5; color: Qt.rgba(0.35, 0.55, 1.0, 0.35) }
+                GradientStop { position: 0.8; color: Qt.rgba(0.35, 0.55, 1.0, 0.2) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
@@ -556,26 +575,70 @@ Rectangle {
 
         // Empty state
         Column {
-            anchors.centerIn: parent; spacing: Math.round(12 * root.sf)
+            anchors.centerIn: parent; spacing: Math.round(16 * root.sf)
             visible: messages.length === 0 && !isSending
 
-            Image {
+            // Glow ring around logo
+            Item {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.round(48 * root.sf); height: Math.round(48 * root.sf)
-                source: "assets/whale_logo.png"
-                fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
-                opacity: 0.5
+                width: Math.round(72 * root.sf); height: Math.round(72 * root.sf)
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(72 * root.sf); height: width; radius: width / 2
+                    color: Qt.rgba(0.2, 0.35, 0.8, 0.08)
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(56 * root.sf); height: width; radius: width / 2
+                    color: Qt.rgba(0.2, 0.4, 0.9, 0.06)
+                    border.color: Qt.rgba(0.35, 0.55, 1.0, 0.12); border.width: 1
+                }
+
+                Image {
+                    anchors.centerIn: parent
+                    width: Math.round(36 * root.sf); height: Math.round(36 * root.sf)
+                    source: "assets/whale_logo.png"
+                    fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true
+                    opacity: 0.6
+                }
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "How can I help you today?"
-                font.pixelSize: Math.round(15 * root.sf); font.weight: Font.DemiBold
-                color: Qt.rgba(1, 1, 1, 0.4)
+                font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold
+                color: Qt.rgba(1, 1, 1, 0.45)
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Ask me anything - code, files, system tasks"
-                font.pixelSize: Math.round(11 * root.sf); color: Qt.rgba(1, 1, 1, 0.2)
+                text: "Ask me anything — code, files, system tasks"
+                font.pixelSize: Math.round(11 * root.sf); color: Qt.rgba(1, 1, 1, 0.22)
+            }
+
+            // Quick suggestion chips
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Math.round(8 * root.sf)
+                Repeater {
+                    model: ["Write code", "Open terminal", "System info"]
+                    Rectangle {
+                        width: chipText.width + Math.round(16 * root.sf); height: Math.round(26 * root.sf)
+                        radius: Math.round(13 * root.sf)
+                        color: chipMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+                        border.color: chipMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(1, 1, 1, 0.08)
+                        border.width: 1
+                        Text {
+                            id: chipText; anchors.centerIn: parent
+                            text: modelData; font.pixelSize: Math.round(10 * root.sf)
+                            color: chipMa.containsMouse ? "#93c5fd" : Qt.rgba(1, 1, 1, 0.35)
+                        }
+                        MouseArea {
+                            id: chipMa; anchors.fill: parent; hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: { chatInput.text = modelData; chatInput.forceActiveFocus(); }
+                        }
+                    }
+                }
             }
         }
 
@@ -662,15 +725,15 @@ Rectangle {
                                     ? Math.min(messageList.width * 0.68, userMsgMetrics.width + Math.round(36 * root.sf))
                                     : messageList.width - Math.round(48 * root.sf)
                                 height: msgContentCol.height + Math.round(24 * root.sf)
-                                radius: Math.round(14 * root.sf)
+                                radius: Math.round(16 * root.sf)
 
                                 color: modelData.role === "user"
-                                    ? Qt.rgba(0.24, 0.45, 0.95, 0.18)
-                                    : "transparent"
+                                    ? Qt.rgba(0.20, 0.38, 0.85, 0.15)
+                                    : Qt.rgba(0.08, 0.09, 0.14, 0.4)
                                 border.color: modelData.role === "user"
-                                    ? Qt.rgba(0.35, 0.55, 1.0, 0.15)
-                                    : "transparent"
-                                border.width: modelData.role === "user" ? 1 : 0
+                                    ? Qt.rgba(0.35, 0.55, 1.0, 0.12)
+                                    : Qt.rgba(1, 1, 1, 0.04)
+                                border.width: 1
 
                                 TextMetrics {
                                     id: userMsgMetrics
@@ -990,11 +1053,19 @@ Rectangle {
         id: inputArea
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
-        anchors.bottomMargin: Math.round(8 * root.sf)
-        height: Math.round(48 * root.sf); radius: Math.round(14 * root.sf)
-        color: Qt.rgba(0.06, 0.06, 0.10, 0.95)
-        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.18)
+        anchors.bottomMargin: Math.round(10 * root.sf)
+        height: Math.round(50 * root.sf); radius: Math.round(16 * root.sf)
+        color: Qt.rgba(0.05, 0.05, 0.09, 0.96)
+        border.color: chatInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.30) : Qt.rgba(1, 1, 1, 0.10)
         border.width: 1
+
+        // Inner shadow effect at top
+        Rectangle {
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+            anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(16 * root.sf)
+            anchors.topMargin: 1; height: 1; radius: 1
+            color: Qt.rgba(1, 1, 1, 0.04)
+        }
 
         // PERF: Removed border.color Behavior — triggers repaint on every focus change
 
@@ -1097,10 +1168,33 @@ Rectangle {
             Rectangle {
                 width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
 
-                color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.06)
+                color: chatInput.text.trim() ? "#3b82f6" : Qt.rgba(1, 1, 1, 0.05)
+                border.color: chatInput.text.trim() ? Qt.rgba(0.35, 0.55, 1.0, 0.3) : "transparent"
+                border.width: 1
                 // PERF: Removed color Behavior on send button
 
-                Text { anchors.centerIn: parent; text: "↑"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: chatInput.text.trim() ? "#fff" : "#666" }
+                // Arrow icon
+                Canvas {
+                    anchors.centerIn: parent
+                    width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
+                    property bool active: chatInput.text.trim().length > 0
+                    property real s: root.sf
+                    onActiveChanged: requestPaint()
+                    onSChanged: requestPaint()
+                    Component.onCompleted: requestPaint()
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
+                        ctx.save(); ctx.scale(s, s);
+                        ctx.strokeStyle = active ? "#fff" : "#555";
+                        ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+                        // Up arrow
+                        ctx.beginPath();
+                        ctx.moveTo(8, 13); ctx.lineTo(8, 4);
+                        ctx.moveTo(4, 7); ctx.lineTo(8, 3); ctx.lineTo(12, 7);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
 
                 // PERF: Removed SequentialAnimation on border.color — was repainting every 1200ms
                 // even while idle. Static glow is visually equivalent and costs nothing.

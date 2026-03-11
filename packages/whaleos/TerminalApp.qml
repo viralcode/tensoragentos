@@ -1,71 +1,648 @@
+/*
+ * TerminalApp.qml — Real Linux Terminal with PTY + VT100 Emulation
+ *
+ * Full interactive terminal with:
+ *   • Real PTY (pseudo-terminal) — nano, vi, vim, emacs all work
+ *   • VT100/xterm ANSI escape sequence parsing
+ *   • 256-color + true-color support
+ *   • Canvas-based character grid rendering
+ *   • Scrollback buffer with mouse wheel scrolling
+ *   • Full keyboard input (arrow keys, function keys, etc.)
+ *   • Alternate screen buffer (for TUI apps)
+ *   • Resize support (SIGWINCH)
+ *   • Tab completion and all bash features
+ */
+
 import QtQuick
 import QtQuick.Layouts
+import TensorAgent.Terminal 1.0
 
 Rectangle {
     id: terminalApp
     anchors.fill: parent
-    color: "#0a0a0a"
+    color: "#0d1117"
 
-    property var outputLines: []
-    property bool isRunning: false
-    property string currentCwd: ""
-    property var cmdHistory: []
-    property int historyIndex: -1
-    property string savedInput: ""
-    property string activeCommandId: ""
-    property string cachedHome: ""  // PERF: cache home dir to avoid subprocess spawns
+    // ════════════════════════════════════════════════
+    // ── Color Palette (matches xterm-256color)
+    // ════════════════════════════════════════════════
 
-    Component.onCompleted: {
-        // PERF: Use cached home dir if available (after C++ rebuild), else sync fallback
-        if (typeof sysManager.getCachedHome === "function") {
-            cachedHome = sysManager.getCachedHome() || "/home";
-        } else {
-            try {
-                var result = JSON.parse(sysManager.runCommand("echo $HOME", ""));
-                cachedHome = (result.stdout || "").trim() || "/home";
-            } catch(e) {
-                cachedHome = "/home";
-            }
+    // Standard 16 ANSI colors (0-15)
+    readonly property var ansiColors: [
+        "#000000", "#cd3131", "#0dbc79", "#e5e510",  // 0-3:  black, red, green, yellow
+        "#2472c8", "#bc3fbc", "#11a8cd", "#e5e5e5",  // 4-7:  blue, magenta, cyan, white
+        "#666666", "#f14c4c", "#23d18b", "#f5f543",  // 8-11: bright black, red, green, yellow
+        "#3b8eea", "#d670d6", "#29b8db", "#ffffff"   // 12-15: bright blue, magenta, cyan, white
+    ]
+
+    // Convert 256-color index to hex color
+    function colorFromIndex(idx) {
+        if (idx < 16) return ansiColors[idx];
+        if (idx < 232) {
+            // 6x6x6 color cube (indices 16-231)
+            var i = idx - 16;
+            var r = Math.floor(i / 36);
+            var g = Math.floor((i % 36) / 6);
+            var b = i % 6;
+            r = r > 0 ? 55 + r * 40 : 0;
+            g = g > 0 ? 55 + g * 40 : 0;
+            b = b > 0 ? 55 + b * 40 : 0;
+            return "#" + hex2(r) + hex2(g) + hex2(b);
         }
-        currentCwd = cachedHome;
-        appendLine("TensorAgent OS — Terminal");
-        appendLine("System shell access. Type commands and press Enter.");
-        appendLine("Type 'help' for available shortcuts.");
-        appendLine("");
-        cmdInput.forceActiveFocus();
+        // Grayscale ramp (indices 232-255)
+        var v = 8 + (idx - 232) * 10;
+        return "#" + hex2(v) + hex2(v) + hex2(v);
+    }
+
+    function hex2(n) {
+        var h = Math.floor(n).toString(16);
+        return h.length < 2 ? "0" + h : h;
     }
 
     // ════════════════════════════════════════════════
-    // ── Async Command Signal Handlers
+    // ── Terminal Geometry
     // ════════════════════════════════════════════════
 
-    Connections {
-        target: sysManager
+    property int cellWidth: 0
+    property int cellHeight: 0
+    property int termRows: 24
+    property int termCols: 80
+    property int scrollOffset: 0    // How many lines scrolled back (0 = at bottom)
+    property bool autoScroll: true  // Auto-scroll to bottom on new output
 
-        function onCommandOutput(cmdId, data) {
-            if (cmdId !== activeCommandId) return;
-            appendLines(data);
+    // Calculate terminal dimensions based on available space
+    function calcGeometry() {
+        // Use a monospace font metric to determine cell size
+        var testSize = Math.round(14 * root.sf);
+        // Approximate: monospace char width ~= 0.6 × height
+        cellHeight = testSize + Math.round(4 * root.sf);
+        cellWidth = Math.round(testSize * 0.602);
+
+        var availW = terminalApp.width - Math.round(16 * root.sf);
+        var availH = terminalApp.height - Math.round(8 * root.sf);
+
+        var newCols = Math.max(20, Math.floor(availW / cellWidth));
+        var newRows = Math.max(5, Math.floor(availH / cellHeight));
+
+        if (newCols !== termCols || newRows !== termRows) {
+            termCols = newCols;
+            termRows = newRows;
+            return true;
+        }
+        return false;
+    }
+
+    // ════════════════════════════════════════════════
+    // ── PTY Process + Terminal Emulator (C++ backends)
+    // ════════════════════════════════════════════════
+
+    PtyProcess {
+        id: pty
+
+        onDataReceived: function(data) {
+            emulator.processData(data);
+            if (autoScroll) scrollOffset = 0;
         }
 
-        function onCommandError(cmdId, data) {
-            if (cmdId !== activeCommandId) return;
-            var parts = data.split("\n");
-            for (var i = 0; i < parts.length; i++) {
-                if (parts[i]) appendLine(parts[i]);
+        onFinished: function(exitCode) {
+            // Shell exited — restart it
+            console.log("Terminal: Shell exited with code", exitCode, "— restarting");
+            restartTimer.start();
+        }
+    }
+
+    TerminalEmulator {
+        id: emulator
+
+        onScreenChanged: {
+            termCanvas.requestPaint();
+            cursorBlink.restart();
+            cursorVisible = true;
+        }
+
+        onTitleChanged: function(title) {
+            // Could update window title if needed
+            console.log("Terminal title:", title);
+        }
+
+        onBellRang: {
+            // Visual bell — brief flash
+            bellFlash.start();
+        }
+    }
+
+    Timer {
+        id: restartTimer
+        interval: 500
+        onTriggered: startTerminal()
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Initialization
+    // ════════════════════════════════════════════════
+
+    Component.onCompleted: {
+        calcGeometry();
+        startTerminal();
+    }
+
+    function startTerminal() {
+        emulator.init(termRows, termCols);
+        pty.start(termRows, termCols);
+        termCanvas.forceActiveFocus();
+    }
+
+    Component.onDestruction: {
+        pty.stop();
+    }
+
+    onWidthChanged: handleResize()
+    onHeightChanged: handleResize()
+
+    Timer {
+        id: resizeTimer
+        interval: 100
+        onTriggered: doResize()
+    }
+
+    function handleResize() {
+        resizeTimer.restart();
+    }
+
+    function doResize() {
+        if (calcGeometry()) {
+            emulator.resize(termRows, termCols);
+            pty.resize(termRows, termCols);
+            termCanvas.requestPaint();
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Cursor Blink
+    // ════════════════════════════════════════════════
+
+    property bool cursorVisible: true
+
+    Timer {
+        id: cursorBlink
+        interval: 530
+        running: termCanvas.activeFocus
+        repeat: true
+        onTriggered: {
+            cursorVisible = !cursorVisible;
+            termCanvas.requestPaint();
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Visual Bell Flash
+    // ════════════════════════════════════════════════
+
+    Rectangle {
+        id: bellOverlay
+        anchors.fill: parent
+        color: "#ffffff"
+        opacity: 0
+        z: 10
+
+        SequentialAnimation {
+            id: bellFlash
+            NumberAnimation { target: bellOverlay; property: "opacity"; to: 0.15; duration: 50 }
+            NumberAnimation { target: bellOverlay; property: "opacity"; to: 0; duration: 100 }
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    // ── Canvas-based Terminal Renderer
+    // ════════════════════════════════════════════════
+
+    Canvas {
+        id: termCanvas
+        anchors.fill: parent
+        anchors.margins: Math.round(4 * root.sf)
+        focus: true
+        antialiasing: false
+
+        property real fontSize: Math.round(14 * root.sf)
+
+        // Click to focus
+        MouseArea {
+            anchors.fill: parent
+            onClicked: termCanvas.forceActiveFocus()
+            onWheel: function(wheel) {
+                if (wheel.angleDelta.y > 0) {
+                    // Scroll up (into scrollback)
+                    scrollOffset = Math.min(scrollOffset + 3, emulator.scrollbackSize());
+                    autoScroll = false;
+                } else {
+                    // Scroll down (toward current)
+                    scrollOffset = Math.max(0, scrollOffset - 3);
+                    if (scrollOffset === 0) autoScroll = true;
+                }
+                termCanvas.requestPaint();
             }
         }
 
-        function onCommandFinished(cmdId, exitCode, cwd) {
-            if (cmdId !== activeCommandId) return;
-            activeCommandId = "";
-            isRunning = false;
-            if (cwd) currentCwd = cwd;
+        onPaint: {
+            var ctx = getContext("2d");
+            var w = termCanvas.width;
+            var h = termCanvas.height;
 
-            if (exitCode === 124) {
-                appendLine("bash: command timed out (use SSH for long-running tasks)");
+            // Clear background
+            ctx.fillStyle = "#0d1117";
+            ctx.fillRect(0, 0, w, h);
+
+            if (cellWidth <= 0 || cellHeight <= 0) return;
+
+            var fontStr = fontSize + "px monospace";
+            ctx.font = fontStr;
+            ctx.textBaseline = "top";
+
+            var lines = emulator.getScreenLines();
+            var cRow = emulator.cursorRow;
+            var cCol = emulator.cursorCol;
+            var showCursor = cursorVisible && emulator.cursorVisible && scrollOffset === 0;
+
+            // Render each row
+            for (var r = 0; r < termRows && r < lines.length; r++) {
+                var y = r * cellHeight;
+                var attrsStr = emulator.getRowAttrs(r);
+                var line = lines[r];
+
+                // Parse attribute segments for this row
+                var attrs = attrsStr.split(";");
+
+                for (var c = 0; c < termCols; c++) {
+                    var x = c * cellWidth;
+                    var ch = c < line.length ? line[c] : " ";
+
+                    // Parse cell attributes
+                    var fgColor = "#d4d4d8";  // Default FG
+                    var bgColor = "";          // Default BG (transparent)
+                    var isBold = false;
+                    var isDim = false;
+                    var isUnderline = false;
+                    var isInverse = false;
+                    var isItalic = false;
+
+                    if (c < attrs.length && attrs[c]) {
+                        var parts = attrs[c].split(",");
+                        if (parts.length >= 2) {
+                            // Parse FG
+                            var fgPart = parts[0];
+                            if (fgPart !== "-" && fgPart !== "") {
+                                if (fgPart.startsWith("r")) {
+                                    // RGB: r128,255,0
+                                    var rgbParts = fgPart.substring(1).split(",");
+                                    // Wait — actually the RGB values after 'r' are part of the same comma-split
+                                    // Re-parse: if fgPart starts with 'r', the next 2 parts are G and B
+                                    // and the bg starts at parts[3]
+                                    if (parts.length >= 4) {
+                                        var rr = parseInt(fgPart.substring(1));
+                                        var gg = parseInt(parts[1]);
+                                        var bb = parseInt(parts[2]);
+                                        fgColor = "rgb(" + rr + "," + gg + "," + bb + ")";
+                                        // Shift parts for BG parsing
+                                        var bgPart = parts[3];
+                                        if (bgPart && bgPart !== "-" && bgPart !== "") {
+                                            if (bgPart.startsWith("r") && parts.length >= 7) {
+                                                var br = parseInt(bgPart.substring(1));
+                                                var bgg = parseInt(parts[4]);
+                                                var bbb = parseInt(parts[5]);
+                                                bgColor = "rgb(" + br + "," + bgg + "," + bbb + ")";
+                                                if (parts.length >= 8) {
+                                                    var attrBits = parseInt(parts[7]);
+                                                    parseAttrBits(attrBits);
+                                                }
+                                            } else {
+                                                bgColor = colorFromIndex(parseInt(bgPart));
+                                                if (parts.length >= 5) {
+                                                    var attrBits2 = parseInt(parts[4]);
+                                                    parseAttrBits(attrBits2);
+                                                }
+                                            }
+                                        } else if (parts.length >= 5) {
+                                            var attrBits3 = parseInt(parts[4]);
+                                            parseAttrBits(attrBits3);
+                                        }
+                                        // Skip the complex parsing below
+                                        applyRendering();
+                                        continue;
+                                    }
+                                } else {
+                                    fgColor = colorFromIndex(parseInt(fgPart));
+                                }
+                            }
+
+                            // Parse BG
+                            if (parts.length >= 2) {
+                                var bgP = parts[1];
+                                if (bgP && bgP !== "-" && bgP !== "") {
+                                    if (bgP.startsWith("r") && parts.length >= 4) {
+                                        var br2 = parseInt(bgP.substring(1));
+                                        var bg2 = parseInt(parts[2]);
+                                        var bb2 = parseInt(parts[3]);
+                                        bgColor = "rgb(" + br2 + "," + bg2 + "," + bb2 + ")";
+                                        if (parts.length >= 5) {
+                                            parseAttrBits(parseInt(parts[4]));
+                                        }
+                                    } else {
+                                        bgColor = colorFromIndex(parseInt(bgP));
+                                    }
+                                }
+                            }
+
+                            // Parse attribute bitmask
+                            var attrIdx = 2;
+                            if (parts.length > attrIdx) {
+                                var ab = parseInt(parts[attrIdx]);
+                                if (!isNaN(ab)) {
+                                    parseAttrBits(ab);
+                                }
+                            }
+                        }
+                    }
+
+                    function parseAttrBits(bits) {
+                        if (isNaN(bits)) return;
+                        isBold = (bits & 1) !== 0;
+                        isDim = (bits & 2) !== 0;
+                        isUnderline = (bits & 4) !== 0;
+                        isInverse = (bits & 8) !== 0;
+                        isItalic = (bits & 16) !== 0;
+                    }
+
+                    function applyRendering() {
+                        renderCell(ctx, x, y, ch, fgColor, bgColor,
+                                   isBold, isDim, isUnderline, isInverse, isItalic,
+                                   r, c, cRow, cCol, showCursor);
+                    }
+
+                    // Handle inverse
+                    if (isInverse) {
+                        var tmp = fgColor;
+                        fgColor = bgColor || "#0d1117";
+                        bgColor = tmp;
+                    }
+
+                    // Handle dim
+                    if (isDim) {
+                        fgColor = dimColor(fgColor);
+                    }
+
+                    // Draw background
+                    if (bgColor) {
+                        ctx.fillStyle = bgColor;
+                        ctx.fillRect(x, y, cellWidth, cellHeight);
+                    }
+
+                    // Draw cursor
+                    if (showCursor && r === cRow && c === cCol) {
+                        ctx.fillStyle = "#60a5fa";
+                        ctx.fillRect(x, y, cellWidth, cellHeight);
+                        fgColor = "#0d1117";  // Dark text on cursor
+                    }
+
+                    // Draw character
+                    if (ch !== " ") {
+                        var font = "";
+                        if (isItalic) font += "italic ";
+                        if (isBold) font += "bold ";
+                        font += fontSize + "px monospace";
+                        ctx.font = font;
+                        ctx.fillStyle = fgColor;
+                        ctx.fillText(ch, x, y + Math.round(2 * root.sf));
+
+                        // Reset font if we changed it
+                        if (isBold || isItalic) {
+                            ctx.font = fontStr;
+                        }
+                    }
+
+                    // Draw underline
+                    if (isUnderline) {
+                        ctx.strokeStyle = fgColor;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + cellHeight - 1);
+                        ctx.lineTo(x + cellWidth, y + cellHeight - 1);
+                        ctx.stroke();
+                    }
+                }
             }
 
-            cmdInput.forceActiveFocus();
+            // Draw scrollback indicator
+            if (scrollOffset > 0) {
+                ctx.fillStyle = "rgba(96, 165, 250, 0.8)";
+                ctx.font = "bold " + Math.round(11 * root.sf) + "px monospace";
+                var scrollText = "↑ " + scrollOffset + " lines scrolled";
+                ctx.fillText(scrollText, Math.round(8 * root.sf), Math.round(4 * root.sf));
+            }
+        }
+
+        function renderCell(ctx, x, y, ch, fg, bg, bold, dim, underline, inverse, italic, r, c, cRow, cCol, showCursor) {
+            if (inverse) {
+                var tmp = fg;
+                fg = bg || "#0d1117";
+                bg = tmp;
+            }
+            if (dim) fg = dimColor(fg);
+            if (bg) {
+                ctx.fillStyle = bg;
+                ctx.fillRect(x, y, cellWidth, cellHeight);
+            }
+            if (showCursor && r === cRow && c === cCol) {
+                ctx.fillStyle = "#60a5fa";
+                ctx.fillRect(x, y, cellWidth, cellHeight);
+                fg = "#0d1117";
+            }
+            if (ch !== " ") {
+                var font = "";
+                if (italic) font += "italic ";
+                if (bold) font += "bold ";
+                font += fontSize + "px monospace";
+                ctx.font = font;
+                ctx.fillStyle = fg;
+                ctx.fillText(ch, x, y + Math.round(2 * root.sf));
+            }
+            if (underline) {
+                ctx.strokeStyle = fg;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, y + cellHeight - 1);
+                ctx.lineTo(x + cellWidth, y + cellHeight - 1);
+                ctx.stroke();
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        // ── Keyboard Input Handler
+        // ════════════════════════════════════════════════
+
+        Keys.onPressed: function(event) {
+            // Auto-scroll on keypress
+            scrollOffset = 0;
+            autoScroll = true;
+
+            var seq = "";
+
+            // Modifier keys only — don't send
+            if (event.key === Qt.Key_Shift || event.key === Qt.Key_Control ||
+                event.key === Qt.Key_Alt || event.key === Qt.Key_Meta) {
+                return;
+            }
+
+            var ctrl = (event.modifiers & Qt.ControlModifier);
+            var alt = (event.modifiers & Qt.AltModifier);
+            var shift = (event.modifiers & Qt.ShiftModifier);
+
+            // Ctrl+key sequences
+            if (ctrl && !alt) {
+                // Don't intercept Ctrl+Shift+C/V for copy/paste
+                if ((event.key === Qt.Key_C || event.key === Qt.Key_V) && shift) {
+                    return;  // Let the system handle Ctrl+Shift+C/V
+                }
+
+                // Standard Ctrl sequences
+                var ctrlKeys = {};
+                ctrlKeys[Qt.Key_A] = "\x01";
+                ctrlKeys[Qt.Key_B] = "\x02";
+                ctrlKeys[Qt.Key_C] = "\x03";
+                ctrlKeys[Qt.Key_D] = "\x04";
+                ctrlKeys[Qt.Key_E] = "\x05";
+                ctrlKeys[Qt.Key_F] = "\x06";
+                ctrlKeys[Qt.Key_G] = "\x07";
+                ctrlKeys[Qt.Key_H] = "\x08";
+                ctrlKeys[Qt.Key_I] = "\x09";
+                ctrlKeys[Qt.Key_J] = "\x0a";
+                ctrlKeys[Qt.Key_K] = "\x0b";
+                ctrlKeys[Qt.Key_L] = "\x0c";
+                ctrlKeys[Qt.Key_M] = "\x0d";
+                ctrlKeys[Qt.Key_N] = "\x0e";
+                ctrlKeys[Qt.Key_O] = "\x0f";
+                ctrlKeys[Qt.Key_P] = "\x10";
+                ctrlKeys[Qt.Key_Q] = "\x11";
+                ctrlKeys[Qt.Key_R] = "\x12";
+                ctrlKeys[Qt.Key_S] = "\x13";
+                ctrlKeys[Qt.Key_T] = "\x14";
+                ctrlKeys[Qt.Key_U] = "\x15";
+                ctrlKeys[Qt.Key_V] = "\x16";
+                ctrlKeys[Qt.Key_W] = "\x17";
+                ctrlKeys[Qt.Key_X] = "\x18";
+                ctrlKeys[Qt.Key_Y] = "\x19";
+                ctrlKeys[Qt.Key_Z] = "\x1a";
+
+                if (event.key in ctrlKeys) {
+                    seq = ctrlKeys[event.key];
+                }
+                else if (event.key === Qt.Key_BracketLeft) seq = "\x1b";
+                else if (event.key === Qt.Key_Backslash) seq = "\x1c";
+                else if (event.key === Qt.Key_BracketRight) seq = "\x1d";
+                else if (event.key === Qt.Key_AsciiCircum || event.key === Qt.Key_6) seq = "\x1e";
+                else if (event.key === Qt.Key_Slash) seq = "\x1f";
+
+                if (seq) {
+                    pty.write(seq);
+                    event.accepted = true;
+                    return;
+                }
+            }
+
+            // Special keys — send VT/xterm escape sequences
+            switch (event.key) {
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+                seq = "\r";
+                break;
+            case Qt.Key_Backspace:
+                seq = "\x7f";
+                break;
+            case Qt.Key_Tab:
+                seq = "\t";
+                break;
+            case Qt.Key_Escape:
+                seq = "\x1b";
+                break;
+            case Qt.Key_Up:
+                seq = "\x1b[A";
+                break;
+            case Qt.Key_Down:
+                seq = "\x1b[B";
+                break;
+            case Qt.Key_Right:
+                seq = "\x1b[C";
+                break;
+            case Qt.Key_Left:
+                seq = "\x1b[D";
+                break;
+            case Qt.Key_Home:
+                seq = "\x1b[H";
+                break;
+            case Qt.Key_End:
+                seq = "\x1b[F";
+                break;
+            case Qt.Key_PageUp:
+                seq = "\x1b[5~";
+                break;
+            case Qt.Key_PageDown:
+                seq = "\x1b[6~";
+                break;
+            case Qt.Key_Insert:
+                seq = "\x1b[2~";
+                break;
+            case Qt.Key_Delete:
+                seq = "\x1b[3~";
+                break;
+            case Qt.Key_F1:
+                seq = "\x1bOP";
+                break;
+            case Qt.Key_F2:
+                seq = "\x1bOQ";
+                break;
+            case Qt.Key_F3:
+                seq = "\x1bOR";
+                break;
+            case Qt.Key_F4:
+                seq = "\x1bOS";
+                break;
+            case Qt.Key_F5:
+                seq = "\x1b[15~";
+                break;
+            case Qt.Key_F6:
+                seq = "\x1b[17~";
+                break;
+            case Qt.Key_F7:
+                seq = "\x1b[18~";
+                break;
+            case Qt.Key_F8:
+                seq = "\x1b[19~";
+                break;
+            case Qt.Key_F9:
+                seq = "\x1b[20~";
+                break;
+            case Qt.Key_F10:
+                seq = "\x1b[21~";
+                break;
+            case Qt.Key_F11:
+                seq = "\x1b[23~";
+                break;
+            case Qt.Key_F12:
+                seq = "\x1b[24~";
+                break;
+            default:
+                if (event.text) {
+                    seq = event.text;
+                }
+                break;
+            }
+
+            if (seq) {
+                // Alt modifier wraps in ESC prefix
+                if (alt && seq.length > 0) {
+                    seq = "\x1b" + seq;
+                }
+                pty.write(seq);
+                event.accepted = true;
+            }
         }
     }
 
@@ -73,319 +650,19 @@ Rectangle {
     // ── Helpers
     // ════════════════════════════════════════════════
 
-    function getPrompt() {
-        var dir = currentCwd;
-        // PERF: Use cached home dir instead of spawning a process
-        var home = cachedHome;
-        if (!home && typeof sysManager.getCachedHome === "function") {
-            home = sysManager.getCachedHome() || "";
+    function dimColor(color) {
+        // Make a color dimmer by reducing opacity
+        // Simple approach: return with reduced value
+        if (color.startsWith("rgb(")) return color;
+        if (color.startsWith("#") && color.length === 7) {
+            var r = parseInt(color.substr(1, 2), 16);
+            var g = parseInt(color.substr(3, 2), 16);
+            var b = parseInt(color.substr(5, 2), 16);
+            r = Math.floor(r * 0.6);
+            g = Math.floor(g * 0.6);
+            b = Math.floor(b * 0.6);
+            return "#" + hex2(r) + hex2(g) + hex2(b);
         }
-        if (home && dir.indexOf(home) === 0) {
-            dir = "~" + dir.substring(home.length);
-        }
-        if (!dir.startsWith("~")) {
-            dir = dir.replace(/^\/home\/[^/]+/, "~");
-        }
-        var user = root.currentUser || "user";
-        return user + "@tensoragent:" + dir + "$ ";
-    }
-
-    function appendLine(text) {
-        var lines = outputLines.slice();
-        lines.push(text);
-        if (lines.length > 1000) lines = lines.slice(lines.length - 800);
-        outputLines = lines;
-    }
-
-    function appendLines(text) {
-        if (!text) return;
-        var parts = text.split("\n");
-        if (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
-        for (var i = 0; i < parts.length; i++) {
-            appendLine(parts[i]);
-        }
-    }
-
-    // Click anywhere to focus input
-    MouseArea {
-        anchors.fill: parent
-        onClicked: cmdInput.forceActiveFocus()
-    }
-
-    Flickable {
-        id: termFlick
-        anchors.fill: parent
-        anchors.margins: Math.round(10 * root.sf)
-        contentHeight: termCol.height
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        interactive: true
-
-        Column {
-            id: termCol
-            width: parent.width
-            spacing: 0
-
-            // ── Output Lines ──
-            Repeater {
-                model: outputLines
-                Text {
-                    width: termCol.width
-                    text: modelData
-                    color: {
-                        if (modelData.indexOf("@tensoragent:") > 0) return "#60a5fa";
-                        if (modelData.indexOf("Error:") === 0 || modelData.indexOf("bash:") === 0) return "#ef4444";
-                        if (modelData.indexOf("Permission denied") >= 0) return "#ef4444";
-                        if (modelData.indexOf("command not found") >= 0) return "#f59e0b";
-                        return "#d4d4d8";
-                    }
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.family: "monospace"
-                    wrapMode: Text.WrapAnywhere
-                    height: implicitHeight + 2
-                }
-            }
-
-            // ── Inline Prompt + Input ──
-            Row {
-                visible: !isRunning
-                width: termCol.width
-                spacing: 0
-
-                Text {
-                    id: promptText
-                    text: getPrompt()
-                    color: "#60a5fa"
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.family: "monospace"
-                    height: implicitHeight + 2
-                }
-
-                TextInput {
-                    id: cmdInput
-                    width: termCol.width - promptText.width
-                    color: "#d4d4d8"
-                    selectionColor: "#3b82f6"
-                    selectedTextColor: "#ffffff"
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.family: "monospace"
-                    focus: true
-                    activeFocusOnTab: true
-                    height: promptText.height
-
-                    // Blinking cursor
-                    cursorVisible: true
-                    cursorDelegate: Rectangle {
-                        width: 8
-                        height: Math.round(15 * root.sf)
-                        color: "#d4d4d8"
-                        visible: cmdInput.activeFocus
-
-                        SequentialAnimation on opacity {
-                            running: cmdInput.activeFocus
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 0; duration: 530 }
-                            NumberAnimation { to: 1; duration: 530 }
-                        }
-                    }
-
-                    Keys.onReturnPressed: executeCommand()
-                    Keys.onUpPressed: navigateHistory(-1)
-                    Keys.onDownPressed: navigateHistory(1)
-
-                    Keys.onPressed: function(event) {
-                        if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
-                            if (isRunning) {
-                                isRunning = false;
-                                activeCommandId = "";
-                                appendLine("^C");
-                            } else {
-                                appendLine(getPrompt() + cmdInput.text + "^C");
-                                cmdInput.text = "";
-                            }
-                            event.accepted = true;
-                        }
-                        if (event.key === Qt.Key_L && (event.modifiers & Qt.ControlModifier)) {
-                            outputLines = [];
-                            event.accepted = true;
-                        }
-                    }
-                }
-            }
-
-            // ── Busy indicator while command runs ──
-            Row {
-                visible: isRunning
-                width: termCol.width
-                spacing: 0
-
-                Text {
-                    text: getPrompt()
-                    color: "#60a5fa"
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.family: "monospace"
-                }
-
-                Text {
-                    text: "running..."
-                    color: "#f59e0b"
-                    font.pixelSize: Math.round(13 * root.sf)
-                    font.family: "monospace"
-
-                    SequentialAnimation on opacity {
-                        running: isRunning
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.3; duration: 500 }
-                        NumberAnimation { to: 1.0; duration: 500 }
-                    }
-                }
-            }
-        }
-
-        onContentHeightChanged: {
-            Qt.callLater(function() {
-                termFlick.contentY = Math.max(0, termFlick.contentHeight - termFlick.height);
-            });
-        }
-    }
-
-    // ════════════════════════════════════════════════
-    // ── Command History Navigation
-    // ════════════════════════════════════════════════
-
-    function navigateHistory(direction) {
-        if (cmdHistory.length === 0) return;
-        if (historyIndex === -1 && direction === -1) {
-            savedInput = cmdInput.text;
-            historyIndex = cmdHistory.length - 1;
-        } else if (direction === -1) {
-            historyIndex = Math.max(0, historyIndex - 1);
-        } else if (direction === 1) {
-            historyIndex = historyIndex + 1;
-            if (historyIndex >= cmdHistory.length) {
-                historyIndex = -1;
-                cmdInput.text = savedInput;
-                return;
-            }
-        }
-        if (historyIndex >= 0 && historyIndex < cmdHistory.length) {
-            cmdInput.text = cmdHistory[historyIndex];
-            cmdInput.cursorPosition = cmdInput.text.length;
-        }
-    }
-
-    // ════════════════════════════════════════════════
-    // ── Interactive Command Detection
-    // ════════════════════════════════════════════════
-
-    property var interactiveCommands: ["cat", "less", "more", "head", "tail", "grep", "sort",
-                                       "top", "htop", "vim", "vi", "nano", "emacs", "pico",
-                                       "python", "python3", "node", "irb", "ruby", "bash", "sh",
-                                       "ssh", "ftp", "sftp", "telnet", "nc", "netcat",
-                                       "read", "watch", "journalctl", "man", "info"]
-
-    function isInteractiveStdin(cmd) {
-        var parts = cmd.trim().split(/\s+/);
-        var base = parts[0].split("/").pop();
-        if (interactiveCommands.indexOf(base) >= 0) {
-            var hasFileArg = false;
-            for (var i = 1; i < parts.length; i++) {
-                if (!parts[i].startsWith("-") && parts[i] !== "") {
-                    hasFileArg = true; break;
-                }
-            }
-            if (cmd.indexOf("-f") >= 0 || cmd.indexOf("--follow") >= 0
-                || (cmd.indexOf("--no-pager") < 0 && base === "journalctl")) {
-                return !cmd.includes("--no-pager");
-            }
-            return !hasFileArg;
-        }
-        return false;
-    }
-
-    // ════════════════════════════════════════════════
-    // ── Command Execution (Async)
-    // ════════════════════════════════════════════════
-
-    function executeCommand() {
-        var cmd = cmdInput.text.trim();
-        cmdInput.text = "";
-        historyIndex = -1;
-
-        appendLine(getPrompt() + cmd);
-
-        if (!cmd) return;
-
-        // Add to history
-        if (cmdHistory.length === 0 || cmdHistory[cmdHistory.length - 1] !== cmd) {
-            var hist = cmdHistory.slice();
-            hist.push(cmd);
-            if (hist.length > 100) hist = hist.slice(hist.length - 100);
-            cmdHistory = hist;
-        }
-
-        // Built-in commands
-        if (cmd === "clear") { outputLines = []; return; }
-        if (cmd === "exit") { appendLine("Use the close button to close the terminal."); return; }
-
-        // OpenWhale convenience commands
-        if (cmd === "ow-restart" || cmd === "openwhale-restart") {
-            cmd = "sudo systemctl restart openwhale.service && echo 'OpenWhale restarted successfully'";
-        } else if (cmd === "ow-status" || cmd === "openwhale-status") {
-            cmd = "systemctl status openwhale.service --no-pager -l 2>&1";
-        } else if (cmd === "ow-logs" || cmd === "openwhale-logs") {
-            cmd = "sudo journalctl -u openwhale.service -n 40 --no-pager 2>&1";
-        } else if (cmd === "gui-restart") {
-            cmd = "sudo systemctl restart ainux-gui.service && echo 'GUI restarted'";
-        } else if (cmd === "gui-status") {
-            cmd = "systemctl status ainux-gui.service --no-pager -l 2>&1";
-        } else if (cmd === "help") {
-            appendLine("");
-            appendLine("TensorAgent OS Terminal — Available shortcuts:");
-            appendLine("  ow-restart     Restart OpenWhale service");
-            appendLine("  ow-status      OpenWhale service status");
-            appendLine("  ow-logs        OpenWhale recent logs");
-            appendLine("  gui-restart    Restart the GUI service");
-            appendLine("  gui-status     GUI service status");
-            appendLine("  clear          Clear terminal");
-            appendLine("  Ctrl+L         Clear terminal");
-            appendLine("  Ctrl+C         Cancel / interrupt");
-            appendLine("  help           Show this help");
-            appendLine("");
-            appendLine("All standard Linux commands are available (ls, cat, grep, apt, etc.)");
-            appendLine("Note: Interactive/pager commands need arguments (e.g. 'cat file.txt')");
-            appendLine("");
-            return;
-        }
-
-        // ── Stdin-blocking protection ──
-        if (isInteractiveStdin(cmd)) {
-            var base = cmd.trim().split(/\s+/)[0].split("/").pop();
-            appendLine("bash: " + base + ": requires a file argument in this terminal");
-            appendLine("Tip: Use '" + base + " <filename>' or pipe input: 'echo text | " + base + "'");
-            cmdInput.forceActiveFocus();
-            return;
-        }
-
-        // ── Handle 'cd' locally (synchronous, instant — uses quick 2s timeout) ──
-        if (cmd.trim().startsWith("cd ") || cmd.trim() === "cd") {
-            var runFn = (typeof sysManager.runCommandQuick === "function") ? "runCommandQuick" : "runCommand";
-            var cdResult = sysManager[runFn](cmd + " && pwd", currentCwd);
-            try {
-                var d = JSON.parse(cdResult);
-                if (d.exitCode === 0 && d.stdout) {
-                    currentCwd = d.stdout.trim();
-                } else if (d.stderr) {
-                    appendLine(d.stderr.trim());
-                }
-            } catch(e) {}
-            cmdInput.forceActiveFocus();
-            return;
-        }
-
-        // ── Async execution: non-blocking, streams output in real-time ──
-        isRunning = true;
-        var safeCmd = "timeout 30s bash -c " + JSON.stringify(cmd) + " < /dev/null 2>&1";
-        activeCommandId = sysManager.runCommandAsync(safeCmd, currentCwd);
+        return color;
     }
 }
