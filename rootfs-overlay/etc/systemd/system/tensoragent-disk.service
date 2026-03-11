@@ -1,0 +1,12 @@
+[Unit]
+Description=TensorAgent OS Persistent Disk Setup
+Before=tensoragent-gui.service whaleos-helper.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/ainux/setup-disk.sh
+
+[Install]
+WantedBy=multi-user.target

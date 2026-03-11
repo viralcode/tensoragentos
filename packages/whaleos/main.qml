@@ -112,6 +112,7 @@ WaylandCompositor {
 
             // ── Wayland Surface Tracking ──
             property var pendingSurfaces: []   // Surfaces waiting to be assigned to AppWindows
+            property int autoSurfaceCounter: 0
 
             // ── API ──
             property string apiBase: "http://127.0.0.1:7777/dashboard/api"
@@ -174,14 +175,12 @@ WaylandCompositor {
                 var appTitle = toplevel.title || "";
                 var appId = toplevel.appId || "";
 
-                if (appTitle.length === 0 && appId.length === 0) return false;
-
                 // First: try to match an existing AppWindow waiting for a surface
                 for (var i = 0; i < openWindows.length; i++) {
                     var win = openWindows[i];
                     if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
                         var searchName = win.searchName || "";
-                        if (searchName.length > 0 &&
+                        if (searchName.length > 0 && (appTitle.length > 0 || appId.length > 0) &&
                             (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
                              appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
                             var wins = openWindows.slice();
@@ -200,14 +199,10 @@ WaylandCompositor {
                     }
                 }
 
-                // Second: no match found — auto-create an AppWindow for this surface
+                // Second: auto-create an AppWindow for this surface
+                root.autoSurfaceCounter++;
                 var windowTitle = appTitle || appId || "App";
-                var windowAppId = "native-" + (appId || appTitle || "app").toLowerCase().replace(/[^a-z0-9]/g, "-");
-
-                // Prevent duplicates
-                for (var j = 0; j < openWindows.length; j++) {
-                    if (openWindows[j].appId === windowAppId && openWindows[j].surface) return true;
-                }
+                var windowAppId = "native-auto-" + root.autoSurfaceCounter;
 
                 var autoWins = openWindows.slice();
                 autoWins.push({
@@ -220,7 +215,7 @@ WaylandCompositor {
                     toplevel: toplevel
                 });
                 openWindows = autoWins;
-                console.log("WhaleOS: Auto-created window for surface: " + windowTitle);
+                console.log("WhaleOS: Auto-created window for surface: " + windowTitle + " (id: " + windowAppId + ")");
                 return true;
             }
 

@@ -41,6 +41,25 @@ Rectangle {
         loadUserApps();
     }
 
+    function launchNativeViaHelper(cmd, label) {
+        // Launch via the helper service with proper Wayland env
+        // nohup + & ensures the app runs independently
+        var launchCmd = "nohup bash -c 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games; " +
+            "export WAYLAND_DISPLAY=whaleos-0; " +
+            "export XDG_RUNTIME_DIR=/run/user/1000; " +
+            "export GDK_BACKEND=wayland; " +
+            "export QT_QPA_PLATFORM=wayland; " +
+            "export LIBGL_ALWAYS_SOFTWARE=1; " +
+            "export GTK_CSD=0; " +
+            "export GTK_USE_PORTAL=0; " +
+            "export HOME=/home/ainux; " +
+            "export DISPLAY=:0; " +
+            "export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; " +
+            cmd + "' >/dev/null 2>&1 &";
+        helperExec(launchCmd, function() {});
+        root.showToast(label + " launching...", "info");
+    }
+
     function helperExec(cmd, callback) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "http://127.0.0.1:7778/exec");
@@ -196,7 +215,7 @@ Rectangle {
         var b = busyPkgs.slice(); b.push(pkg); busyPkgs = b;
         busyPkgStatus = "Removing " + pkg + "...";
         root.showToast("Removing " + pkg + "...", "info");
-        helperExec("sudo apt-get remove -y " + pkg + " 2>&1", function() {
+        helperExec("sudo apt-get purge -y " + pkg + " 2>&1 && sudo apt-get autoremove -y 2>&1", function() {
             var nb = []; for (var i = 0; i < busyPkgs.length; i++) { if (busyPkgs[i] !== pkg) nb.push(busyPkgs[i]); } busyPkgs = nb;
             busyPkgStatus = "";
             refreshInstalled();
@@ -341,8 +360,7 @@ Rectangle {
                             id: iMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; z: 0
                             onClicked: {
                                 if (modelData.cmd && modelData.cmd.length > 0) {
-                                    root.launchNative(modelData.cmd, modelData.searchName || modelData.pkg);
-                                    root.showToast(modelData.label + " launching...", "info");
+                                    nativeAppsLauncher.launchNativeViaHelper(modelData.cmd, modelData.label);
                                 } else {
                                     root.openAppWindow(modelData.appId, modelData.label, modelData.iconType || "generic", modelData.searchName || modelData.pkg, modelData.cmd);
                                 }

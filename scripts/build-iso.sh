@@ -117,6 +117,8 @@ sudo mount --bind /sys  "${ROOTFS_DIR}/sys"  2>/dev/null || true
 
 # Set hostname
 echo "tensoragent" | sudo tee "${ROOTFS_DIR}/etc/hostname" > /dev/null
+# Add hostname to /etc/hosts so sudo doesn't complain
+sudo bash -c "grep -q tensoragent '${ROOTFS_DIR}/etc/hosts' || echo '127.0.1.1 tensoragent' >> '${ROOTFS_DIR}/etc/hosts'"
 
 # Configure apt sources with non-free for firmware
 sudo tee "${ROOTFS_DIR}/etc/apt/sources.list" > /dev/null << 'SOURCES'
@@ -273,9 +275,11 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     if ! id ainux 2>/dev/null; then
         useradd -m -s /bin/bash -G sudo,video,audio,input,render,systemd-journal ainux
         echo "ainux:ainux" | chpasswd
-        echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/nopasswd
-        chmod 440 /etc/sudoers.d/nopasswd
     fi
+    # Always ensure passwordless sudo
+    echo "ainux ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/ainux
+    echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/nopasswd
+    chmod 440 /etc/sudoers.d/ainux /etc/sudoers.d/nopasswd
 '
 
 echo "  ✓ User created (ainux/ainux)"
@@ -538,6 +542,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     systemctl enable openwhale.service
     systemctl set-default graphical.target
     systemctl enable systemd-logind
+    systemctl enable tensoragent-disk.service 2>/dev/null || true
 '
 
 echo "  ✓ Services configured"
