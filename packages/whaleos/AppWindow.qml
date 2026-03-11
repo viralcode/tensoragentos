@@ -54,6 +54,7 @@ Rectangle {
     property bool isNative: appId.indexOf("native-") === 0 || appId.indexOf("wayland-") === 0
     property string nativeCmd: ""
     property string nativeSearchName: ""
+    property int launchCountdown: 60
 
     // Set initial size + launch native app in one onCompleted handler
     // (QML only allows ONE Component.onCompleted per component)
@@ -222,11 +223,12 @@ Rectangle {
             }
         }
 
-        // Native app loading indicator (shown until surface arrives)
+        // Native app loading indicator (shown until surface arrives or timeout)
+
         Column {
             anchors.centerIn: parent
             spacing: Math.round(12 * root.sf)
-            visible: isNative && shellSurface === null
+            visible: isNative && shellSurface === null && appWindow.launchCountdown > 0
 
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -252,6 +254,19 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
+
+        // Auto-close if app doesn't produce a surface in time
+        Timer {
+            id: launchTimeout
+            interval: 1000; running: isNative && shellSurface === null && appWindow.launchCountdown > 0; repeat: true
+            onTriggered: {
+                appWindow.launchCountdown--;
+                if (appWindow.launchCountdown <= 0) {
+                    root.showToast(windowTitle + " did not open — it may be a CLI tool", "info");
+                    closeWindow();
+                }
+            }
+        }
     }
 
     // ── Native App Launch ──
@@ -261,7 +276,6 @@ Rectangle {
         onTriggered: {
             if (!isNative || nativeCmd.length === 0) return;
             sysManager.launchNativeApp(nativeCmd);
-            // Don't close — wait for compositor to assign the surface
         }
     }
 

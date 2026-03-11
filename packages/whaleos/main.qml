@@ -103,6 +103,12 @@ WaylandCompositor {
                 openWindows = wins;
             }
 
+            // ── Launch a native app directly (no loader window) ──
+            function launchNative(cmd, searchName) {
+                if (!cmd || cmd.length === 0) return;
+                sysManager.launchNativeApp(cmd);
+            }
+
 
             // ── Wayland Surface Tracking ──
             property var pendingSurfaces: []   // Surfaces waiting to be assigned to AppWindows
@@ -170,6 +176,7 @@ WaylandCompositor {
 
                 if (appTitle.length === 0 && appId.length === 0) return false;
 
+                // First: try to match an existing AppWindow waiting for a surface
                 for (var i = 0; i < openWindows.length; i++) {
                     var win = openWindows[i];
                     if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
@@ -192,7 +199,29 @@ WaylandCompositor {
                         }
                     }
                 }
-                return false;
+
+                // Second: no match found — auto-create an AppWindow for this surface
+                var windowTitle = appTitle || appId || "App";
+                var windowAppId = "native-" + (appId || appTitle || "app").toLowerCase().replace(/[^a-z0-9]/g, "-");
+
+                // Prevent duplicates
+                for (var j = 0; j < openWindows.length; j++) {
+                    if (openWindows[j].appId === windowAppId && openWindows[j].surface) return true;
+                }
+
+                var autoWins = openWindows.slice();
+                autoWins.push({
+                    appId: windowAppId,
+                    title: windowTitle,
+                    icon: "generic",
+                    cmd: "",
+                    searchName: appId || appTitle || "",
+                    surface: xdgSurface,
+                    toplevel: toplevel
+                });
+                openWindows = autoWins;
+                console.log("WhaleOS: Auto-created window for surface: " + windowTitle);
+                return true;
             }
 
             // Timer to retry matching pending surfaces

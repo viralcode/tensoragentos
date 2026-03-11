@@ -177,6 +177,13 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         pipewire pipewire-alsa wireplumber \
         xsel wl-clipboard
 
+    # Office suite & PDF viewer
+    apt-get install -y -qq \
+        libreoffice-writer libreoffice-calc libreoffice-impress \
+        libreoffice-gtk3 \
+        evince \
+        2>/dev/null || echo "  [SKIP] Some office/PDF packages unavailable"
+
     # Chromium — package name varies by architecture
     apt-get install -y -qq chromium 2>/dev/null \
         || apt-get install -y -qq chromium-browser 2>/dev/null \
@@ -492,6 +499,10 @@ log "  XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 # Launch WhaleOS directly — it IS a Wayland compositor
 # No Cage needed. WhaleOS renders via EGLFS to the DRM device.
 log "Starting WhaleOS compositor directly..."
+
+# Refresh apt cache in background so Package Store works immediately
+apt-get update -qq &>/dev/null &
+
 exec /opt/ainux/whaleos/whaleos >> "$LOGFILE" 2>&1
 STARTGUI
 sudo chmod +x "${ROOTFS_DIR}/opt/ainux/start-gui.sh"
