@@ -77,17 +77,25 @@ Rectangle {
     property var shellSurface: null
     property var toplevelObj: null
 
+    function focusNativeSurface() {
+        if (isNative && shellSurface && surfaceItem && typeof surfaceItem.takeFocus === "function") {
+            surfaceItem.takeFocus();
+        }
+    }
+
     // When a native surface arrives, configure it to fill the content area
     // (the area below WhaleOS's title bar)
     onShellSurfaceChanged: {
         if (shellSurface && toplevelObj) {
             surfaceConfigureTimer.restart();
         }
+        focusNativeSurface();
     }
     onToplevelObjChanged: {
         if (shellSurface && toplevelObj) {
             surfaceConfigureTimer.restart();
         }
+        focusNativeSurface();
     }
     Timer {
         id: surfaceConfigureTimer
@@ -187,6 +195,7 @@ Rectangle {
             propagateComposedEvents: true
             onPressed: function(mouse) {
                 root.bringToFront(appWindow);
+                focusNativeSurface();
                 mouse.accepted = false;
             }
         }
@@ -216,6 +225,10 @@ Rectangle {
             visible: shellSurface !== null
             shellSurface: appWindow.shellSurface
             autoCreatePopupItems: true
+            focusOnClick: true
+
+            Component.onCompleted: focusNativeSurface()
+            onVisibleChanged: if (visible) focusNativeSurface()
 
             onSurfaceDestroyed: {
                 // Native app closed itself — close the AppWindow too
