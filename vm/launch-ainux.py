@@ -138,7 +138,7 @@ packages:
   - libqt6opengl6-dev
   - galculator
   - mousepad
-  - chromium
+  - firefox-esr
   - qt6-wayland-dev
   - qml6-module-qtwayland-compositor
   - wl-clipboard
@@ -386,32 +386,19 @@ runcmd:
     
     MOTDEOF
   
-  # ── Install Google Chrome (official .deb) + Chromium fallback ──
-  # Try Google Chrome first, fall back to chromium from apt
+  # ── Ensure Firefox ESR is preinstalled and Wayland-ready ──
   - |
     set -e
-    # Add Google Chrome apt repo
-    wget -q -O /tmp/google-chrome.gpg https://dl.google.com/linux/linux_signing_key.pub 2>/dev/null || true
-    if [ -f /tmp/google-chrome.gpg ]; then
-      gpg --dearmor < /tmp/google-chrome.gpg > /usr/share/keyrings/google-chrome.gpg 2>/dev/null || true
-      echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list || true
-      apt-get update -qq 2>/dev/null || true
-      apt-get install -y google-chrome-stable 2>/dev/null && ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chromium 2>/dev/null || true
-    fi
-    # Ensure chromium binary exists (use chromium package as fallback)
-    if ! which chromium &>/dev/null && ! which chromium-browser &>/dev/null; then
-      apt-get install -y chromium 2>/dev/null || true
-    fi
-    # Create universal chromium wrapper script
-    CHROME_BIN=$(which google-chrome-stable 2>/dev/null || which chromium-browser 2>/dev/null || which chromium 2>/dev/null || echo "/usr/bin/chromium")
-    cat > /usr/local/bin/chromium << CHREOF
+    apt-get install -y firefox-esr 2>/dev/null || true
+    cat > /usr/local/bin/firefox-wayland << 'FFEOF'
     #!/bin/bash
     export DISPLAY=:0
     export XAUTHORITY=/home/ainux/.Xauthority
     export XDG_RUNTIME_DIR=/run/user/1000
-    exec $CHROME_BIN --no-sandbox --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage "$@"
-    CHREOF
-    chmod +x /usr/local/bin/chromium
+    export MOZ_ENABLE_WAYLAND=1
+    exec /usr/bin/firefox-esr "$@"
+    FFEOF
+    chmod +x /usr/local/bin/firefox-wayland
 
   # Install Ollama (local AI)
   - curl -fsSL https://ollama.com/install.sh | sh

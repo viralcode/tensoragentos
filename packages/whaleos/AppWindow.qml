@@ -78,9 +78,13 @@ Rectangle {
     property var toplevelObj: null
 
     function focusNativeSurface() {
-        if (isNative && shellSurface && surfaceItem && typeof surfaceItem.takeFocus === "function") {
-            surfaceItem.takeFocus();
-        }
+        if (!isNative || !shellSurface || !surfaceItem) return;
+
+        root.bringToFront(appWindow);
+        if (typeof appWindow.forceActiveFocus === "function") appWindow.forceActiveFocus();
+        if (typeof contentArea.forceActiveFocus === "function") contentArea.forceActiveFocus();
+        if (typeof surfaceItem.forceActiveFocus === "function") surfaceItem.forceActiveFocus();
+        if (typeof surfaceItem.takeFocus === "function") surfaceItem.takeFocus();
     }
 
     // When a native surface arrives, configure it to fill the content area
