@@ -162,7 +162,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         2>/dev/null || echo "  ⚠ Some Qt6 packages unavailable, will build from source"
 
     # PAM (for secure authentication)
-    apt-get install -y -qq libpam0g-dev
+    apt-get install -y -qq libpam0g-dev 2>/dev/null || apt-get install -y -qq libpam-dev 2>/dev/null || echo "  ⚠ PAM dev package not found, may need manual install"
 
     # Node.js 22.x
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -186,38 +186,21 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         evince \
         2>/dev/null || echo "  [SKIP] Some office/PDF packages unavailable"
 
-    # Chromium — package name varies by architecture
-    apt-get install -y -qq chromium 2>/dev/null \
-        || apt-get install -y -qq chromium-browser 2>/dev/null \
-        || echo "  ⚠ Chromium not available for this architecture"
+    # Firefox ESR — stable browser with native Wayland support
+    # (Replaces Chromium which crashes on right-click due to Qt 6.4.2 xdg_popup bug)
+    apt-get install -y -qq firefox-esr 2>/dev/null \
+        || echo "  ⚠ Firefox ESR not available for this architecture"
 
-    # Configure Chromium to use Client-Side Decorations (CSD)
-    # This makes Chromium show its own minimize/maximize/close buttons
-    # just like on Ubuntu/GNOME
-    echo "  Configuring Chromium CSD..."
-
-    # Method 1: Chromium flags file (loaded on startup)
-    mkdir -p /etc/chromium.d
-    cat > /etc/chromium.d/csd.conf << CHROMIUM_CSD
-# Enable Client-Side Decorations (CSD) — show min/max/close buttons
-export CHROMIUM_FLAGS="\$CHROMIUM_FLAGS --enable-features=UseOzonePlatform,WaylandWindowDecorations"
-CHROMIUM_CSD
-
-    # Method 2: Default preferences for the user (custom_chrome_frame = CSD)
-    CHROMIUM_PREFS_DIR="/home/ainux/.config/chromium/Default"
-    mkdir -p "$CHROMIUM_PREFS_DIR"
-    cat > "$CHROMIUM_PREFS_DIR/Preferences" << CHROMIUM_PREFS
-{
-    "browser": {
-        "custom_chrome_frame": true
-    }
-}
-CHROMIUM_PREFS
-    chown -R 1000:1000 /home/ainux/.config
+    # Configure Firefox for Wayland
+    mkdir -p /etc/profile.d
+    cat > /etc/profile.d/firefox-wayland.sh << FIREFOXENV
+# Enable Wayland backend for Firefox
+export MOZ_ENABLE_WAYLAND=1
+FIREFOXENV
 
     # Verify native app binaries
     echo "  Verifying native app binaries..."
-    for bin in chromium mousepad galculator; do
+    for bin in firefox-esr mousepad galculator; do
         if which "$bin" 2>/dev/null; then
             echo "    ✓ $bin found: $(which $bin)"
         else
@@ -267,6 +250,31 @@ NMCONF
 '
 
 echo "  ✓ Dependencies installed"
+
+# ── Patch Qt 6.4.2 Wayland Compositor binary ──────────────────────
+# Qt 6.4's libQt6WaylandCompositor has stub implementations for critical
+# Wayland protocol functions that print "Not implemented" and cause
+# Chrome/Chromium to crash on right-click (context menu popups).
+# We patch these stubs to ARM64 'ret' (immediate return, no-op).
+# This must happen OUTSIDE the chroot using the rootfs path from the host.
+QT_SO=$(find "${ROOTFS_DIR}/usr/lib" -name "libQt6WaylandCompositor.so.6.4.2" -type f 2>/dev/null | head -1)
+if [ -n "$QT_SO" ] && [ -f "$QT_SO" ]; then
+    echo "  Patching Qt Wayland Compositor: $QT_SO"
+    RET='\xc0\x03\x5f\xd6'  # ARM64: ret instruction
+    # xdg_popup_destroy (0xada78) + thunk (0xadb14)
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xada78)) conv=notrunc 2>/dev/null
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadb14)) conv=notrunc 2>/dev/null
+    # xdg_popup_grab (0xadbb0) + thunk (0xadc4c)
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadbb0)) conv=notrunc 2>/dev/null
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadc4c)) conv=notrunc 2>/dev/null
+    # subsurface_set_desync (0xc5050)
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc5050)) conv=notrunc 2>/dev/null
+    # subsurface_set_sync (0xc4f50)
+    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc4f50)) conv=notrunc 2>/dev/null
+    echo "  ✓ Qt Wayland stubs patched (xdg_popup_destroy/grab, subsurface sync/desync)"
+else
+    echo "  ⚠ libQt6WaylandCompositor.so.6.4.2 not found in rootfs, skipping patch"
+fi
 
 # ─── Create User ───────────────────────────────────────────────
 echo "[5/8] Creating default user..."
@@ -527,6 +535,15 @@ log "Starting WhaleOS compositor directly..."
 
 # Refresh apt cache in background so Package Store works immediately
 apt-get update -qq &>/dev/null &
+
+# Apply LD_PRELOAD popup fix shim if available.
+# Patches Qt 6.4.2's missing xdg_popup_destroy/xdg_popup_grab stubs
+# that cause Chrome/Chromium to crash when right-clicking (context menu).
+POPUP_SHIM="/opt/ainux/whaleos/libpopupfix.so"
+if [ -f "$POPUP_SHIM" ]; then
+    export LD_PRELOAD="$POPUP_SHIM${LD_PRELOAD:+:$LD_PRELOAD}"
+    log "Popup fix shim loaded: $POPUP_SHIM"
+fi
 
 exec /opt/ainux/whaleos/whaleos >> "$LOGFILE" 2>&1
 STARTGUI

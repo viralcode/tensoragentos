@@ -18,7 +18,7 @@ Rectangle {
     property var userInstalledApps: []
 
     property var nativeApps: [
-        { appId: "native-chromium", label: "Chromium", desc: "Web browser", cmd: "chromium --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform,WaylandWindowDecorations", searchName: "Chromium", iconType: "chrome", accent: "#60a5fa", pkg: "chromium", builtIn: true },
+        { appId: "native-firefox", label: "Firefox", desc: "Web browser", cmd: "firefox-esr", searchName: "Firefox", iconType: "firefox", accent: "#f97316", pkg: "firefox-esr", builtIn: true },
         { appId: "native-mousepad", label: "Editor", desc: "Text editor", cmd: "mousepad", searchName: "Mousepad", iconType: "editor", accent: "#4ade80", pkg: "mousepad", builtIn: true },
         { appId: "native-galculator", label: "Calculator", desc: "Desktop calculator", cmd: "galculator", searchName: "galculator", iconType: "calculator", accent: "#c084fc", pkg: "galculator", builtIn: true },
         { appId: "native-libreoffice-writer", label: "Writer", desc: "Word processor", cmd: "libreoffice --writer", searchName: "libreoffice", iconType: "office-writer", accent: "#2563eb", pkg: "libreoffice-writer", builtIn: true },
@@ -607,13 +607,18 @@ Rectangle {
     function drawIcon(ctx, iconType, accent, label) {
         ctx.fillStyle = accent; ctx.strokeStyle = accent;
         ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
-        if (iconType === "chrome") {
+        if (iconType === "firefox") {
+            // Firefox icon — globe with flame
             var cx=11,cy=11,r=9;
-            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,-Math.PI/6,-Math.PI*5/6,true);ctx.closePath();ctx.fillStyle="#ea4335";ctx.fill();
-            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,-Math.PI*5/6,Math.PI/2,true);ctx.closePath();ctx.fillStyle="#34a853";ctx.fill();
-            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,Math.PI/2,-Math.PI/6,true);ctx.closePath();ctx.fillStyle="#fbbc05";ctx.fill();
-            ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
-            ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle="#4285f4";ctx.fill();
+            // Globe base (blue)
+            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle="#1a0a3e";ctx.fill();
+            // Flame wrap (orange arc)
+            ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI*0.8,Math.PI*0.9);ctx.lineWidth=3.5;ctx.strokeStyle="#ff6611";ctx.stroke();
+            // Flame tail (orange-yellow)
+            ctx.beginPath();ctx.moveTo(17,5);ctx.quadraticCurveTo(19,9,16,14);ctx.quadraticCurveTo(13,18,8,17);ctx.lineWidth=2.5;ctx.strokeStyle="#ff9500";ctx.stroke();
+            // Inner glow
+            ctx.beginPath();ctx.arc(cx,cy,4.5,0,Math.PI*2);ctx.fillStyle="#3a1578";ctx.fill();
+            ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fillStyle="#5b2d9e";ctx.fill();
         } else if (iconType === "editor") {
             ctx.fillStyle="#1e293b";ctx.fillRect(4,2,14,18);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.strokeRect(4,2,14,18);
             ctx.fillStyle=accent;ctx.fillRect(7,6,8,1);ctx.fillRect(7,9,6,1);ctx.fillRect(7,12,9,1);ctx.fillRect(7,15,5,1);
