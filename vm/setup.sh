@@ -8,7 +8,7 @@
 # Installs:
 #   • Node.js 22.x, Python 3, SQLite
 #   • Qt6 + Wayland Compositor + PAM
-#   • Cage compositor, Chromium, desktop apps
+#   • Cage compositor, Firefox ESR, desktop apps
 #   • OpenWhale AI platform + WhaleOS shell
 #   • Flatpak for user-installable applications
 #   • Ollama local LLM runtime
@@ -44,13 +44,13 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get install -y -qq \
     bash curl wget git openssh-server sudo htop tmux \
     mesa-utils libgl1-mesa-dri libegl-mesa0 \
-    wayland-protocols libwayland-dev cage xwayland \
+    wayland-protocols libwayland-dev cage xwayland seatd \
     qt6-base-dev qt6-declarative-dev \
     qt6-wayland-dev qt6-wayland \
     qml6-module-qtquick qml6-module-qtquick-controls \
     qml6-module-qtquick-layouts qml6-module-qtwayland-compositor \
     libpam0g-dev \
-    chromium mousepad galculator \
+    firefox-esr mousepad galculator \
     pipewire pipewire-alsa wireplumber \
     fonts-dejavu fonts-noto fonts-noto-color-emoji fontconfig \
     xsel wl-clipboard ripgrep jq tree \
@@ -76,7 +76,7 @@ echo "  ✓ Node.js installed"
 # ─── 4. Create TensorAgent user ────────────────────────────────
 echo "[4/9] Creating ainux user..."
 if ! id ainux 2>/dev/null; then
-    useradd -m -s /bin/bash -G sudo,video,audio,input ainux
+    useradd -m -s /bin/bash -G sudo,video,audio,input,render ainux
     echo "ainux:ainux" | chpasswd
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tensoragent
     chmod 440 /etc/sudoers.d/tensoragent
@@ -157,29 +157,40 @@ RestartSec=5
 WantedBy=multi-user.target
 OWSERVICE
 
-# WhaleOS desktop service
-cat > /etc/systemd/system/ainux-gui.service << 'GUISERVICE'
-[Unit]
-Description=TensorAgent OS Desktop Shell
-After=openwhale.service systemd-logind.service
-Wants=openwhale.service
+# seatd is required so Cage gets real input devices
+systemctl enable seatd 2>/dev/null || true
+systemctl start seatd 2>/dev/null || true
 
+# Auto-login on tty1 and launch WhaleOS from the real VT session.
+# This keeps keyboard input working reliably for native Wayland apps like Firefox.
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'AUTOLOGIN'
 [Service]
-Type=simple
-User=ainux
-PAMName=login
-Environment=WLR_LIBINPUT_NO_DEVICES=1
-Environment=WLR_NO_HARDWARE_CURSORS=1
-Environment=QT_QPA_PLATFORM=wayland
-Environment=QSG_RENDER_LOOP=threaded
-ExecStartPre=/bin/sleep 3
-ExecStart=/usr/bin/cage -- /opt/ainux/whaleos/whaleos
-Restart=on-failure
-RestartSec=3
+ExecStart=
+ExecStart=-/sbin/agetty --autologin ainux --noclear %I $TERM
+AUTOLOGIN
 
-[Install]
-WantedBy=graphical.target
-GUISERVICE
+cat > /home/ainux/.bash_profile << 'BPEOF'
+# Auto-start WhaleOS GUI on virtual console login
+if [[ -t 0 ]] && [[ -z "$DISPLAY" ]] && [[ -z "$WAYLAND_DISPLAY" ]]; then
+    mkdir -p /run/user/1000
+    chown ainux:ainux /run/user/1000
+    chmod 700 /run/user/1000
+    export HOME=/home/ainux
+    export XDG_RUNTIME_DIR=/run/user/1000
+    export XDG_SESSION_TYPE=wayland
+    export WLR_RENDERER=pixman
+    export WLR_NO_HARDWARE_CURSORS=1
+    export WLR_DRM_NO_ATOMIC=1
+    export QT_QPA_PLATFORM=wayland
+    export QT_QUICK_BACKEND=software
+    export QSG_RENDER_LOOP=basic
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export MOZ_ENABLE_WAYLAND=1
+    exec /usr/bin/cage -- /opt/ainux/whaleos/whaleos
+fi
+BPEOF
+chown ainux:ainux /home/ainux/.bash_profile
 
 # Ollama service (optional)
 cat > /etc/systemd/system/ollama.service << 'OLLAMA'
@@ -227,23 +238,16 @@ PAMCFG
 # Enable services
 systemctl daemon-reload
 systemctl enable openwhale.service
-systemctl enable ainux-gui.service
 systemctl enable ollama.service 2>/dev/null || true
 systemctl enable whaleos-helper.service
+systemctl enable seatd 2>/dev/null || true
+systemctl enable getty@tty1.service
 systemctl enable systemd-logind
 systemctl enable systemd-timesyncd 2>/dev/null || true
 
 # Activate NTP time sync immediately
 timedatectl set-ntp true 2>/dev/null || true
-systemctl set-default graphical.target
-
-# Auto-login on tty1
-mkdir -p /etc/systemd/system/getty@tty1.service.d
-cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'AUTOLOGIN'
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin ainux --noclear %I $TERM
-AUTOLOGIN
+systemctl set-default multi-user.target
 
 echo "  ✓ Services configured"
 
@@ -271,7 +275,7 @@ You have direct access to hardware, shell commands, and AI tools.
 ## Available Services
 - `openwhale` — AI agent platform (port 7777)
 - `ollama` — Local LLM runtime (port 11434)
-- `ainux-gui` — Desktop shell (Cage + WhaleOS)
+- `getty@tty1` → WhaleOS desktop shell (Cage + WhaleOS)
 
 ## Key Commands
 - `sudo systemctl restart <service>` — Restart a service
@@ -306,7 +310,7 @@ cat > /etc/motd << 'MOTD'
   🐋
   🐋  Commands:
   🐋    systemctl status openwhale
-  🐋    systemctl status ainux-gui
+  🐋    systemctl status getty@tty1
   🐋    flatpak install flathub <app>
   🐋 ══════════════════════════════════════════════
 
@@ -318,7 +322,7 @@ echo "  🐋  TensorAgent OS Setup Complete!"
 echo "  🐋"
 echo "  🐋  Start services:"
 echo "  🐋    sudo systemctl start openwhale"
-echo "  🐋    sudo systemctl start ainux-gui"
+echo "  🐋    sudo systemctl restart getty@tty1"
 echo "  🐋"
 echo "  🐋  Or reboot to auto-start everything:"
 echo "  🐋    sudo reboot"
