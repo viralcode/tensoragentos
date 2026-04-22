@@ -5,8 +5,7 @@
 <h1 align="center">TensorAgent OS</h1>
 
 <p align="center">
-  <strong>An experimental AI-native operating system.</strong><br/>
-  No app launcher. No file manager. Just you, an AI agent, and the kernel.
+  <strong>An experimental AI-native operating system.</strong>
 </p>
 
 <p align="center">
