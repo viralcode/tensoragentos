@@ -12,8 +12,8 @@ echo "Building WhaleOS..."
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) ptyprocess.h -o moc_ptyprocess.cpp
 /usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) terminalemulator.h -o moc_terminalemulator.cpp
 
-# ── Run MOC on main.cpp (ClipboardFilter has Q_OBJECT) ──
-/usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core) main.cpp -o main.moc
+# ── Run MOC on main.cpp (ClipboardBridge has Q_OBJECT) ──
+/usr/lib/qt6/libexec/moc $(pkg-config --cflags Qt6Core Qt6WaylandCompositor 2>/dev/null || pkg-config --cflags Qt6Core) main.cpp -o main.moc
 
 # ── Compile with Wayland Compositor + PAM + PTY support ──
 # -lpam: PAM authentication

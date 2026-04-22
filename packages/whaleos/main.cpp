@@ -1,10 +1,9 @@
 /*
  * WhaleOS — TensorAgent OS Native Desktop Shell
  *
- * Entry point for the Qt6 QML Wayland compositor.
- * Registers SystemManager for kernel-level OS operations,
- * installs a global clipboard event filter, and loads the
- * QML compositor from /opt/ainux/whaleos/main.qml.
+ * ClipboardCompositor: Subclasses QWaylandQuickCompositor and adds
+ * retainedSelectionReceived() override to sync Wayland→QClipboard.
+ * Includes proper QML default property for child items (WaylandOutput etc).
  */
 
 #include <QGuiApplication>
@@ -12,72 +11,121 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QDebug>
-#include <QKeyEvent>
-#include <QQuickItem>
-#include <QInputMethodEvent>
 #include <QFontDatabase>
+#include <QClipboard>
+#include <QMimeData>
+#include <QTimer>
+#include <QMouseEvent>
+#include <QQmlListProperty>
+#include <QtWaylandCompositor/QWaylandQuickCompositor>
 #include "systemmanager.h"
 #include "ptyprocess.h"
 #include "terminalemulator.h"
 
 
 // ════════════════════════════════════════════════════════════════
-// Global clipboard event filter
-//
-// Intercepts Ctrl+V and Ctrl+C before Qt's broken Wayland
-// clipboard handler processes them, using SystemManager's
-// wl-paste / xsel based clipboard sync.
+// RightClickFilter — blocks right-click ONLY for Chromium windows
 // ════════════════════════════════════════════════════════════════
-
-class ClipboardFilter : public QObject {
+class RightClickFilter : public QObject {
     Q_OBJECT
 public:
-    explicit ClipboardFilter(SystemManager *mgr, QObject *parent = nullptr)
-        : QObject(parent), m_mgr(mgr) {}
-
+    explicit RightClickFilter(QObject *parent = nullptr) : QObject(parent) {}
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override {
-        if (event->type() != QEvent::KeyPress)
-            return QObject::eventFilter(obj, event);
-
-        QKeyEvent *ke = static_cast<QKeyEvent *>(event);
-
-        // Ctrl+V — Paste
-        if (ke->key() == Qt::Key_V && (ke->modifiers() & Qt::ControlModifier)) {
-            QString text = m_mgr->pasteFromClipboard();
-            if (!text.isEmpty()) {
-                QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
-                if (app && app->focusObject()) {
-                    QInputMethodEvent ime;
-                    ime.setCommitString(text);
-                    QCoreApplication::sendEvent(app->focusObject(), &ime);
-                    qDebug() << "ClipboardFilter: Pasted" << text.length() << "chars";
-                }
-                return true;
+        if (event->type() == QEvent::MouseButtonPress ||
+            event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent *me = static_cast<QMouseEvent *>(event);
+            if (me->button() == Qt::RightButton && isChromiumWindow(obj)) {
+                return true;  // Block right-click for Chromium only
             }
         }
-
-        // Ctrl+C — Copy
-        if (ke->key() == Qt::Key_C && (ke->modifiers() & Qt::ControlModifier)) {
-            QGuiApplication *app = qobject_cast<QGuiApplication *>(QGuiApplication::instance());
-            if (app && app->focusObject()) {
-                QQuickItem *item = qobject_cast<QQuickItem *>(app->focusObject());
-                if (item) {
-                    QVariant sel = item->property("selectedText");
-                    if (sel.isValid() && !sel.toString().isEmpty()) {
-                        m_mgr->copyToClipboard(sel.toString());
-                        qDebug() << "ClipboardFilter: Copied" << sel.toString().length() << "chars";
-                        return true;
-                    }
-                }
-            }
-        }
-
         return QObject::eventFilter(obj, event);
+    }
+private:
+    // Walk up the QObject parent chain to find the AppWindow.
+    // AppWindow has QML properties "appId" and "windowTitle" —
+    // if either contains "chromium" this is a Chromium window.
+    bool isChromiumWindow(QObject *obj) {
+        QObject *current = obj;
+        while (current) {
+            QVariant appId = current->property("appId");
+            if (appId.isValid() && !appId.toString().isEmpty()) {
+                if (appId.toString().contains("chromium", Qt::CaseInsensitive))
+                    return true;
+            }
+            QVariant title = current->property("windowTitle");
+            if (title.isValid() && !title.toString().isEmpty()) {
+                if (title.toString().contains("chromium", Qt::CaseInsensitive))
+                    return true;
+            }
+            current = current->parent();
+        }
+        return false;
+    }
+};
+
+// ════════════════════════════════════════════════════════════════
+// ClipboardCompositor — bridges Wayland clipboard → QClipboard
+// ════════════════════════════════════════════════════════════════
+class ClipboardCompositor : public QWaylandQuickCompositor {
+    Q_OBJECT
+    // QML default property — allows child items (WaylandOutput, XdgShell, etc.)
+    Q_PROPERTY(QQmlListProperty<QObject> data READ data DESIGNABLE false)
+    Q_CLASSINFO("DefaultProperty", "data")
+
+public:
+    ClipboardCompositor(QObject *parent = nullptr)
+        : QWaylandQuickCompositor(parent) {}
+
+    QQmlListProperty<QObject> data() {
+        return QQmlListProperty<QObject>(this, nullptr,
+            &ClipboardCompositor::appendData,
+            &ClipboardCompositor::countData,
+            &ClipboardCompositor::atData,
+            &ClipboardCompositor::clearData);
+    }
+
+protected:
+    // Called by Qt when a Wayland client copies and retainedSelection is true.
+    // Qt reads data from client's data source via pipe FD and passes QMimeData.
+    void retainedSelectionReceived(QMimeData *mimeData) override {
+        if (!mimeData) return;
+
+        if (mimeData->hasText()) {
+            QString text = mimeData->text().trimmed();
+            if (!text.isEmpty() && text != m_lastText) {
+                m_lastText = text;
+                // Defer to avoid re-entrancy
+                QTimer::singleShot(0, this, [text]() {
+                    QClipboard *cb = QGuiApplication::clipboard();
+                    if (cb) {
+                        cb->setText(text);
+                        qDebug() << "ClipboardCompositor: synced Wayland→QClipboard:"
+                                 << text.left(50);
+                    }
+                });
+            }
+        }
     }
 
 private:
-    SystemManager *m_mgr;
+    QString m_lastText;
+    QList<QObject *> m_data;
+
+    static void appendData(QQmlListProperty<QObject> *prop, QObject *obj) {
+        auto *self = static_cast<ClipboardCompositor *>(prop->object);
+        obj->setParent(self);
+        self->m_data.append(obj);
+    }
+    static qsizetype countData(QQmlListProperty<QObject> *prop) {
+        return static_cast<ClipboardCompositor *>(prop->object)->m_data.count();
+    }
+    static QObject *atData(QQmlListProperty<QObject> *prop, qsizetype idx) {
+        return static_cast<ClipboardCompositor *>(prop->object)->m_data.at(idx);
+    }
+    static void clearData(QQmlListProperty<QObject> *prop) {
+        static_cast<ClipboardCompositor *>(prop->object)->m_data.clear();
+    }
 };
 
 
@@ -89,6 +137,11 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setApplicationName("TensorAgentOS");
     app.setOrganizationName("TensorAgentOS");
+
+    // Block right-click globally — prevents Chromium context menus
+    RightClickFilter *rcFilter = new RightClickFilter(&app);
+    app.installEventFilter(rcFilter);
+    qDebug() << "TensorAgent OS: Right-click filter installed";
 
     // ── Register Font Awesome fonts BEFORE QML loads ──
     const QString fontDir = "/opt/ainux/whaleos/fonts";
@@ -110,6 +163,9 @@ int main(int argc, char *argv[]) {
     // ── QML Engine ──
     QQmlApplicationEngine engine;
 
+    // Register ClipboardCompositor — replaces WaylandCompositor in QML
+    qmlRegisterType<ClipboardCompositor>("TensorAgent.Compositor", 1, 0, "ClipboardCompositor");
+
     // Register PTY terminal types for real Linux terminal support
     qmlRegisterType<PtyProcess>("TensorAgent.Terminal", 1, 0, "PtyProcess");
     qmlRegisterType<TerminalEmulator>("TensorAgent.Terminal", 1, 0, "TerminalEmulator");
@@ -117,11 +173,6 @@ int main(int argc, char *argv[]) {
     // Register SystemManager for kernel-level OS operations
     SystemManager sysManager;
     engine.rootContext()->setContextProperty("sysManager", &sysManager);
-
-    // Install global clipboard event filter
-    ClipboardFilter *clipFilter = new ClipboardFilter(&sysManager, &app);
-    app.installEventFilter(clipFilter);
-    qDebug() << "TensorAgent OS: Clipboard event filter installed";
 
     // Log QML errors
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
@@ -144,8 +195,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Pass main window to SystemManager for display operations
-    QQuickWindow *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    // Find the Window inside the compositor for SystemManager
+    QObject *root = engine.rootObjects().first();
+    QQuickWindow *mainWindow = root ? root->findChild<QQuickWindow *>() : nullptr;
     if (mainWindow) {
         sysManager.setMainWindow(mainWindow);
         qDebug() << "TensorAgent OS: Main window WId:" << mainWindow->winId();

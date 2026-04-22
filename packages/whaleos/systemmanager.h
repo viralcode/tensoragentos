@@ -674,90 +674,36 @@ public:
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
+        // QClipboard only — no external Wayland client tools (ghost windows!)
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             clipboard->setText(text);
-            qDebug() << "SystemManager: copyToClipboard via Qt OK";
+            qDebug() << "SystemManager: copyToClipboard OK:" << text.left(30);
+            return true;
         }
-
-        // Also push to X11 clipboard for XWayland apps (async, non-blocking)
-        {
-            QProcess *proc = new QProcess(this);
-            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("DISPLAY", ":0");
-            proc->setProcessEnvironment(env);
-            proc->start("xsel", QStringList() << "--clipboard" << "--input");
-            proc->waitForStarted(1000);
-            proc->write(text.toUtf8());
-            proc->closeWriteChannel();
-            connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                    proc, &QProcess::deleteLater);
-        }
-
-        return true;
+        return false;
     }
 
-    // Legacy synchronous paste — kept for backward compat, reduced timeout
     Q_INVOKABLE QString pasteFromClipboard() {
-        // Primary: Wayland clipboard
-        {
-            QProcess proc;
-            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("WAYLAND_DISPLAY", "wayland-0");
-            env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
-            proc.setProcessEnvironment(env);
-            proc.start("wl-paste", QStringList() << "--no-newline");
-            proc.waitForFinished(500);  // Reduced from 2000ms → 500ms
-            if (proc.exitCode() == 0) {
-                QString result = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
-                if (!result.isEmpty() && result != "No selection") {
-                    return result;
-                }
-            }
-        }
-
-        // Fallback: Qt native clipboard
+        // QClipboard only — no external Wayland client tools (ghost windows!)
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             QString text = clipboard->text();
             if (!text.isEmpty()) {
+                qDebug() << "SystemManager: pasteFromClipboard OK:" << text.left(30);
                 return text;
             }
         }
-
         return "";
     }
 
-    // ASYNC paste — emits clipboardReady(text) without blocking UI
     Q_INVOKABLE void pasteFromClipboardAsync() {
-        QProcess *proc = new QProcess(this);
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("WAYLAND_DISPLAY", "wayland-0");
-        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
-        proc->setProcessEnvironment(env);
-
-        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                this, [this, proc](int exitCode, QProcess::ExitStatus) {
-            QString text;
-            if (exitCode == 0) {
-                text = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
-                if (text == "No selection") text = "";
-            }
-
-            // Fallback to Qt clipboard
-            if (text.isEmpty()) {
-                QClipboard *clipboard = QGuiApplication::clipboard();
-                if (clipboard) text = clipboard->text();
-            }
-
-            if (!text.isEmpty()) {
-                emit clipboardReady(text);
-            }
-            proc->deleteLater();
-        });
-
-        proc->start("wl-paste", QStringList() << "--no-newline");
+        // QClipboard only — emits signal for QML
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        QString text = clipboard ? clipboard->text() : "";
+        emit clipboardReady(text);
     }
+
 
 
     // ════════════════════════════════════════════════
@@ -1013,6 +959,7 @@ public:
             "export GTK_CSD=0; "
             "export XDG_CURRENT_DESKTOP=WhaleOS; "
             "export SSD_PREFER=1; "
+            "unset GTK_IM_MODULE; "
             "exec %4 2>&1"
         ).arg(waylandDisplay, runtimeDir, home, command);
 

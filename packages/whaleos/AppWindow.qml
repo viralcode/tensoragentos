@@ -85,6 +85,27 @@ Rectangle {
         if (typeof contentArea.forceActiveFocus === "function") contentArea.forceActiveFocus();
         if (typeof surfaceItem.forceActiveFocus === "function") surfaceItem.forceActiveFocus();
         if (typeof surfaceItem.takeFocus === "function") surfaceItem.takeFocus();
+
+        // CRITICAL: Set Wayland-protocol-level keyboard focus.
+        // Try multiple routes to get the actual WaylandSurface object:
+        //   1. surfaceItem.surface  — ShellSurfaceItem exposes the WaylandSurface
+        //   2. shellSurface.surface — XdgSurface.surface property
+        //   3. shellSurface itself  — WlShellSurface IS a WaylandSurface
+        try {
+            var wlSurface = null;
+            if (surfaceItem.surface)            wlSurface = surfaceItem.surface;
+            if (!wlSurface && shellSurface.surface) wlSurface = shellSurface.surface;
+            if (!wlSurface)                     wlSurface = shellSurface;
+
+            if (comp.defaultSeat && wlSurface) {
+                comp.defaultSeat.keyboardFocus = wlSurface;
+                console.log("WhaleOS: keyboard focus SET for " + appWindow.windowTitle);
+            } else {
+                console.log("WhaleOS: keyboard focus SKIP — seat:" + !!comp.defaultSeat + " surface:" + !!wlSurface);
+            }
+        } catch(e) {
+            console.log("WhaleOS: keyboard focus ERROR: " + e);
+        }
     }
 
     // When a native surface arrives, configure it to fill the content area
@@ -194,15 +215,10 @@ Rectangle {
         onWidthChanged: if (isNative && toplevelObj) surfaceConfigureTimer.restart()
         onHeightChanged: if (isNative && toplevelObj) surfaceConfigureTimer.restart()
 
-        MouseArea {
-            anchors.fill: parent
-            propagateComposedEvents: true
-            onPressed: function(mouse) {
-                root.bringToFront(appWindow);
-                focusNativeSurface();
-                mouse.accepted = false;
-            }
-        }
+        // NOTE: No overlay MouseArea here! For native apps, the ShellSurfaceItem
+        // must be the direct recipient of all input events (mouse + keyboard).
+        // An overlay MouseArea would intercept events before they reach the
+        // Wayland client, breaking keyboard and click-to-focus.
 
         Loader {
             anchors.fill: parent
@@ -229,16 +245,24 @@ Rectangle {
             visible: shellSurface !== null
             shellSurface: appWindow.shellSurface
             autoCreatePopupItems: true
-            focusOnClick: true
+            focusOnClick: true  // Give Qt focus when clicked, so wl_keyboard events flow
 
-            Component.onCompleted: focusNativeSurface()
-            onVisibleChanged: if (visible) focusNativeSurface()
+            // When this item gets Qt focus (user clicked), set wl_keyboard focus
+            // on the Wayland seat so key events are forwarded to the client.
+            onActiveFocusChanged: {
+                if (activeFocus && isNative && shellSurface !== null && comp.defaultSeat) {
+                    var surf = shellSurface.surface || shellSurface;
+                    if (surf) comp.defaultSeat.keyboardFocus = surf;
+                }
+            }
 
             onSurfaceDestroyed: {
                 // Native app closed itself — close the AppWindow too
                 closeWindow();
             }
         }
+        // NOTE: Right-click blocking is handled at the C++ level in main.cpp
+        // via RightClickFilter. QML MouseArea cannot intercept Wayland pointer events.
 
         // Native app loading indicator (shown until surface arrives or timeout)
 

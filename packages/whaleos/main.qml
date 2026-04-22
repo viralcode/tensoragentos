@@ -4,13 +4,19 @@ import QtQuick.Controls
 import QtWayland.Compositor
 import QtWayland.Compositor.XdgShell
 import QtWayland.Compositor.WlShell
+import TensorAgent.Compositor 1.0
 import "api.js" as API
 
-WaylandCompositor {
+ClipboardCompositor {
     id: comp
 
     // Our custom Wayland socket — native apps connect here
     socketName: "whaleos-0"
+
+    // Enable retained selection — when a Wayland client (Chromium) copies,
+    // Qt reads the data via pipe FD and calls retainedSelectionReceived()
+    // in our C++ subclass, which syncs it to QClipboard for QML TextInput.
+    retainedSelection: true
 
     WaylandOutput {
         sizeFollowsWindow: true
@@ -25,55 +31,34 @@ WaylandCompositor {
             title: "TensorAgent OS"
             color: "#0d0d0d"
 
-            // ── Clipboard: async Wayland clipboard sync (non-blocking) ──
-            // PERF: Replaced 1s blocking poll with 5s async check.
-            //       pasteFromClipboardAsync() emits clipboardReady() without blocking.
-            property string lastClipboard: ""
-
-            Connections {
-                target: sysManager
-                function onClipboardReady(text) {
-                    if (text.length > 0 && text !== root.lastClipboard) {
-                        root.lastClipboard = text;
-                        sysManager.copyToClipboard(text);  // Syncs to Qt clipboard
-                    }
-                }
-            }
-
-            Timer {
-                interval: 5000   // 5s instead of 1s — async so no UI freeze
-                running: true
-                repeat: true
-                onTriggered: {
-                    if (typeof sysManager.pasteFromClipboardAsync === "function") {
-                        sysManager.pasteFromClipboardAsync();
-                    } else {
-                        // Sync fallback for current binary
-                        var text = sysManager.pasteFromClipboard();
-                        if (text.length > 0 && text !== root.lastClipboard) {
-                            root.lastClipboard = text;
-                            sysManager.copyToClipboard(text);
-                        }
-                    }
-                }
-            }
+            // ── Clipboard ──
+            // NOTE: No clipboard polling timer here. The old timer was spawning
+            // wl-paste processes every 5s, each creating ghost "App" windows.
+            // Clipboard is now on-demand only via Ctrl+V shortcut below.
+            // ── Clipboard: Ctrl+V for QML TextInput only ──
+            // ONLY enabled when a QML TextInput has focus (it has an "insert" method).
+            // When a ShellSurfaceItem (Chromium) has focus, this is DISABLED so
+            // the key passes through to wl_keyboard → Chromium handles it natively.
+            // Uses wl-paste which reads from the same whaleos-0 socket Chromium writes to.
             Shortcut {
                 sequence: "Ctrl+V"
                 context: Qt.ApplicationShortcut
+                enabled: root.activeFocusItem && (typeof root.activeFocusItem.insert === "function")
                 onActivated: {
                     var text = sysManager.pasteFromClipboard();
                     if (text.length > 0 && root.activeFocusItem) {
-                        if (typeof root.activeFocusItem.insert === "function") {
-                            root.activeFocusItem.insert(root.activeFocusItem.cursorPosition, text);
-                        } else if (root.activeFocusItem.text !== undefined) {
-                            root.activeFocusItem.text += text;
-                        }
+                        root.activeFocusItem.insert(root.activeFocusItem.cursorPosition, text);
                     }
                 }
             }
+
+            // ── Clipboard: Ctrl+C for QML TextInput only ──
+            // ONLY enabled when a QML TextInput with selected text has focus.
+            // Uses wl-copy to write to whaleos-0 clipboard so Chromium can also paste.
             Shortcut {
                 sequence: "Ctrl+C"
                 context: Qt.ApplicationShortcut
+                enabled: root.activeFocusItem && root.activeFocusItem.selectedText !== undefined
                 onActivated: {
                     if (root.activeFocusItem && root.activeFocusItem.selectedText) {
                         sysManager.copyToClipboard(root.activeFocusItem.selectedText);

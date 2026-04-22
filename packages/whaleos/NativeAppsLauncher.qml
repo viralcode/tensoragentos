@@ -18,7 +18,7 @@ Rectangle {
     property var userInstalledApps: []
 
     property var nativeApps: [
-        { appId: "native-firefox", label: "Firefox", desc: "Web browser", cmd: "firefox-esr", searchName: "Firefox", iconType: "firefox", accent: "#f97316", pkg: "firefox-esr", builtIn: true },
+        { appId: "native-chromium", label: "Chromium", desc: "Web browser", cmd: "chromium --ozone-platform=wayland 2>/dev/null || chromium-browser --ozone-platform=wayland", searchName: "Chromium", iconType: "chromium", accent: "#4285f4", pkg: "chromium", builtIn: true },
         { appId: "native-mousepad", label: "Editor", desc: "Text editor", cmd: "mousepad", searchName: "Mousepad", iconType: "editor", accent: "#4ade80", pkg: "mousepad", builtIn: true },
         { appId: "native-galculator", label: "Calculator", desc: "Desktop calculator", cmd: "galculator", searchName: "galculator", iconType: "calculator", accent: "#c084fc", pkg: "galculator", builtIn: true },
         { appId: "native-libreoffice-writer", label: "Writer", desc: "Word processor", cmd: "libreoffice --writer", searchName: "libreoffice", iconType: "office-writer", accent: "#2563eb", pkg: "libreoffice-writer", builtIn: true },
@@ -607,7 +607,16 @@ Rectangle {
     function drawIcon(ctx, iconType, accent, label) {
         ctx.fillStyle = accent; ctx.strokeStyle = accent;
         ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
-        if (iconType === "firefox") {
+        if (iconType === "chromium") {
+            // Chromium icon — circle with colored segments
+            var cx=11,cy=11,r=9;
+            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle="#4285f4";ctx.fill();
+            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,-Math.PI*0.5,Math.PI/6);ctx.fillStyle="#ea4335";ctx.fill();
+            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,Math.PI/6,Math.PI*5/6);ctx.fillStyle="#fbbc05";ctx.fill();
+            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,Math.PI*5/6,Math.PI*3/2);ctx.fillStyle="#34a853";ctx.fill();
+            ctx.beginPath();ctx.arc(cx,cy,4.5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
+            ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fillStyle="#4285f4";ctx.fill();
+        } else if (iconType === "firefox") {
             // Firefox icon — globe with flame
             var cx=11,cy=11,r=9;
             // Globe base (blue)

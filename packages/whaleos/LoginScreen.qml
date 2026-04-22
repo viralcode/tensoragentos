@@ -205,7 +205,7 @@ Rectangle {
                     width: parent.width - Math.round(22 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
                     color: "#e2e8f0"; font.pixelSize: Math.round(13 * root.sf); clip: true
-                    text: ""
+                    text: "ainux"  // pre-fill default user
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -266,6 +266,7 @@ Rectangle {
                     }
 
                     Keys.onReturnPressed: doLogin()
+                    Keys.onTabPressed: userField.forceActiveFocus()
                     Component.onCompleted: forceActiveFocus()
                 }
 

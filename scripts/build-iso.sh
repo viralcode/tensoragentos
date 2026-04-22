@@ -186,25 +186,24 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         evince \
         2>/dev/null || echo "  [SKIP] Some office/PDF packages unavailable"
 
-    # Firefox ESR — stable browser with native Wayland support
-    # (Replaces Chromium which crashes on right-click due to Qt 6.4.2 xdg_popup bug)
-    apt-get install -y -qq firefox-esr 2>/dev/null \
-        || echo "  ⚠ Firefox ESR not available for this architecture"
+    # Chromium — package name varies by architecture
+    # The xdg_popup binary patch below fixes right-click/context-menu crashes
+    apt-get install -y -qq chromium 2>/dev/null \
+        || apt-get install -y -qq chromium-browser 2>/dev/null \
+        || echo "  ⚠ Chromium not available for this architecture"
 
-    # Configure Firefox for Wayland
-    mkdir -p /etc/profile.d
-    cat > /etc/profile.d/firefox-wayland.sh << FIREFOXENV
-# Enable Wayland backend for Firefox
-export MOZ_ENABLE_WAYLAND=1
-FIREFOXENV
+    # Configure Chromium for Wayland (avoid X11 fallback)
+    mkdir -p /etc/chromium.d
+    cat > /etc/chromium.d/wayland.conf << 'CHROMIUM_WAYLAND'
+# Force Wayland backend — required for WhaleOS compositor
+export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --ozone-platform=wayland --enable-features=UseOzonePlatform"
+CHROMIUM_WAYLAND
 
     # Verify native app binaries
     echo "  Verifying native app binaries..."
-    for bin in firefox-esr mousepad galculator; do
+    for bin in chromium chromium-browser mousepad galculator; do
         if which "$bin" 2>/dev/null; then
             echo "    ✓ $bin found: $(which $bin)"
-        else
-            echo "    ✗ $bin NOT FOUND"
         fi
     done
 
@@ -288,6 +287,11 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     echo "ainux ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/ainux
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/nopasswd
     chmod 440 /etc/sudoers.d/ainux /etc/sudoers.d/nopasswd
+
+    # Enable SSH password auth for remote deploys (Debian defaults to no)
+    mkdir -p /etc/ssh/sshd_config.d
+    echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/ainux.conf
+    echo "PermitRootLogin no" >> /etc/ssh/sshd_config.d/ainux.conf
 '
 
 echo "  ✓ User created (ainux/ainux)"
@@ -468,6 +472,19 @@ export QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 export QT_QPA_EGLFS_ALWAYS_SET_MODE=1
 export LIBGL_ALWAYS_SOFTWARE=1
 
+# XKB keyboard layout — CRITICAL: without this, Qt's Wayland compositor
+# cannot create an XKB keymap and will never send wl_keyboard.keymap to
+# native clients (Firefox, GTK apps), making keyboard input non-functional.
+export XKB_DEFAULT_LAYOUT=us
+export XKB_DEFAULT_MODEL=pc105
+export XKB_DEFAULT_RULES=evdev
+
+# XKB keyboard layout — required for Qt Wayland compositor to generate and
+# send wl_keyboard.keymap to native Wayland clients (Firefox, GTK apps).
+export XKB_DEFAULT_LAYOUT=us
+export XKB_DEFAULT_MODEL=pc105
+export XKB_DEFAULT_RULES=evdev
+
 # Disable GTK client-side decorations — WhaleOS provides server-side title bars
 export GTK_CSD=0
 export XDG_CURRENT_DESKTOP=WhaleOS
@@ -544,6 +561,12 @@ if [ -f "$POPUP_SHIM" ]; then
     export LD_PRELOAD="$POPUP_SHIM${LD_PRELOAD:+:$LD_PRELOAD}"
     log "Popup fix shim loaded: $POPUP_SHIM"
 fi
+
+# Ensure udev has enumerated all input devices before compositor starts.
+# libinput needs udev to discover keyboard/mouse — without this, it fails
+# silently and the compositor gets no keyboard input at all.
+udevadm trigger --subsystem-match=input 2>/dev/null || true
+udevadm settle --timeout=3 2>/dev/null || true
 
 exec /opt/ainux/whaleos/whaleos >> "$LOGFILE" 2>&1
 STARTGUI
