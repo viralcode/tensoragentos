@@ -9,12 +9,24 @@
 </p>
 
 <p align="center">
+  <img src="screenshot/screenshot.png" alt="TensorAgent OS screenshot" width="800" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/version-0.2.0--alpha-orange" />
   <img src="https://img.shields.io/badge/status-EARLY%20%E2%80%94%20EXPECT%20BUGS-red" />
   <img src="https://img.shields.io/badge/license-MIT-green" />
   <img src="https://img.shields.io/badge/arch-x86__64%20%7C%20ARM64-blue" />
   <img src="https://img.shields.io/badge/powered_by-OpenWhale-blueviolet" />
 </p>
+
+---
+
+> 📣 **Heads up**
+>
+> - 🌐 **Official website** — coming soon.
+> - 🏢 **Enterprise support, deployments & custom integrations** — coming soon.
+> - 📧 **Contact / inquiries:** [jijojohnx@outlook.com](mailto:jijojohnx@outlook.com)
 
 ---
 
