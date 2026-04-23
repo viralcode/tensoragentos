@@ -255,7 +255,7 @@ Native SwiftUI menu bar app with quick chat, status monitoring, and channel cont
 | **Twitter integration** | ✅ Full API | ❌ No | ❌ No | ❌ No |
 | **Self-extensible** | ✅ Creates own tools | ❌ No | ❌ No | ❌ No |
 | **Runs locally** | ✅ Your machine | ❌ Cloud only | ❌ Cloud only | ❌ Usually cloud |
-| **Open source** | ✅ MIT license | ❌ Closed | ❌ Closed | ❌ Varies |
+| **Source availability** | ✅ BUSL-1.1 | ❌ Closed | ❌ Closed | ❌ Varies |
 | **Persistent memory** | ✅ Vector search | ✅ Limited | ✅ Limited | ❌ Usually no |
 | **Proactive heartbeat** | ✅ Configurable | ❌ No | ❌ No | ❌ No |
 
@@ -317,7 +317,7 @@ PRs welcome! If you find a bug or have an idea, open an issue. Keep it friendly.
 
 ## License
 
-MIT — do whatever you want with it.
+Business Source License 1.1 (BUSL-1.1) — see [../../LICENSE](../../LICENSE).
 
 ---
 

@@ -15,7 +15,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.2.0--alpha-orange" />
   <img src="https://img.shields.io/badge/status-EARLY%20%E2%80%94%20EXPECT%20BUGS-red" />
-  <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/license-BUSL--1.1-orange" />
   <img src="https://img.shields.io/badge/arch-x86__64%20%7C%20ARM64-blue" />
   <img src="https://img.shields.io/badge/powered_by-OpenWhale-blueviolet" />
 </p>
@@ -315,7 +315,7 @@ Please keep changes focused and avoid bundling unrelated refactors.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Business Source License 1.1 (BUSL-1.1) — see [LICENSE](LICENSE).
 
 ---
 
