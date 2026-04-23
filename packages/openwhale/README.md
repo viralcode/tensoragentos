@@ -318,7 +318,7 @@ PRs welcome! If you find a bug or have an idea, open an issue. Keep it friendly.
 ## License
 
 Business Source License 1.1 (BUSL-1.1) — see [../../LICENSE](../../LICENSE).
-Production use requires a commercial license until the Change Date.
+Production use requires a commercial license before 2050-04-22.
 
 ---
 
