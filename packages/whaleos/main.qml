@@ -31,7 +31,16 @@ ClipboardCompositor {
             width: Screen.width
             height: Screen.height
             title: "TensorAgent OS"
-            color: "#0d0d0d"
+            color: "#030712"
+
+            // ── Base cursor — ensures mouse pointer is always visible ──
+            MouseArea {
+                anchors.fill: parent
+                z: -1000
+                acceptedButtons: Qt.NoButton
+                hoverEnabled: true
+                cursorShape: Qt.ArrowCursor
+            }
 
             // ── Clipboard ──
             // NOTE: No clipboard polling timer here. The old timer was spawning
@@ -104,20 +113,23 @@ ClipboardCompositor {
             // ── API ──
             property string apiBase: "http://127.0.0.1:7777/dashboard/api"
 
-            // ── Theme Constants ──
-            readonly property color bgVoid: "#0d0d0d"
-            readonly property color bgSurface: "#141414"
-            readonly property color bgElevated: "#1c1c1c"
-            readonly property color bgCard: "#1f1f1f"
-            readonly property color borderColor: "#2a2a2a"
-            readonly property color borderLight: "#333333"
-            readonly property color textPrimary: "#ffffff"
-            readonly property color textSecondary: "#999999"
-            readonly property color textMuted: "#666666"
-            readonly property color accentBlue: "#3b82f6"
-            readonly property color accentGreen: "#22c55e"
-            readonly property color accentRed: "#ef4444"
-            readonly property color accentOrange: "#f97316"
+            // ── Theme Constants — Cyber Glass ──
+            readonly property color bgVoid: "#030712"
+            readonly property color bgSurface: "#0a0e1a"
+            readonly property color bgElevated: "#111827"
+            readonly property color bgCard: "#1a1f36"
+            readonly property color borderColor: "#1e293b"
+            readonly property color borderLight: "#334155"
+            readonly property color textPrimary: "#f0f4ff"
+            readonly property color textSecondary: "#94a3b8"
+            readonly property color textMuted: "#64748b"
+            readonly property color accentBlue: "#00e5ff"
+            readonly property color accentGreen: "#00e676"
+            readonly property color accentRed: "#ff1744"
+            readonly property color accentOrange: "#ff9100"
+            readonly property color accentPurple: "#b388ff"
+            readonly property color accentPink: "#ff4081"
+            readonly property color accentCyan: "#00e5ff"
             readonly property int radiusSm: Math.round(6 * sf)
             readonly property int radiusMd: Math.round(10 * sf)
             readonly property int radiusLg: Math.round(14 * sf)
@@ -187,6 +199,11 @@ ClipboardCompositor {
                 }
 
                 // Second: auto-create an AppWindow for this surface
+                // Skip empty/clipboard surfaces that have no title or appId
+                if (!appTitle && !appId) {
+                    console.log("WhaleOS: Ignoring empty WlShell surface (likely clipboard/system)");
+                    return true; // consume but don't create a window
+                }
                 root.autoSurfaceCounter++;
                 var windowTitle = appTitle || appId || "App";
                 var windowAppId = "native-auto-" + root.autoSurfaceCounter;
@@ -262,17 +279,17 @@ ClipboardCompositor {
                 toastText.text = message;
                 toastText.color = "#fff";
                 if (type === "success") {
-                    toastBg.color = Qt.rgba(0.13, 0.77, 0.37, 0.95);
+                    toastBg.color = Qt.rgba(0.0, 0.90, 0.46, 0.92);
                     toastIcon.text = "✓";
-                    toastIcon.color = "#fff";
+                    toastIcon.color = "#030712";
                 } else if (type === "error") {
-                    toastBg.color = Qt.rgba(0.94, 0.27, 0.27, 0.95);
+                    toastBg.color = Qt.rgba(1.0, 0.09, 0.27, 0.92);
                     toastIcon.text = "✕";
                     toastIcon.color = "#fff";
                 } else {
-                    toastBg.color = Qt.rgba(0.23, 0.51, 0.96, 0.95);
+                    toastBg.color = Qt.rgba(0.0, 0.90, 1.0, 0.92);
                     toastIcon.text = "ℹ";
-                    toastIcon.color = "#fff";
+                    toastIcon.color = "#030712";
                 }
                 toastContainer.opacity = 1.0;
                 toastContainer.y = 20;
@@ -292,7 +309,7 @@ ClipboardCompositor {
                 Rectangle {
                     id: toastBg
                     anchors.fill: parent; radius: Math.round(12 * root.sf)
-                    color: Qt.rgba(0.13, 0.77, 0.37, 0.95)
+                    color: Qt.rgba(0.0, 0.90, 1.0, 0.92)
 
                     Row {
                         id: toastRow
@@ -329,7 +346,11 @@ ClipboardCompositor {
     WlShell {
         onWlShellSurfaceCreated: function(shellSurface) {
             console.log("WhaleOS Compositor: WlShell surface — title:" + shellSurface.title + " className:" + shellSurface.className);
-            root.assignSurface(shellSurface, shellSurface);
+            if (root && typeof root.assignSurface === "function") {
+                root.assignSurface(shellSurface, shellSurface);
+            } else {
+                console.log("WhaleOS: root not ready, ignoring surface");
+            }
         }
     }
 

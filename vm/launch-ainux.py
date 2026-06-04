@@ -2,11 +2,11 @@
 """
 AInux — One-Command Custom Linux Distro Builder & Runner
  
-Downloads Debian ARM64 generic image, injects cloud-init config
-that auto-installs everything, boots in QEMU with HVF acceleration.
+Downloads Ubuntu Server 24.04 LTS ARM64 cloud image, injects cloud-init
+config that auto-installs everything, boots in QEMU with HVF acceleration.
 
-First boot: cloud-init runs (~3-5 min), installs OpenWhale, Firefox, Cage
-Second boot: boots straight into OpenWhale GUI in Firefox kiosk mode
+First boot: cloud-init runs (~3-5 min), installs OpenWhale, Qt6, WhaleOS
+Second boot: boots straight into WhaleOS native desktop shell
 
 Usage: python3 vm/launch-ainux.py
 """
@@ -20,7 +20,7 @@ VM_DIR = os.path.dirname(os.path.abspath(__file__))
 AINUX_ROOT = os.path.dirname(VM_DIR)
 
 DISK    = os.path.join(VM_DIR, "ainux.qcow2")
-BASE    = os.path.join(VM_DIR, "debian-generic.qcow2")
+BASE    = os.path.join(VM_DIR, "ubuntu-server.qcow2")
 UEFI_FW = "/opt/homebrew/share/qemu/edk2-aarch64-code.fd"
 UEFI_VARS = os.path.join(VM_DIR, "efivars.fd")
 SEED_IMG = os.path.join(VM_DIR, "seed.img")
@@ -109,6 +109,7 @@ packages:
   - python3
   - g++
   - pkg-config
+  - software-properties-common
   - cage
   - xwayland
   - xdotool
@@ -141,7 +142,6 @@ packages:
   - libqt6opengl6-dev
   - galculator
   - mousepad
-  - firefox-esr
   - qt6-wayland-dev
   - qml6-module-qtwayland-compositor
   - wl-clipboard
@@ -154,7 +154,6 @@ packages:
   - network-manager
   - isc-dhcp-client
   - libpam0g-dev
-  - linux-image-arm64
 
 write_files:
   - path: /opt/ainux/ainux-login.b64
@@ -173,9 +172,24 @@ write_files:
 
 bootcmd:
   # ── Restrict cloud-init datasources IMMEDIATELY to avoid 120s EC2/OpenStack probe timeouts ──
-  # Without this, cloud-init tries AWS/OpenStack/VMware on every boot (all unreachable in QEMU)
   - mkdir -p /etc/cloud/cloud.cfg.d
   - 'echo "datasource_list: [NoCloud, None]" > /etc/cloud/cloud.cfg.d/99-datasource.cfg'
+  # ── Enable universe repo for ARM64 (needed for cage, seatd, Qt6, etc.) ──
+  # Must run in bootcmd so it's available BEFORE the packages: phase
+  - |
+    cat > /etc/apt/sources.list.d/ubuntu.sources << 'SRCEOF'
+    Types: deb
+    URIs: http://ports.ubuntu.com/ubuntu-ports
+    Suites: noble noble-updates noble-backports
+    Components: main restricted universe multiverse
+    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+    Types: deb
+    URIs: http://ports.ubuntu.com/ubuntu-ports
+    Suites: noble-security
+    Components: main restricted universe multiverse
+    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+    SRCEOF
   # Enable VGA console output so QEMU window shows boot
   - 'sed -i "s/console=ttyAMA0/console=tty0 console=ttyAMA0/" /etc/default/grub 2>/dev/null || true'
   - 'update-grub 2>/dev/null || true'
@@ -188,10 +202,10 @@ runcmd:
   # Enable seatd and add user to required groups
   - systemctl enable seatd
   - systemctl start seatd
-  - adduser ainux seat 2>/dev/null || true
-  - adduser ainux render 2>/dev/null || true
-  - adduser ainux video 2>/dev/null || true
-  - adduser ainux input 2>/dev/null || true
+  - usermod -aG seat ainux 2>/dev/null || adduser ainux seat 2>/dev/null || true
+  - usermod -aG render ainux 2>/dev/null || true
+  - usermod -aG video ainux 2>/dev/null || true
+  - usermod -aG input ainux 2>/dev/null || true
 
   # ── Fix boot speed: disable wait-online (QEMU network is always up via DHCP) ──
   # Without this, systemd waits 90s+ for network before starting SSH / other services
@@ -237,9 +251,7 @@ runcmd:
   - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   - apt-get install -y nodejs
 
-  # ── Remove cloud kernels to boot into standard graphics-enabled kernel by default ──
-  - DEBIAN_FRONTEND=noninteractive apt-get purge -y linux-image-cloud-arm64 linux-image-6.1.0-49-cloud-arm64 linux-image-6.1.0-43-cloud-arm64 2>/dev/null || true
-  - update-grub 2>/dev/null || true
+  # Ubuntu cloud image already ships a graphics-capable kernel — no purge needed
   
   # Install global node tools  
   - npm install -g pnpm tsx @anthropic-ai/chrome-devtools-mcp 2>/dev/null || npm install -g pnpm tsx
@@ -347,7 +359,7 @@ runcmd:
     
     [Service]
     Type=simple
-    ExecStart=/usr/bin/Xorg :0 -nocursor vt1
+    ExecStart=/usr/bin/Xorg :0 vt1
     Restart=always
     RestartSec=3
     
@@ -374,6 +386,10 @@ runcmd:
     Environment=QT_QUICK_BACKEND=software
     Environment=QSG_RENDER_LOOP=basic
     Environment=LIBGL_ALWAYS_SOFTWARE=1
+    Environment=XCURSOR_THEME=Adwaita
+    Environment=XCURSOR_SIZE=24
+    ExecStartPre=/bin/bash -c "mkdir -p /run/user/1000 && chown ainux:ainux /run/user/1000 && chmod 700 /run/user/1000"
+    ExecStartPre=/bin/bash -c "DISPLAY=:0 xsetroot -cursor_name left_ptr"
     ExecStartPre=/bin/sleep 2
     ExecStart=/opt/ainux/whaleos/whaleos
     Restart=always
@@ -383,11 +399,50 @@ runcmd:
     WantedBy=multi-user.target
     WGUIEOF
 
+  # Create GUI watchdog script — auto-restarts if display goes black
+  - |
+    cat > /opt/ainux/whaleos/gui-watchdog.sh << 'GWEOF'
+    #!/bin/bash
+    while true; do
+        sleep 30
+        if systemctl is-active --quiet whaleos-gui; then
+            DISPLAY=:0 xdpyinfo >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                systemctl restart xorg
+                sleep 2
+                systemctl restart whaleos-gui
+            fi
+        fi
+    done
+    GWEOF
+    chmod +x /opt/ainux/whaleos/gui-watchdog.sh
+
+  # Create watchdog service
+  - |
+    cat > /etc/systemd/system/gui-watchdog.service << 'GWSEOF'
+    [Unit]
+    Description=WhaleOS GUI Watchdog
+    After=whaleos-gui.service
+
+    [Service]
+    Type=simple
+    ExecStart=/opt/ainux/whaleos/gui-watchdog.sh
+    Restart=always
+    RestartSec=5
+
+    [Install]
+    WantedBy=multi-user.target
+    GWSEOF
+
+  # Enable lingering so systemd creates /run/user/1000 on boot
+  - loginctl enable-linger ainux 2>/dev/null || true
+
   # Enable services
   - systemctl daemon-reload
   - systemctl enable openwhale.service
   - systemctl enable xorg.service
   - systemctl enable whaleos-gui.service
+  - systemctl enable gui-watchdog.service
   - systemctl mask getty@tty1.service
   - systemctl set-default multi-user.target
   
@@ -402,17 +457,22 @@ runcmd:
     
     MOTDEOF
   
-  # ── Ensure Firefox ESR is preinstalled and Wayland-ready ──
+  # ── Install Firefox from Mozilla PPA (Ubuntu snap version won't work on server) ──
   - |
     set -e
-    apt-get install -y firefox-esr 2>/dev/null || true
+    add-apt-repository -y ppa:mozillateam/ppa 2>/dev/null || true
+    echo 'Package: *
+    Pin: release o=LP-PPA-mozillateam
+    Pin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
+    apt-get update -qq
+    apt-get install -y firefox 2>/dev/null || true
     cat > /usr/local/bin/firefox-wayland << 'FFEOF'
     #!/bin/bash
     export DISPLAY=:0
     export XAUTHORITY=/home/ainux/.Xauthority
     export XDG_RUNTIME_DIR=/run/user/1000
     export MOZ_ENABLE_WAYLAND=1
-    exec /usr/bin/firefox-esr "$@"
+    exec /usr/bin/firefox "$@"
     FFEOF
     chmod +x /usr/local/bin/firefox-wayland
 
@@ -549,7 +609,7 @@ print("  [3/4] Preparing AInux disk image...")
 
 if not os.path.exists(BASE):
     print("    ✗ No base image! Download with:")
-    print('    curl -L -o vm/debian-generic.qcow2 "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-arm64.qcow2"')
+    print('    curl -L -o vm/ubuntu-server.qcow2 "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"')
     sys.exit(1)
 
 # Copy base image and resize 
@@ -567,12 +627,13 @@ print("  [4/4] Booting AInux in QEMU...")
 print("")
 print("  🐋 ═══════════════════════════════════════════════")
 print("  🐋  FIRST BOOT — cloud-init will install everything")
+print("  🐋  Base: Ubuntu Server 24.04 LTS (Noble)")
 print("  🐋  This takes ~3-5 minutes. Watch the QEMU window.")
 print("  🐋")
 print("  🐋  What happens automatically:")
 print("  🐋   • Node.js 22.x + tsx installed")
 print("  🐋   • OpenWhale cloned & npm installed")
-print("  🐋   • Qt6 QML + Cage (Wayland compositor) installed")
+print("  🐋   • Qt6 QML + Wayland compositor installed")
 print("  🐋   • WhaleOS native desktop shell compiled")
 print("  🐋   • AInux OS Login Screen injected")
 print("  🐋   • systemd services created & enabled")

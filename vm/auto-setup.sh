@@ -2,11 +2,11 @@
 #
 # TensorAgent OS — Fully Automated QEMU Setup
 #
-# Boots Debian, installs to disk, installs OpenWhale + WhaleOS,
+# Boots Alpine installer, installs to disk, installs OpenWhale + WhaleOS,
 # and configures boot-to-GUI — ALL AUTOMATED.
 #
 # This script drives QEMU via monitor socket keystrokes.
-# It creates a fresh Debian Bookworm VM with TensorAgent OS
+# It creates a fresh Alpine Linux VM with TensorAgent OS
 # pre-configured and both services enabled on boot.
 #
 

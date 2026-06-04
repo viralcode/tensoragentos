@@ -66,7 +66,7 @@ system. The agent has native access to:
 - A **WebMCP-enabled Chromium** for tool use inside web pages
 - A pluggable **skills + tools** layer through OpenWhale
 
-It ships as either a full bootable ISO (via `debootstrap` + Debian Bookworm)
+It ships as either a full bootable ISO (via `debootstrap` + Ubuntu 24.04 LTS)
 or as a pre-built UTM/QEMU image you can boot in seconds on macOS.
 
 ### Architecture at a glance
@@ -112,9 +112,9 @@ forwarding:
 ```bash
 brew install qemu
 
-# 1. Download a Debian ARM64 generic cloud image (~400 MB)
-curl -L -o vm/debian-generic.qcow2 \
-  "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-arm64.qcow2"
+# 1. Download an Ubuntu Server 24.04 ARM64 cloud image (~580 MB)
+curl -L -o vm/ubuntu-server.qcow2 \
+  "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
 
 # 2. Launch (first boot ≈ 5 minutes — cloud-init installs everything)
 python3 vm/launch-ainux.py
@@ -155,7 +155,7 @@ sudo apt install -y \
 
 # 2. Build the ISO
 ./scripts/build-iso.sh                # x86_64, full build (slow)
-./scripts/build-iso.sh --skip-chromium  # use Debian's chromium, much faster
+./scripts/build-iso.sh --skip-chromium  # use Ubuntu's chromium, much faster
 ./scripts/build-iso.sh --arch=aarch64   # cross-build ARM64 ISO
 ./scripts/build-iso.sh --clean          # nuke ./build and start over
 
@@ -165,7 +165,7 @@ sudo apt install -y \
 
 The build pipeline (see [scripts/build-iso.sh](scripts/build-iso.sh)) does:
 
-1. `debootstrap` a Debian Bookworm rootfs.
+1. `debootstrap` an Ubuntu 24.04 Noble rootfs.
 2. Install Qt6, Node.js, PAM, Wayland, and other system packages.
 3. Drop in [rootfs-overlay/](rootfs-overlay/) (systemd units, configs).
 4. Build & install OpenWhale + WhaleOS into `/opt/ainux/`.
@@ -220,7 +220,7 @@ ainux/
 ├── configs/              # Buildroot defconfig + kernel .config
 ├── rootfs-overlay/       # Files copied into the rootfs (systemd units, /etc, /opt)
 ├── scripts/
-│   ├── build-iso.sh      # Master build script (Debian-based)
+│   ├── build-iso.sh      # Master build script (Ubuntu-based)
 │   ├── run-qemu.sh       # Launch the built ISO in QEMU
 │   ├── integrate-openwhale.sh
 │   ├── configure-rendering.sh

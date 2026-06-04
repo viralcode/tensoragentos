@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Rectangle {
     id: loginScreen
     anchors.fill: parent
-    color: "#050510"
+    color: "#030712"
 
     property bool loginBusy: false
     // PERF: Removed glowPhase timer (was 60ms = 16 repaints/sec, ran even after login)
@@ -13,31 +13,31 @@ Rectangle {
     // ── Background: Aurora (original style) ──
     Rectangle {
         anchors.fill: parent
-        color: "#050510"
+        color: "#030712"
     }
 
     // Cyan nebula - top
     Rectangle {
         x: parent.width * 0.15; y: parent.height * 0.0
         width: parent.width * 0.7; height: parent.height * 0.5
-        radius: width / 2; opacity: 0.09; rotation: -5
-        color: "#0ea5e9"
+        radius: width / 2; opacity: 0.12; rotation: -5
+        color: "#00e5ff"
     }
 
     // Indigo nebula - center
     Rectangle {
         x: parent.width * 0.2; y: parent.height * 0.1
         width: parent.width * 0.65; height: parent.height * 0.55
-        radius: width / 2; opacity: 0.11; rotation: 10
-        color: "#4f46e5"
+        radius: width / 2; opacity: 0.14; rotation: 10
+        color: "#b388ff"
     }
 
     // Rose accent - bottom
     Rectangle {
         x: parent.width * 0.5; y: parent.height * 0.5
         width: parent.width * 0.5; height: parent.height * 0.4
-        radius: width / 2; opacity: 0.05
-        color: "#f43f5e"
+        radius: width / 2; opacity: 0.08
+        color: "#ff4081"
     }
 
     // Star field
@@ -112,15 +112,14 @@ Rectangle {
                 anchors.centerIn: parent
                 width: Math.round(110 * root.sf); height: width; radius: width / 2
                 color: "transparent"
-                border.color: Qt.rgba(0.35, 0.55, 1.0, 0.12)
+                border.color: Qt.rgba(0.0, 0.90, 1.0, 0.12)
                 border.width: Math.round(1 * root.sf)
-                rotation: 0
                 // PERF: Removed infinite rotation animation
 
                 // Accent dot on ring
                 Rectangle {
                     width: Math.round(4 * root.sf); height: Math.round(4 * root.sf)
-                    radius: width / 2; color: "#60a5fa"
+                    radius: width / 2; color: "#00e5ff"
                     x: parent.width / 2 - width / 2
                     y: -height / 2
                     opacity: 0.8
@@ -132,8 +131,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: Math.round(90 * root.sf); height: width; radius: width / 2
                 color: "transparent"
-                border.color: Qt.rgba(0.4, 0.5, 1.0, 0.1)
-                border.width: Math.round(1 * root.sf)
+                border.color: Qt.rgba(0.70, 0.53, 1.0, 0.10); border.width: Math.round(1 * root.sf)
                 // PERF: Removed infinite pulsing color animation
             }
 
@@ -141,8 +139,8 @@ Rectangle {
             Rectangle {
                 anchors.centerIn: parent
                 width: Math.round(74 * root.sf); height: width; radius: width / 2
-                color: Qt.rgba(0.08, 0.08, 0.15, 0.6)
-                border.color: Qt.rgba(0.4, 0.5, 1.0, 0.15); border.width: 1
+                color: Qt.rgba(0.04, 0.04, 0.10, 0.6)
+                border.color: Qt.rgba(0.0, 0.90, 1.0, 0.15); border.width: 1
             }
 
             // Whale logo
@@ -173,8 +171,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.round(280 * root.sf); height: Math.round(42 * root.sf)
             radius: Math.round(21 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.06)
-            border.color: userField.activeFocus ? Qt.rgba(0.4, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
+            color: Qt.rgba(1, 1, 1, 0.04)
+            border.color: userField.activeFocus ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.06)
             border.width: 1
             Behavior on border.color { ColorAnimation { duration: 200 } }
 
@@ -191,7 +189,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = focused ? "#818cf8" : "rgba(255,255,255,0.3)";
+                        ctx.strokeStyle = focused ? "#00e5ff" : "rgba(255,255,255,0.3)";
                         ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.arc(7, 5, 2.8, 0, Math.PI * 2); ctx.stroke();
                         ctx.beginPath(); ctx.arc(7, 15, 5.5, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
@@ -224,8 +222,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.round(280 * root.sf); height: Math.round(42 * root.sf)
             radius: Math.round(21 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.06)
-            border.color: passField.activeFocus ? Qt.rgba(0.4, 0.55, 1.0, 0.35) : Qt.rgba(1, 1, 1, 0.08)
+            color: Qt.rgba(1, 1, 1, 0.04)
+            border.color: passField.activeFocus ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.06)
             border.width: 1
             Behavior on border.color { ColorAnimation { duration: 200 } }
 
@@ -242,7 +240,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = focused ? "#818cf8" : "rgba(255,255,255,0.3)";
+                        ctx.strokeStyle = focused ? "#00e5ff" : "rgba(255,255,255,0.3)";
                         ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.strokeRect(3, 7, 8, 6);
                         ctx.beginPath(); ctx.arc(7, 7, 2.5, Math.PI, 0); ctx.stroke();
@@ -274,7 +272,7 @@ Rectangle {
                     id: loginArrow
                     width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
                     radius: width / 2; anchors.verticalCenter: parent.verticalCenter
-                    color: loginMouse.containsMouse ? Qt.rgba(0.4, 0.5, 1.0, 0.3) : Qt.rgba(1, 1, 1, 0.08)
+                    color: loginMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.4) : Qt.rgba(0.0, 0.90, 1.0, 0.15)
 
                     Canvas {
                         anchors.centerIn: parent
@@ -304,7 +302,7 @@ Rectangle {
             id: errorText
             anchors.horizontalCenter: parent.horizontalCenter
             text: loginBusy ? "Authenticating..." : ""
-            color: loginBusy ? Qt.rgba(0.6, 0.7, 1.0, 0.5) : "#f87171"
+            color: loginBusy ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : "#ff1744"
             font.pixelSize: Math.round(11 * root.sf)
             font.letterSpacing: Math.round(0.5 * root.sf)
             visible: text !== ""
@@ -340,7 +338,7 @@ Rectangle {
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = hov ? "#f59e0b" : "rgba(255,255,255,0.35)";
+                    ctx.strokeStyle = hov ? "#ff9100" : "rgba(255,255,255,0.35)";
                     ctx.lineWidth = 1.4; ctx.lineCap = "round";
                     ctx.beginPath(); ctx.arc(7, 7, 4.5, -0.5, Math.PI * 1.5); ctx.stroke();
                     ctx.fillStyle = ctx.strokeStyle;
@@ -364,7 +362,7 @@ Rectangle {
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = hov ? "#ef4444" : "rgba(255,255,255,0.35)";
+                    ctx.strokeStyle = hov ? "#ff1744" : "rgba(255,255,255,0.35)";
                     ctx.lineWidth = 1.6; ctx.lineCap = "round";
                     ctx.beginPath(); ctx.moveTo(7, 1.5); ctx.lineTo(7, 6); ctx.stroke();
                     ctx.beginPath(); ctx.arc(7, 7, 4.5, -1.2, Math.PI + 1.2); ctx.stroke();

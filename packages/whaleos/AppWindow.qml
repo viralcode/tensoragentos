@@ -12,7 +12,7 @@ Rectangle {
     height: Math.round(450 * root.sf)
     radius: root.radiusLg
     color: root.bgSurface
-    border.color: root.borderColor
+    border.color: Qt.rgba(0.0, 0.90, 1.0, 0.10)
     border.width: 1
     clip: true
     z: 10
@@ -139,7 +139,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
-        color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.4); border.width: 2; z: -1
+        color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.5); border.width: 2; z: -1
     }
 
     // ── Title Bar (always shown — compositor provides window controls) ──
@@ -147,10 +147,21 @@ Rectangle {
         id: titleBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
         height: Math.round(40 * root.sf)
-        color: root.bgElevated; radius: root.radiusLg
+        color: Qt.rgba(0.04, 0.06, 0.14, 0.95); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: parent.radius; color: parent.color }
-        Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: root.borderColor }
+        // Neon gradient accent line
+        Rectangle {
+            anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.2; color: Qt.rgba(0.0, 0.90, 1.0, 0.3) }
+                GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.4) }
+                GradientStop { position: 0.8; color: Qt.rgba(1.0, 0.25, 0.51, 0.3) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
         MouseArea {
             id: dragArea; anchors.fill: parent; drag.target: maximized ? null : appWindow
@@ -181,8 +192,8 @@ Rectangle {
                 Rectangle {
                     anchors.centerIn: parent
                     width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
-                    color: maxHover.containsMouse ? "#22c55e" : Qt.darker("#22c55e", 1.5)
-                    border.color: Qt.darker("#22c55e", 1.3); border.width: 0.5
+                    color: maxHover.containsMouse ? "#00e676" : Qt.rgba(0.0, 0.90, 0.46, 0.3)
+                    border.color: Qt.rgba(0.0, 0.90, 0.46, 0.5); border.width: 0.5
                 }
                 MouseArea { id: maxHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: toggleMaximize() }
             }
@@ -195,8 +206,8 @@ Rectangle {
                 Rectangle {
                     anchors.centerIn: parent
                     width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
-                    color: closeHover.containsMouse ? "#ef4444" : Qt.darker("#ef4444", 1.5)
-                    border.color: Qt.darker("#ef4444", 1.3); border.width: 0.5
+                    color: closeHover.containsMouse ? "#ff1744" : Qt.rgba(1.0, 0.09, 0.27, 0.3)
+                    border.color: Qt.rgba(1.0, 0.09, 0.27, 0.5); border.width: 0.5
                 }
                 MouseArea { id: closeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: closeWindow() }
             }
@@ -277,7 +288,7 @@ Rectangle {
                 Repeater {
                     model: 3
                     Rectangle {
-                        width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#3b82f6"
+                        width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#00e5ff"
                         SequentialAnimation on opacity {
                             running: isNative && shellSurface === null; loops: Animation.Infinite
                             PauseAnimation { duration: index * 200 }
@@ -324,15 +335,43 @@ Rectangle {
     function closeWindow() {
         // Send close to Wayland surface if applicable
         if (toplevelObj) {
-            toplevelObj.sendClose();
+            // XdgToplevel has sendClose(), WlShellSurface does not
+            if (typeof toplevelObj.sendClose === "function") {
+                toplevelObj.sendClose();
+            } else if (shellSurface) {
+                // WlShell fallback: destroy the surface's client connection
+                try {
+                    var surf = shellSurface.surface || shellSurface;
+                    if (surf && surf.client) {
+                        surf.client.close();
+                    }
+                } catch(e) {
+                    console.log("WhaleOS: closeWindow fallback error: " + e);
+                }
+            }
         }
 
-        var wins = root.openWindows;
-        var newWins = [];
-        for (var i = 0; i < wins.length; i++) {
-            if (wins[i].appId !== appId) newWins.push(wins[i]);
+        // Remove from openWindows list (lives on desktopRoot in main.qml)
+        try {
+            // Walk up parent chain to find the component with openWindows
+            var target = parent;
+            while (target && typeof target.openWindows === "undefined") {
+                target = target.parent;
+            }
+            if (target && target.openWindows) {
+                var wins = target.openWindows;
+                var newWins = [];
+                for (var i = 0; i < wins.length; i++) {
+                    if (wins[i].appId !== appId) newWins.push(wins[i]);
+                }
+                target.openWindows = newWins;
+            }
+        } catch(e) {
+            console.log("WhaleOS: openWindows cleanup: " + e);
         }
-        root.openWindows = newWins;
+
+        // Hide immediately — QML Repeater will destroy when removed from openWindows
+        root.visible = false;
     }
 
     // ── Resize Handle ──

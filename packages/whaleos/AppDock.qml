@@ -6,17 +6,24 @@ Rectangle {
     width: dockRow.width + Math.round(28 * root.sf)
     height: Math.round(78 * root.sf)
     radius: root.radiusLg
-    color: Qt.rgba(0.06, 0.06, 0.09, 0.88)
-    border.color: Qt.rgba(1, 1, 1, 0.08)
+    color: Qt.rgba(0.02, 0.04, 0.12, 0.88)
+    border.color: Qt.rgba(0.0, 0.90, 1.0, 0.08)
     border.width: 1
 
-    // Inner highlight line at top for depth
+    // Neon gradient top highlight
     Rectangle {
         anchors.top: parent.top; anchors.topMargin: 1
         anchors.left: parent.left; anchors.leftMargin: Math.round(16 * root.sf)
         anchors.right: parent.right; anchors.rightMargin: Math.round(16 * root.sf)
         height: 1; radius: 1
-        color: Qt.rgba(1, 1, 1, 0.06)
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 0.2; color: Qt.rgba(0.0, 0.90, 1.0, 0.25) }
+            GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.35) }
+            GradientStop { position: 0.8; color: Qt.rgba(1.0, 0.25, 0.51, 0.25) }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
     Row {
@@ -48,16 +55,16 @@ Rectangle {
                     return false;
                 }
 
-                // Hover lift effect
+                // Hover lift effect — stronger for futuristic feel
                 transform: Translate {
-                    y: dockItemMa.containsMouse ? Math.round(-3 * root.sf) : 0
-                    Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    y: dockItemMa.containsMouse ? Math.round(-6 * root.sf) : 0
+                    Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
                 }
 
                 // Dock item
                 Rectangle {
                     anchors.fill: parent; radius: root.radiusMd
-                    color: dockItemMa.containsMouse ? Qt.rgba(1,1,1,0.08) : "transparent"
+                    color: dockItemMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
                     Behavior on color { ColorAnimation { duration: 150 } }
 
                     Column {
@@ -68,7 +75,7 @@ Rectangle {
                             width: Math.round(32 * root.sf); height: Math.round(32 * root.sf)
                             radius: Math.round(8 * root.sf)
                             anchors.horizontalCenter: parent.horizontalCenter
-                            color: dockItemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                            color: dockItemMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
                             Behavior on color { ColorAnimation { duration: 200 } }
 
                             Canvas {
@@ -84,7 +91,7 @@ Rectangle {
                                 onPaint: {
                                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                     ctx.save(); ctx.scale(s, s);
-                                    var mainColor = hovered ? "#e0eaff" : "#a0b4cc";
+                                    var mainColor = hovered ? "#00e5ff" : "#7dd3fc";
                                     ctx.strokeStyle = mainColor;
                                     ctx.fillStyle = mainColor;
                                     ctx.lineWidth = 1.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -229,16 +236,16 @@ Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: modelData.label || ""; font.pixelSize: Math.round(9 * root.sf)
                             font.weight: dockItemMa.containsMouse ? Font.Medium : Font.Normal
-                            color: dockItemMa.containsMouse ? "#e0eaff" : root.textSecondary
+                            color: dockItemMa.containsMouse ? "#00e5ff" : root.textSecondary
                             Behavior on color { ColorAnimation { duration: 150 } }
                         }
 
-                        // Active indicator dot
+                        // Active indicator — neon gradient dot
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: Math.round(4 * root.sf); height: Math.round(4 * root.sf)
                             radius: width / 2
-                            color: dockItem.isOpen ? "#60a5fa" : "transparent"
+                            color: dockItem.isOpen ? "#00e5ff" : "transparent"
                             Behavior on color { ColorAnimation { duration: 200 } }
                         }
                     }

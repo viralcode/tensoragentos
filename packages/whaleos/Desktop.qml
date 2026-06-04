@@ -5,7 +5,7 @@ import "api.js" as API
 Rectangle {
     id: desktop
     anchors.fill: parent
-    color: "#050510"
+    color: "#030712"
 
     // ── Open Files App ──
     function openFilesApp() {
@@ -69,10 +69,10 @@ Rectangle {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: "#0c0a1a" }
-                GradientStop { position: 0.3; color: "#0f1628" }
-                GradientStop { position: 0.6; color: "#101830" }
-                GradientStop { position: 1.0; color: "#080e1c" }
+                GradientStop { position: 0.0; color: "#030712" }
+                GradientStop { position: 0.3; color: "#0a1128" }
+                GradientStop { position: 0.6; color: "#0c1633" }
+                GradientStop { position: 1.0; color: "#050a18" }
             }
         }
 
@@ -83,11 +83,11 @@ Rectangle {
             width: parent.width * 0.7
             height: parent.height * 0.5
             radius: width / 2
-            opacity: 0.15
+            opacity: 0.18
             rotation: -15
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#0ea5e9" }
-                GradientStop { position: 0.4; color: "#06b6d4" }
+                GradientStop { position: 0.0; color: "#00e5ff" }
+                GradientStop { position: 0.4; color: "#00bcd4" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -99,11 +99,11 @@ Rectangle {
             width: parent.width * 0.65
             height: parent.height * 0.55
             radius: width / 2
-            opacity: 0.12
+            opacity: 0.16
             rotation: 10
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#7c3aed" }
-                GradientStop { position: 0.5; color: "#4f46e5" }
+                GradientStop { position: 0.0; color: "#b388ff" }
+                GradientStop { position: 0.5; color: "#7c3aed" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -115,11 +115,11 @@ Rectangle {
             width: parent.width * 0.55
             height: parent.height * 0.45
             radius: width / 2
-            opacity: 0.1
+            opacity: 0.14
             rotation: 20
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#2563eb" }
-                GradientStop { position: 0.5; color: "#1d4ed8" }
+                GradientStop { position: 0.0; color: "#00b0ff" }
+                GradientStop { position: 0.5; color: "#2979ff" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -131,10 +131,10 @@ Rectangle {
             width: parent.width * 0.5
             height: parent.height * 0.4
             radius: width / 2
-            opacity: 0.06
+            opacity: 0.10
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#e11d48" }
-                GradientStop { position: 0.5; color: "#be185d" }
+                GradientStop { position: 0.0; color: "#ff4081" }
+                GradientStop { position: 0.5; color: "#f50057" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -194,8 +194,8 @@ Rectangle {
         width: Math.round(220 * root.sf)
         height: menuCol.height + Math.round(16 * root.sf)
         radius: root.radiusMd
-        color: Qt.rgba(0.08, 0.08, 0.10, 0.95)
-        border.color: Qt.rgba(1, 1, 1, 0.1)
+        color: Qt.rgba(0.03, 0.05, 0.10, 0.94)
+        border.color: Qt.rgba(0.0, 0.90, 1.0, 0.12)
         border.width: 1
         z: 500
 
@@ -216,7 +216,7 @@ Rectangle {
             // ── Copy ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: copyMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                color: copyMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
@@ -237,7 +237,7 @@ Rectangle {
             // ── Paste ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: pasteMa2.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                color: pasteMa2.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
@@ -263,16 +263,16 @@ Rectangle {
             // ── Open Works Folder ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: worksMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                color: worksMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.fillStyle = "#64b5f6";
+                            ctx.fillStyle = "#00e5ff";
                             ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(6,5); ctx.lineTo(7,3); ctx.lineTo(1,3); ctx.closePath(); ctx.fill();
                             ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(13,5); ctx.lineTo(13,13); ctx.lineTo(1,13); ctx.closePath(); ctx.fill();
-                            ctx.fillStyle = "#42a5f5";
+                            ctx.fillStyle = "#00b0ff";
                             ctx.beginPath(); ctx.moveTo(1,7); ctx.lineTo(13,7); ctx.lineTo(13,13); ctx.lineTo(1,13); ctx.closePath(); ctx.fill();
                             ctx.restore(); }
                         onSChanged: requestPaint()
@@ -288,7 +288,7 @@ Rectangle {
             // ── Wallpaper Section (expandable/collapsible) ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: wpHeaderMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                color: wpHeaderMa.containsMouse ? Qt.rgba(0.70, 0.53, 1.0, 0.10) : "transparent"
                 Row {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
@@ -297,8 +297,8 @@ Rectangle {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 1.2; ctx.strokeRect(1, 1, 12, 12);
-                            ctx.fillStyle = "#a78bfa";
+                            ctx.strokeStyle = "#b388ff"; ctx.lineWidth = 1.2; ctx.strokeRect(1, 1, 12, 12);
+                            ctx.fillStyle = "#b388ff";
                             ctx.beginPath(); ctx.moveTo(3,10); ctx.lineTo(5,6); ctx.lineTo(7,8); ctx.lineTo(9,4); ctx.lineTo(11,10); ctx.closePath(); ctx.fill();
                             ctx.restore(); }
                         onSChanged: requestPaint()
@@ -316,8 +316,8 @@ Rectangle {
                     width: parent.width
                     height: Math.round(36 * root.sf)
                     radius: root.radiusSm
-                    color: wpItemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) :
-                           desktop.currentWallpaper === modelData.id ? Qt.rgba(1, 1, 1, 0.05) :
+                    color: wpItemMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) :
+                           desktop.currentWallpaper === modelData.id ? Qt.rgba(0.0, 0.90, 1.0, 0.06) :
                            "transparent"
 
                     Row {
@@ -418,7 +418,7 @@ Rectangle {
             // ── Display Settings Section (expandable) ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: dispHeaderMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                color: dispHeaderMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
                 Row {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
@@ -427,7 +427,7 @@ Rectangle {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = "#00e5ff"; ctx.lineWidth = 1.2;
                             ctx.strokeRect(1, 2, 12, 8);
                             ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(10, 10); ctx.lineTo(10, 12); ctx.lineTo(4, 12); ctx.closePath(); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(3, 12); ctx.lineTo(11, 12); ctx.stroke();
@@ -460,11 +460,11 @@ Rectangle {
 
                     delegate: Rectangle {
                         width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
-                        color: resCtxMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                        color: resCtxMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
                         Row {
                             anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                             anchors.leftMargin: Math.round(30 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
-                            Text { text: "●"; font.pixelSize: Math.round(8 * root.sf); color: "#6366f1"; visible: false /* TODO: check current */ }
+                            Text { text: "●"; font.pixelSize: Math.round(8 * root.sf); color: "#00e5ff"; visible: false /* TODO: check current */ }
                             Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                             Item { width: Math.round(4 * root.sf); height: 1 }
                             Text { text: modelData.tag; font.pixelSize: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.25) }
@@ -524,12 +524,12 @@ Rectangle {
 
                     delegate: Rectangle {
                         width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
-                        color: dscaleMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                        color: dscaleMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
                         Row {
                             anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
                             anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
-                            Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textMuted }
-                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#6366f1" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
+                            Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#00e5ff" : root.textMuted }
+                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#00e5ff" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
                         }
                         MouseArea {
                             id: dscaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -548,7 +548,7 @@ Rectangle {
                 // Open Display Settings (full)
                 Rectangle {
                     width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
-                    color: openDispMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    color: openDispMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
                     Row {
                         anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
                         anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(6 * root.sf)
@@ -577,7 +577,7 @@ Rectangle {
                 width: parent.width
                 height: Math.round(30 * root.sf)
                 radius: root.radiusSm
-                color: closeMenuMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                color: closeMenuMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -605,7 +605,7 @@ Rectangle {
         x: Math.round(24 * root.sf); y: Math.round(60 * root.sf)
         width: Math.round(72 * root.sf); height: Math.round(78 * root.sf)
         radius: root.radiusMd; z: 10
-        color: worksIconMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+        color: worksIconMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
 
         Column {
             anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -617,18 +617,18 @@ Rectangle {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
                     // Folder shape
-                    ctx.fillStyle = "#64b5f6";
+                    ctx.fillStyle = "#00e5ff";
                     ctx.beginPath();
                     ctx.moveTo(2, 10); ctx.lineTo(2, 30); ctx.lineTo(34, 30);
                     ctx.lineTo(34, 12); ctx.lineTo(18, 12); ctx.lineTo(15, 8);
                     ctx.lineTo(2, 8); ctx.closePath(); ctx.fill();
                     // Folder tab
-                    ctx.fillStyle = "#90caf9";
+                    ctx.fillStyle = "#67f0ff";
                     ctx.beginPath();
                     ctx.moveTo(2, 8); ctx.lineTo(15, 8); ctx.lineTo(18, 12);
                     ctx.lineTo(2, 12); ctx.closePath(); ctx.fill();
                     // Folder front
-                    ctx.fillStyle = "#42a5f5";
+                    ctx.fillStyle = "#00b0ff";
                     ctx.beginPath();
                     ctx.moveTo(2, 14); ctx.lineTo(34, 14); ctx.lineTo(34, 30);
                     ctx.lineTo(2, 30); ctx.closePath(); ctx.fill();
@@ -658,8 +658,8 @@ Rectangle {
 
         Rectangle {
             width: Math.round(90 * root.sf); height: Math.round(90 * root.sf); radius: width / 2
-            color: Qt.rgba(0.15, 0.3, 0.7, 0.2)
-            border.color: Qt.rgba(0.4, 0.6, 1.0, 0.25)
+            color: Qt.rgba(0.0, 0.45, 0.80, 0.15)
+            border.color: Qt.rgba(0.0, 0.90, 1.0, 0.30)
             border.width: 1.5
             anchors.horizontalCenter: parent.horizontalCenter
 
@@ -677,7 +677,7 @@ Rectangle {
             font.pixelSize: Math.round(13 * root.sf)
             font.weight: Font.Normal
             font.letterSpacing: Math.round(2 * root.sf)
-            color: "#93c5fd"
+            color: "#7dd3fc"
             anchors.horizontalCenter: parent.horizontalCenter
         }
     }

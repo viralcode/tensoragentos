@@ -2,13 +2,13 @@
 #
 # TensorAgent OS — VM Quick Setup
 #
-# Transforms a stock Debian Bookworm install into TensorAgent OS.
+# Transforms a stock Ubuntu Server 24.04 install into TensorAgent OS.
 # Run inside the VM (SSH or console).
 #
 # Installs:
 #   • Node.js 22.x, Python 3, SQLite
 #   • Qt6 + Wayland Compositor + PAM
-#   • Cage compositor, Firefox ESR, desktop apps
+#   • Cage compositor, Firefox, desktop apps
 #   • OpenWhale AI platform + WhaleOS shell
 #   • Flatpak for user-installable applications
 #   • Ollama local LLM runtime
@@ -24,16 +24,16 @@ set -e
 echo ""
 echo "  🐋 ═══════════════════════════════════════════"
 echo "  🐋  TensorAgent OS Setup"
-echo "  🐋  Configuring Debian Bookworm..."
+echo "  🐋  Configuring Ubuntu 24.04 Noble..."
 echo "  🐋 ═══════════════════════════════════════════"
 echo ""
 
 # ─── 1. Configure apt sources ──────────────────────────────────
 echo "[1/9] Configuring apt sources..."
 cat > /etc/apt/sources.list << 'SOURCES'
-deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
 SOURCES
 apt-get update -qq
 echo "  ✓ Sources configured"
@@ -50,7 +50,7 @@ apt-get install -y -qq \
     qml6-module-qtquick qml6-module-qtquick-controls \
     qml6-module-qtquick-layouts qml6-module-qtwayland-compositor \
     libpam0g-dev \
-    firefox-esr mousepad galculator \
+    firefox mousepad galculator \
     pipewire pipewire-alsa wireplumber \
     fonts-dejavu fonts-noto fonts-noto-color-emoji fontconfig \
     xsel wl-clipboard ripgrep jq tree \
@@ -289,7 +289,7 @@ mkdir -p /home/ainux/.openwhale/memory
 cat > /home/ainux/.openwhale/memory/MEMORY.md << 'MEM'
 ## TensorAgent OS Context
 
-I am running on TensorAgent OS, a custom AI-native operating system built on Debian Bookworm.
+I am running on TensorAgent OS, a custom AI-native operating system built on Ubuntu 24.04 LTS.
 I am the primary user interface. I can execute system commands, manage services, and control hardware.
 Users can install additional software via apt or flatpak.
 MEM

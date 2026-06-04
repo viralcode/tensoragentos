@@ -2,7 +2,7 @@
 #
 # TensorAgent OS — Master Build Script
 #
-# Builds the entire OS from a Debian Bookworm base:
+# Builds the entire OS from an Ubuntu 24.04 LTS (Noble) base:
 #   1. Creates rootfs via debootstrap
 #   2. Installs system dependencies (Qt6, Node.js, PAM, Wayland)
 #   3. Integrates OpenWhale AI platform + WhaleOS shell
@@ -43,13 +43,13 @@ for arg in "$@"; do
             echo "Usage: $0 [--arch=x86_64|aarch64] [--clean] [--skip-chromium]"
             echo "  --arch=ARCH      Target architecture (default: x86_64)"
             echo "  --clean          Remove build directory and start fresh"
-            echo "  --skip-chromium  Use Debian's packaged Chromium instead of building"
+            echo "  --skip-chromium  Use Ubuntu's packaged Chromium instead of building"
             exit 0
             ;;
     esac
 done
 
-# Resolve Debian arch name
+# Resolve Ubuntu/Debian arch name
 case "$ARCH" in
     x86_64)  DEB_ARCH="amd64" ; KERNEL_ARCH="amd64" ;;
     aarch64) DEB_ARCH="arm64" ; KERNEL_ARCH="arm64" ;;
@@ -59,7 +59,7 @@ esac
 echo ""
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo "  🐋  TensorAgent OS Build System"
-echo "  🐋  Target: ${ARCH} (Debian Bookworm)"
+echo "  🐋  Target: ${ARCH} (Ubuntu 24.04 Noble)"
 echo "  🐋 ═══════════════════════════════════════════════════════"
 echo ""
 
@@ -96,12 +96,18 @@ fi
 
 mkdir -p "$BUILD_DIR" "$ISO_DIR"
 
-# ─── Create Rootfs via Debootstrap ──────────────────────────────
-echo "[2/8] Creating Debian Bookworm rootfs (${DEB_ARCH})..."
+# Resolve debootstrap mirror
+if [ "$DEB_ARCH" = "arm64" ]; then
+    DEBOOTSTRAP_MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+else
+    DEBOOTSTRAP_MIRROR="http://archive.ubuntu.com/ubuntu"
+fi
+
+echo "[2/8] Creating Ubuntu Noble rootfs (${DEB_ARCH})..."
 if [ ! -d "$ROOTFS_DIR" ] || [ "$CLEAN" = true ]; then
     sudo debootstrap --arch="$DEB_ARCH" \
         --include=systemd,systemd-sysv,dbus,sudo,bash,curl,wget,git,openssh-server \
-        bookworm "$ROOTFS_DIR" http://deb.debian.org/debian
+        noble "$ROOTFS_DIR" "$DEBOOTSTRAP_MIRROR"
     echo "  ✓ Base rootfs created"
 else
     echo "  ✓ Rootfs already exists, skipping debootstrap"
@@ -120,11 +126,17 @@ echo "tensoragent" | sudo tee "${ROOTFS_DIR}/etc/hostname" > /dev/null
 # Add hostname to /etc/hosts so sudo doesn't complain
 sudo bash -c "grep -q tensoragent '${ROOTFS_DIR}/etc/hosts' || echo '127.0.1.1 tensoragent' >> '${ROOTFS_DIR}/etc/hosts'"
 
-# Configure apt sources with non-free for firmware
-sudo tee "${ROOTFS_DIR}/etc/apt/sources.list" > /dev/null << 'SOURCES'
-deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+# Configure apt sources — use correct mirror per architecture
+if [ "$DEB_ARCH" = "arm64" ]; then
+    UBUNTU_MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+else
+    UBUNTU_MIRROR="http://archive.ubuntu.com/ubuntu"
+fi
+
+sudo tee "${ROOTFS_DIR}/etc/apt/sources.list" > /dev/null << SOURCES
+deb ${UBUNTU_MIRROR} noble main restricted universe multiverse
+deb ${UBUNTU_MIRROR} noble-updates main restricted universe multiverse
+deb ${UBUNTU_MIRROR} noble-security main restricted universe multiverse
 SOURCES
 
 echo "  ✓ Base configuration applied"
@@ -141,7 +153,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     apt-get install -y -qq \
         build-essential pkg-config g++ \
         linux-image-'"$KERNEL_ARCH"' grub-efi-'"$DEB_ARCH"' \
-        systemd-boot firmware-linux \
+        systemd-boot linux-firmware \
         2>/dev/null || apt-get install -y -qq build-essential pkg-config g++ linux-image-'"$KERNEL_ARCH"' grub-efi
 
     # Graphics & Wayland

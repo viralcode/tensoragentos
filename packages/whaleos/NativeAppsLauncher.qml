@@ -93,7 +93,7 @@ Rectangle {
     }
 
     function loadFeatured() {
-        helperExec("apt-cache search --names-only 'firefox-esr\\|gimp\\|vlc\\|inkscape\\|blender\\|audacity\\|krita\\|thunderbird\\|filezilla\\|mpv\\|geany\\|meld\\|gparted\\|keepassxc\\|shotwell\\|rhythmbox\\|supertuxkart\\|hexchat\\|htop\\|neofetch' 2>/dev/null | head -25", function(output) {
+        helperExec("apt-cache search --names-only 'firefox\\|gimp\\|vlc\\|inkscape\\|blender\\|audacity\\|krita\\|thunderbird\\|filezilla\\|mpv\\|geany\\|meld\\|gparted\\|keepassxc\\|shotwell\\|rhythmbox\\|supertuxkart\\|hexchat\\|htop\\|neofetch' 2>/dev/null | head -25", function(output) {
             if (!output || output.trim().length === 0) return;
             var lines = output.trim().split("\n");
             var results = [];
@@ -429,7 +429,7 @@ Rectangle {
                             Text {
                                 visible: searchInput.text === ""
                                 anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
-                                text: "Search " + (totalAvailable > 0 ? totalAvailable.toLocaleString() + " " : "") + "Debian packages..."
+                                text: "Search " + (totalAvailable > 0 ? totalAvailable.toLocaleString() + " " : "") + "Ubuntu packages..."
                                 font.pixelSize: Math.round(11 * root.sf); color: "#4a5568"
                             }
                         }
@@ -437,7 +437,7 @@ Rectangle {
                             id: srcBadge2; width: Math.round(110 * root.sf); height: Math.round(30 * root.sf)
                             radius: Math.round(6 * root.sf); color: "#1a2744"; border.color: "#2a4070"; border.width: 1
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { anchors.centerIn: parent; text: "Debian Bookworm"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: "#93c5fd" }
+                            Text { anchors.centerIn: parent; text: "Ubuntu Noble"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: "#93c5fd" }
                         }
                     }
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#2a2a3a" }
@@ -531,8 +531,8 @@ Rectangle {
                                 color: "#1a2744"; border.color: "#2a4070"; border.width: 1
                                 Column {
                                     anchors.centerIn: parent; spacing: Math.round(3 * root.sf)
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Debian Package Store"; font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: "#e2e8f0" }
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: (totalAvailable > 0 ? totalAvailable.toLocaleString() + " packages" : "Packages") + " from official Debian repos"; font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8" }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Ubuntu Package Store"; font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: "#e2e8f0" }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: (totalAvailable > 0 ? totalAvailable.toLocaleString() + " packages" : "Packages") + " from official Ubuntu repos"; font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8" }
                                 }
                             }
 

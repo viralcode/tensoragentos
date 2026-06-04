@@ -28,7 +28,7 @@ BUILD_DIR="${AINUX_ROOT}/build/vmware"
 BUNDLE_DIR="${BUILD_DIR}/AInux.vmwarevm"
 
 QCOW2_DISK="${VM_DIR}/ainux.qcow2"
-BASE_DISK="${VM_DIR}/debian-base.qcow2"
+BASE_DISK="${VM_DIR}/ubuntu-server.qcow2"
 VMDK_DISK="${BUNDLE_DIR}/ainux.vmdk"
 VMX_FILE="${BUNDLE_DIR}/AInux.vmx"
 
@@ -45,7 +45,7 @@ for arg in "$@"; do
         --fresh) FRESH_BUILD=true ;;
         --help)
             echo "Usage: $0 [--fresh] [--open]"
-            echo "  --fresh   Build from base Debian image (runs cloud-init)"
+            echo "  --fresh   Build from base Ubuntu image (runs cloud-init)"
             echo "  --open    Open in VMware Fusion after building"
             exit 0
             ;;
@@ -81,7 +81,7 @@ if [ "$FRESH_BUILD" = true ] || [ ! -f "$QCOW2_DISK" ]; then
     if [ ! -f "$BASE_DISK" ]; then
         echo "  ✗ No base image found at $BASE_DISK"
         echo "    Download with:"
-        echo '    curl -L -o vm/debian-base.qcow2 "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-arm64.qcow2"'
+        echo '    curl -L -o vm/ubuntu-server.qcow2 "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"'
         exit 1
     fi
     echo "  → Copying base image and resizing to 20GB..."
@@ -145,7 +145,7 @@ displayName = "AInux - TensorAgent OS"
 # ── Virtual Hardware ──────────────────────────────────────────
 config.version = "8"
 virtualHW.version = "21"
-guestOS = "arm-debian-12-64"
+guestOS = "arm-ubuntu-64"
 
 # PCIe Root Ports (needed for VMware Fusion ARM64 to attach PCIe devices)
 pciBridge0.present = "TRUE"

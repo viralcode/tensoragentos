@@ -5,7 +5,23 @@ import "api.js" as API
 Rectangle {
     id: topBar
     height: Math.round(44 * root.sf)
-    color: "transparent"
+    color: Qt.rgba(0.02, 0.04, 0.12, 0.82)
+
+    // Neon gradient bottom border
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.90, 1.0, 0.0) }
+            GradientStop { position: 0.15; color: Qt.rgba(0.0, 0.90, 1.0, 0.4) }
+            GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.5) }
+            GradientStop { position: 0.85; color: Qt.rgba(1.0, 0.25, 0.51, 0.4) }
+            GradientStop { position: 1.0; color: Qt.rgba(1.0, 0.25, 0.51, 0.0) }
+        }
+    }
 
     // ── OpenWhale state ──
     property bool owOnline: false
@@ -371,14 +387,13 @@ Rectangle {
             width: owLeftRow.width + Math.round(28 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
+            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
             border.width: 1
             clip: true
 
-            // PERF: Static border — glowPhase Math.sin binding forced border repaint every frame of an 8s loop
             border.color: owAreaMouse.containsMouse
-                ? Qt.rgba(0.4, 0.6, 1.0, 0.35)
-                : Qt.rgba(1, 1, 1, 0.10)
+                ? Qt.rgba(0.0, 0.90, 1.0, 0.5)
+                : Qt.rgba(0.0, 0.90, 1.0, 0.12)
 
             scale: owAreaMouse.containsMouse ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
@@ -437,20 +452,20 @@ Rectangle {
                     width: Math.round(18 * root.sf); height: Math.round(18 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
 
-                    // Outer ring (static)
+                    // Outer glow ring
                     Rectangle {
                         anchors.centerIn: parent
                         width: Math.round(13 * root.sf); height: width; radius: width / 2
                         color: "transparent"
-                        border.color: owOnline ? Qt.rgba(0.2, 0.83, 0.6, 0.20) : Qt.rgba(0.97, 0.44, 0.44, 0.20)
+                        border.color: owOnline ? Qt.rgba(0.0, 0.90, 0.46, 0.25) : Qt.rgba(1.0, 0.09, 0.27, 0.25)
                         border.width: 1
                     }
 
-                    // Core dot
+                    // Core dot with neon glow
                     Rectangle {
                         anchors.centerIn: parent
                         width: Math.round(7 * root.sf); height: width; radius: width / 2
-                        color: owOnline ? "#34d399" : "#f87171"
+                        color: owOnline ? "#00e676" : "#ff1744"
                     }
                 }
 
@@ -459,7 +474,7 @@ Rectangle {
                     font.pixelSize: Math.round(11.5 * root.sf)
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.3
-                    color: owAreaMouse.containsMouse ? "#f8fafc" : "#e2e8f0"
+                    color: owAreaMouse.containsMouse ? "#00e5ff" : "#e0f2fe"
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
@@ -489,12 +504,13 @@ Rectangle {
             width: clockRow.width + Math.round(30 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
+            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
             border.width: 1
             clip: true
 
-            // PERF: Static border — clockGlow Math.sin binding forced repaint every frame
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.color: clockMa.containsMouse
+                ? Qt.rgba(0.70, 0.53, 1.0, 0.45)
+                : Qt.rgba(0.70, 0.53, 1.0, 0.10)
 
             scale: clockMa.containsMouse ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
@@ -534,7 +550,7 @@ Rectangle {
                     text: Qt.formatTime(new Date(), "h:mm AP")
                     font.pixelSize: Math.round(12.5 * root.sf)
                     font.weight: Font.DemiBold
-                    color: clockMa.containsMouse ? "#ffffff" : "#f1f5f9"
+                    color: clockMa.containsMouse ? "#b388ff" : "#e0f2fe"
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -563,7 +579,7 @@ Rectangle {
                     }
                     font.pixelSize: Math.round(10 * root.sf)
                     font.weight: Font.Medium
-                    color: clockMa.containsMouse ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.45)
+                    color: clockMa.containsMouse ? Qt.rgba(0.70, 0.53, 1.0, 0.70) : Qt.rgba(1, 1, 1, 0.40)
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
@@ -594,8 +610,8 @@ Rectangle {
             width: rightRow.width + Math.round(22 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.08, 0.08, 0.12, 0.70)
-            border.color: Qt.rgba(1, 1, 1, 0.10)
+            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
+            border.color: Qt.rgba(0.0, 0.90, 1.0, 0.10)
             border.width: 1
 
             Row {
@@ -608,7 +624,7 @@ Rectangle {
                     width: Math.round(26 * root.sf)
                     height: Math.round(26 * root.sf)
                     radius: Math.round(13 * root.sf)
-                    color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+                    color: settingsMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.15) : "transparent"
                     anchors.verticalCenter: parent.verticalCenter
 
                     Behavior on color { ColorAnimation { duration: 200 } }
@@ -633,7 +649,7 @@ Rectangle {
                             var ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = settingsMouse.containsMouse ? "#e2e8f0" : "#94a3b8";
+                            ctx.strokeStyle = settingsMouse.containsMouse ? "#00e5ff" : "#94a3b8";
                             ctx.lineWidth = 1.2;
                             ctx.beginPath();
                             var cx = 7, cy = 7;
@@ -673,7 +689,7 @@ Rectangle {
                     width: Math.round(26 * root.sf)
                     height: Math.round(26 * root.sf)
                     radius: Math.round(13 * root.sf)
-                    color: wifiMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
+                    color: wifiMouse.containsMouse ? Qt.rgba(0.0, 0.90, 0.46, 0.15) : "transparent"
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
                     scale: wifiMouse.containsMouse ? 1.12 : 1.0
@@ -694,20 +710,20 @@ Rectangle {
 
                             if (connType === "ethernet") {
                                 // Ethernet icon — monitor with cable
-                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3;
+                                ctx.strokeStyle = "#00e676"; ctx.lineWidth = 1.3;
                                 ctx.strokeRect(2, 1, 10, 7);
                                 ctx.beginPath(); ctx.moveTo(7, 8); ctx.lineTo(7, 11); ctx.stroke();
                                 ctx.beginPath(); ctx.moveTo(4, 11); ctx.lineTo(10, 11); ctx.stroke();
                             } else if (connType === "wifi" && enabled) {
                                 // WiFi connected — signal arcs
                                 var cx = 7, cy = 12;
-                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                                ctx.strokeStyle = "#00e676"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
                                 // Three arcs
                                 ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(cx, cy, 3, -Math.PI * 0.75, -Math.PI * 0.25); ctx.stroke();
                                 // Center dot
-                                ctx.fillStyle = "#34d399";
+                                ctx.fillStyle = "#00e676";
                                 ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, Math.PI * 2); ctx.fill();
                             } else if (!enabled) {
                                 // WiFi disabled — crossed out
@@ -784,11 +800,11 @@ Rectangle {
 
                             // Create rotating gradient border
                             var grad = ctx.createConicalGradient(cx, cy, ringPhase);
-                            grad.addColorStop(0.0, "#6366f1");
-                            grad.addColorStop(0.25, "#8b5cf6");
-                            grad.addColorStop(0.5, "#a78bfa");
-                            grad.addColorStop(0.75, "#818cf8");
-                            grad.addColorStop(1.0, "#6366f1");
+                            grad.addColorStop(0.0, "#00e5ff");
+                            grad.addColorStop(0.25, "#b388ff");
+                            grad.addColorStop(0.5, "#ff4081");
+                            grad.addColorStop(0.75, "#b388ff");
+                            grad.addColorStop(1.0, "#00e5ff");
                             ctx.strokeStyle = grad;
                             ctx.beginPath();
                             ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -802,8 +818,8 @@ Rectangle {
                         height: width; radius: width / 2
 
                         gradient: Gradient {
-                            GradientStop { position: 0.0; color: "#6366f1" }
-                            GradientStop { position: 1.0; color: "#8b5cf6" }
+                            GradientStop { position: 0.0; color: "#00e5ff" }
+                            GradientStop { position: 1.0; color: "#b388ff" }
                         }
 
                         scale: avatarMa.containsMouse ? 1.1 : 1.0
@@ -894,8 +910,8 @@ Rectangle {
                 width: parent.width
                 height: Math.round(44 * root.sf)
                 radius: root.radiusSm
-                color: owOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.06) : Qt.rgba(0.94, 0.27, 0.27, 0.06)
-                border.color: owOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.15) : Qt.rgba(0.94, 0.27, 0.27, 0.15)
+                color: owOnline ? Qt.rgba(0.0, 0.90, 0.46, 0.06) : Qt.rgba(1.0, 0.09, 0.27, 0.06)
+                border.color: owOnline ? Qt.rgba(0.0, 0.90, 0.46, 0.18) : Qt.rgba(1.0, 0.09, 0.27, 0.18)
                 border.width: 1
 
                 RowLayout {
@@ -1198,7 +1214,7 @@ Rectangle {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s * 1.4, s * 1.4);
                         var cx = 7, cy = 12;
-                        ctx.strokeStyle = connectionType !== "none" ? "#34d399" : "#94a3b8";
+                        ctx.strokeStyle = connectionType !== "none" ? "#00e676" : "#94a3b8";
                         ctx.lineWidth = 1.4; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
                         ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
