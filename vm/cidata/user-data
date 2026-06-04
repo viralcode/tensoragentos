@@ -525,18 +525,16 @@ runcmd:
     #!/bin/bash
     sleep 4
     export DISPLAY=:0
-    OUTPUT_NAME=$(xrandr | grep " connected" | awk '{print $1}' | head -n 1)
-    if [ -z "$OUTPUT_NAME" ]; then OUTPUT_NAME="XWAYLAND0"; fi
     xrandr --newmode "1920x1080_60.00" 173.00 1920 2048 2248 2576 1080 1083 1088 1120 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1920x1080_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1920x1080_60.00" 2>/dev/null
     xrandr --newmode "1600x900_60.00" 118.25 1600 1696 1856 2112 900 903 908 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1600x900_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1600x900_60.00" 2>/dev/null
     xrandr --newmode "1440x900_60.00" 106.50 1440 1528 1672 1904 900 903 909 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1440x900_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1440x900_60.00" 2>/dev/null
     xrandr --newmode "1366x768_60.00" 85.25 1366 1440 1576 1784 768 771 781 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1366x768_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1366x768_60.00" 2>/dev/null
     xrandr --newmode "1024x768_60.00" 63.50 1024 1072 1176 1328 768 771 775 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1024x768_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1024x768_60.00" 2>/dev/null
     DMEOF
   - chmod +x /opt/ainux/whaleos/add-display-modes.sh
   

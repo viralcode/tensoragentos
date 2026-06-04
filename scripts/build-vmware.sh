@@ -162,21 +162,6 @@ pciBridge7.present = "TRUE"
 pciBridge7.virtualDev = "pcieRootPort"
 pciBridge7.functions = "8"
 
-# PCIe Root Ports (needed for VMware Fusion ARM64 to attach PCIe devices)
-pciBridge0.present = "TRUE"
-pciBridge4.present = "TRUE"
-pciBridge4.virtualDev = "pcieRootPort"
-pciBridge4.functions = "8"
-pciBridge5.present = "TRUE"
-pciBridge5.virtualDev = "pcieRootPort"
-pciBridge5.functions = "8"
-pciBridge6.present = "TRUE"
-pciBridge6.virtualDev = "pcieRootPort"
-pciBridge6.functions = "8"
-pciBridge7.present = "TRUE"
-pciBridge7.virtualDev = "pcieRootPort"
-pciBridge7.functions = "8"
-
 # ── CPU & Memory ─────────────────────────────────────────────
 numvcpus = "4"
 cpuid.coresPerSocket = "4"

@@ -4,7 +4,7 @@ import QtQuick.Layouts
 Rectangle {
     id: nativeAppsLauncher
     anchors.fill: parent
-    color: root.bgSurface
+    color: "#1e1e2e"
 
     property string activeTab: "installed"
     property string searchQuery: ""
@@ -45,7 +45,7 @@ Rectangle {
         // Launch via the helper service with proper Wayland env
         // nohup + & ensures the app runs independently
         var launchCmd = "nohup bash -c 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games; " +
-            "export WAYLAND_DISPLAY=wayland-0; " +
+            "export WAYLAND_DISPLAY=whaleos-0; " +
             "export XDG_RUNTIME_DIR=/run/user/1000; " +
             "export GDK_BACKEND=wayland; " +
             "export QT_QPA_PLATFORM=wayland; " +
@@ -255,7 +255,7 @@ Rectangle {
 
         // ── Tab bar ──
         Rectangle {
-            width: parent.width; height: Math.round(42 * root.sf); color: root.bgElevated
+            width: parent.width; height: Math.round(42 * root.sf); color: "#15151f"
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left; anchors.leftMargin: Math.round(14 * root.sf)
@@ -264,32 +264,32 @@ Rectangle {
                 Rectangle {
                     width: instLbl.width + Math.round(20 * root.sf); height: Math.round(30 * root.sf)
                     radius: Math.round(6 * root.sf)
-                    color: activeTab === "installed" ? Qt.rgba(37/255, 99/255, 235/255, 0.12) : instTabMa.containsMouse ? Qt.rgba(0,0,0,0.03) : "transparent"
-                    border.color: activeTab === "installed" ? root.accentBlue : "transparent"; border.width: 1
-                    Text { id: instLbl; anchors.centerIn: parent; text: "Installed (" + getAllInstalledApps().length + ")"; font.pixelSize: Math.round(11 * root.sf); font.weight: activeTab === "installed" ? Font.DemiBold : Font.Normal; color: activeTab === "installed" ? root.accentBlue : root.textSecondary }
+                    color: activeTab === "installed" ? "#1e3a5f" : instTabMa.containsMouse ? "#1e1e30" : "transparent"
+                    border.color: activeTab === "installed" ? "#3b82f6" : "transparent"; border.width: 1
+                    Text { id: instLbl; anchors.centerIn: parent; text: "Installed (" + getAllInstalledApps().length + ")"; font.pixelSize: Math.round(11 * root.sf); font.weight: activeTab === "installed" ? Font.DemiBold : Font.Normal; color: activeTab === "installed" ? "#93c5fd" : "#94a3b8" }
                     MouseArea { id: instTabMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: activeTab = "installed" }
                 }
                 Rectangle {
                     width: storeLbl.width + Math.round(20 * root.sf); height: Math.round(30 * root.sf)
                     radius: Math.round(6 * root.sf)
-                    color: activeTab === "store" ? Qt.rgba(37/255, 99/255, 235/255, 0.12) : storeTabMa.containsMouse ? Qt.rgba(0,0,0,0.03) : "transparent"
-                    border.color: activeTab === "store" ? root.accentBlue : "transparent"; border.width: 1
-                    Text { id: storeLbl; anchors.centerIn: parent; text: "Package Store"; font.pixelSize: Math.round(11 * root.sf); font.weight: activeTab === "store" ? Font.DemiBold : Font.Normal; color: activeTab === "store" ? root.accentBlue : root.textSecondary }
+                    color: activeTab === "store" ? "#1e3a5f" : storeTabMa.containsMouse ? "#1e1e30" : "transparent"
+                    border.color: activeTab === "store" ? "#3b82f6" : "transparent"; border.width: 1
+                    Text { id: storeLbl; anchors.centerIn: parent; text: "Package Store"; font.pixelSize: Math.round(11 * root.sf); font.weight: activeTab === "store" ? Font.DemiBold : Font.Normal; color: activeTab === "store" ? "#93c5fd" : "#94a3b8" }
                     MouseArea { id: storeTabMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: activeTab = "store" }
                 }
                 Item { width: Math.round(8 * root.sf); height: 1 }
                 Rectangle {
-                    visible: totalAvailable > 0; width: countLbl.width + Math.round(12 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(10 * root.sf); color: Qt.rgba(0,0,0,0.04); anchors.verticalCenter: parent.verticalCenter
-                    Text { id: countLbl; anchors.centerIn: parent; text: totalAvailable.toLocaleString() + " pkgs"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted }
+                    visible: totalAvailable > 0; width: countLbl.width + Math.round(12 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(10 * root.sf); color: "#1a1a2a"; anchors.verticalCenter: parent.verticalCenter
+                    Text { id: countLbl; anchors.centerIn: parent; text: totalAvailable.toLocaleString() + " pkgs"; font.pixelSize: Math.round(9 * root.sf); color: "#4a5568" }
                 }
             }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.borderColor }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#2a2a3a" }
         }
 
         // ── Install progress bar ──
         Rectangle {
             visible: busyPkgs.length > 0
-            width: parent.width; height: Math.round(28 * root.sf); color: root.bgVoid
+            width: parent.width; height: Math.round(28 * root.sf); color: "#111122"
 
             Row {
                 anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); spacing: Math.round(8 * root.sf)
@@ -298,25 +298,25 @@ Rectangle {
                 // Animated spinner
                 Rectangle {
                     width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width/2
-                    color: "transparent"; border.color: root.accentBlue; border.width: 2
+                    color: "transparent"; border.color: "#3b82f6"; border.width: 2
                     anchors.verticalCenter: parent.verticalCenter
                     Rectangle {
                         width: Math.round(6 * root.sf); height: Math.round(6 * root.sf); radius: width/2
-                        color: root.accentBlue; x: Math.round(4 * root.sf); y: 0
+                        color: "#3b82f6"; x: Math.round(4 * root.sf); y: 0
                     }
                     RotationAnimation on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: busyPkgs.length > 0 }
                 }
 
                 Text {
                     text: busyPkgStatus || ("Working on " + (busyPkgs.length > 0 ? busyPkgs[0] : "") + "...")
-                    font.pixelSize: Math.round(10 * root.sf); color: root.accentOrange
+                    font.pixelSize: Math.round(10 * root.sf); color: "#f59e0b"
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
 
             // Progress bar animation
             Rectangle {
-                anchors.bottom: parent.bottom; height: 2; color: root.accentBlue; radius: 1
+                anchors.bottom: parent.bottom; height: 2; color: "#3b82f6"; radius: 1
                 width: parent.width * progressAnim.value
                 NumberAnimation on width { id: progressAnim; property: "value"; from: 0; to: 1; duration: 8000; loops: Animation.Infinite; running: busyPkgs.length > 0
                     // Workaround: use x-position based animation
@@ -324,7 +324,7 @@ Rectangle {
             }
             Rectangle {
                 id: progressBar
-                anchors.bottom: parent.bottom; height: 2; color: root.accentBlue; radius: 1
+                anchors.bottom: parent.bottom; height: 2; color: "#3b82f6"; radius: 1
                 SequentialAnimation on width {
                     running: busyPkgs.length > 0; loops: Animation.Infinite
                     NumberAnimation { from: 0; to: nativeAppsLauncher.width; duration: 3000; easing.type: Easing.InOutQuad }
@@ -352,14 +352,18 @@ Rectangle {
                     delegate: Rectangle {
                         Layout.fillWidth: true; Layout.minimumWidth: Math.round(130 * root.sf)
                         height: Math.round(130 * root.sf); radius: Math.round(10 * root.sf)
-                        color: iMa.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : root.bgCard
-                        border.color: iMa.containsMouse ? modelData.accent : root.borderColor; border.width: 1
+                        color: iMa.containsMouse ? "#2a2a3e" : "#222236"
+                        border.color: iMa.containsMouse ? modelData.accent : "#2e2e44"; border.width: 1
 
                         // Main click area — z:0 (bottom)
                         MouseArea {
                             id: iMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; z: 0
                             onClicked: {
-                                root.openAppWindow(modelData.appId, modelData.label, modelData.iconType || "generic", modelData.searchName || modelData.pkg, modelData.cmd);
+                                if (modelData.cmd && modelData.cmd.length > 0) {
+                                    nativeAppsLauncher.launchNativeViaHelper(modelData.cmd, modelData.label);
+                                } else {
+                                    root.openAppWindow(modelData.appId, modelData.label, modelData.iconType || "generic", modelData.searchName || modelData.pkg, modelData.cmd);
+                                }
                             }
                         }
 
@@ -370,7 +374,7 @@ Rectangle {
                             Rectangle {
                                 width: Math.round(42 * root.sf); height: Math.round(42 * root.sf)
                                 radius: Math.round(10 * root.sf); anchors.horizontalCenter: parent.horizontalCenter
-                                color: Qt.rgba(0,0,0,0.03); border.color: modelData.accent; border.width: 1
+                                color: "#181828"; border.color: modelData.accent; border.width: 1
                                 Canvas {
                                     anchors.fill: parent; anchors.margins: Math.round(6 * root.sf)
                                     property string t: modelData.iconType; property string a: modelData.accent; property string lbl: modelData.label
@@ -379,17 +383,17 @@ Rectangle {
                                 }
                             }
 
-                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary; elide: Text.ElideRight; width: parent.width; horizontalAlignment: Text.AlignHCenter }
-                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: root.textSecondary; elide: Text.ElideRight; width: parent.width; horizontalAlignment: Text.AlignHCenter }
+                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#e2e8f0"; elide: Text.ElideRight; width: parent.width; horizontalAlignment: Text.AlignHCenter }
+                            Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: "#64748b"; elide: Text.ElideRight; width: parent.width; horizontalAlignment: Text.AlignHCenter }
 
                             // Uninstall button (only for user-installed, not built-in)
                             Rectangle {
                                 visible: !modelData.builtIn && iMa.containsMouse
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: Math.round(70 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(4 * root.sf)
-                                color: unMa.containsMouse ? Qt.rgba(220/255, 38/255, 38/255, 0.15) : Qt.rgba(0,0,0,0.04)
-                                border.color: root.accentRed; border.width: 1; z: 10
-                                Text { anchors.centerIn: parent; text: "Uninstall"; font.pixelSize: Math.round(9 * root.sf); color: root.accentRed; font.weight: Font.DemiBold }
+                                color: unMa.containsMouse ? "#3b1111" : "#1e1e30"
+                                border.color: "#ef4444"; border.width: 1; z: 10
+                                Text { anchors.centerIn: parent; text: "Uninstall"; font.pixelSize: Math.round(9 * root.sf); color: "#ef4444"; font.weight: Font.DemiBold }
                                 MouseArea {
                                     id: unMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                     onClicked: { removePkg(modelData.pkg); }
@@ -410,15 +414,15 @@ Rectangle {
                 anchors.fill: parent; spacing: 0
 
                 Rectangle {
-                    width: parent.width; height: Math.round(48 * root.sf); color: root.bgElevated
+                    width: parent.width; height: Math.round(48 * root.sf); color: "#15151f"
                     Row {
                         anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
                         Rectangle {
                             width: parent.width - srcBadge2.width - Math.round(8 * root.sf); height: Math.round(30 * root.sf)
-                            radius: Math.round(6 * root.sf); color: Qt.rgba(0,0,0,0.04); border.color: searchInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                            radius: Math.round(6 * root.sf); color: "#222236"; border.color: searchInput.activeFocus ? "#3b82f6" : "#333348"; border.width: 1
                             TextInput {
                                 id: searchInput; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
-                                font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; clip: true
+                                font.pixelSize: Math.round(11 * root.sf); color: "#e2e8f0"; clip: true
                                 onTextChanged: { searchQuery = text; searchDebounce.restart(); }
                                 Keys.onReturnPressed: searchStore(text)
                             }
@@ -426,17 +430,17 @@ Rectangle {
                                 visible: searchInput.text === ""
                                 anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
                                 text: "Search " + (totalAvailable > 0 ? totalAvailable.toLocaleString() + " " : "") + "Ubuntu packages..."
-                                font.pixelSize: Math.round(11 * root.sf); color: root.textMuted
+                                font.pixelSize: Math.round(11 * root.sf); color: "#4a5568"
                             }
                         }
                         Rectangle {
                             id: srcBadge2; width: Math.round(110 * root.sf); height: Math.round(30 * root.sf)
-                            radius: Math.round(6 * root.sf); color: Qt.rgba(37/255, 99/255, 235/255, 0.1); border.color: Qt.rgba(37/255, 99/255, 235/255, 0.2); border.width: 1
+                            radius: Math.round(6 * root.sf); color: "#1a2744"; border.color: "#2a4070"; border.width: 1
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { anchors.centerIn: parent; text: "Ubuntu Noble"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: root.accentBlue }
+                            Text { anchors.centerIn: parent; text: "Ubuntu Noble"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: "#93c5fd" }
                         }
                     }
-                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.borderColor }
+                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#2a2a3a" }
                 }
 
                 Flickable {
@@ -448,19 +452,19 @@ Rectangle {
                         leftPadding: Math.round(14 * root.sf); rightPadding: Math.round(14 * root.sf)
                         topPadding: Math.round(10 * root.sf); spacing: Math.round(6 * root.sf)
 
-                        Text { visible: storeLoading; text: "Searching Debian repositories..."; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary; topPadding: Math.round(20 * root.sf) }
+                        Text { visible: storeLoading; text: "Searching Debian repositories..."; font.pixelSize: Math.round(12 * root.sf); color: "#94a3b8"; topPadding: Math.round(20 * root.sf) }
 
                         Text {
                             visible: !storeLoading && searchQuery.length >= 2 && storeResults.length > 0
                             text: storeResults.length + " results for \"" + searchQuery + "\""
-                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary
+                            font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#94a3b8"
                             bottomPadding: Math.round(4 * root.sf)
                         }
 
                         Text {
                             visible: !storeLoading && searchQuery.length >= 2 && storeResults.length === 0
                             text: "No packages found for \"" + searchQuery + "\""
-                            font.pixelSize: Math.round(12 * root.sf); color: root.textMuted; topPadding: Math.round(30 * root.sf)
+                            font.pixelSize: Math.round(12 * root.sf); color: "#64748b"; topPadding: Math.round(30 * root.sf)
                         }
 
                         // Search results — expanded cards with description
@@ -469,8 +473,8 @@ Rectangle {
                             delegate: Rectangle {
                                 width: resultsCol.width - Math.round(28 * root.sf)
                                 height: Math.round(64 * root.sf); radius: Math.round(8 * root.sf)
-                                color: srMa.containsMouse ? Qt.rgba(0,0,0,0.04) : root.bgCard
-                                border.color: srMa.containsMouse ? accentFor(modelData.pkg) : root.borderColor; border.width: 1
+                                color: srMa.containsMouse ? "#262640" : "#1e1e30"
+                                border.color: srMa.containsMouse ? accentFor(modelData.pkg) : "#2a2a3a"; border.width: 1
 
                                 MouseArea { id: srMa; anchors.fill: parent; hoverEnabled: true }
 
@@ -479,7 +483,7 @@ Rectangle {
 
                                     Rectangle {
                                         width: Math.round(44 * root.sf); height: Math.round(44 * root.sf)
-                                        radius: Math.round(10 * root.sf); color: Qt.rgba(0,0,0,0.03)
+                                        radius: Math.round(10 * root.sf); color: "#181828"
                                         border.color: accentFor(modelData.pkg); border.width: 1
                                         anchors.verticalCenter: parent.verticalCenter
                                         Text { anchors.centerIn: parent; text: modelData.pkg.charAt(0).toUpperCase(); font.pixelSize: Math.round(18 * root.sf); font.weight: Font.Bold; color: accentFor(modelData.pkg) }
@@ -488,20 +492,20 @@ Rectangle {
                                     Column {
                                         width: parent.width - Math.round(150 * root.sf); spacing: Math.round(2 * root.sf)
                                         anchors.verticalCenter: parent.verticalCenter
-                                        Text { text: modelData.pkg; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary; elide: Text.ElideRight; width: parent.width }
-                                        Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: root.textSecondary; elide: Text.ElideRight; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
+                                        Text { text: modelData.pkg; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: "#e2e8f0"; elide: Text.ElideRight; width: parent.width }
+                                        Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: "#94a3b8"; elide: Text.ElideRight; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
                                     }
 
                                     Rectangle {
                                         width: Math.round(82 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
                                         anchors.verticalCenter: parent.verticalCenter
-                                        color: isPkgBusy(modelData.pkg) ? Qt.rgba(0,0,0,0.04) : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? Qt.rgba(220/255, 38/255, 38/255, 0.15) : Qt.rgba(22/255, 163/255, 74/255, 0.12)) : (ibMa.containsMouse ? Qt.darker(root.accentBlue, 1.15) : root.accentBlue)
-                                        border.color: isPkgBusy(modelData.pkg) ? root.accentOrange : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? root.accentRed : root.accentGreen) : root.accentBlue; border.width: 1
+                                        color: isPkgBusy(modelData.pkg) ? "#1a1a2a" : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? "#3b1111" : "#112211") : (ibMa.containsMouse ? "#1e3a5f" : "#192844")
+                                        border.color: isPkgBusy(modelData.pkg) ? "#f59e0b" : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? "#ef4444" : "#22c55e") : "#3b82f6"; border.width: 1
                                         Text {
                                             anchors.centerIn: parent
                                             text: isPkgBusy(modelData.pkg) ? "Installing..." : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? "Remove" : "Installed") : "Install"
                                             font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold
-                                            color: isPkgBusy(modelData.pkg) ? root.accentOrange : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? root.accentRed : root.accentGreen) : "#ffffff"
+                                            color: isPkgBusy(modelData.pkg) ? "#f59e0b" : isPkgInstalled(modelData.pkg) ? (ibMa.containsMouse ? "#ef4444" : "#22c55e") : "#93c5fd"
                                         }
                                         MouseArea {
                                             id: ibMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -524,24 +528,24 @@ Rectangle {
 
                             Rectangle {
                                 width: parent.width; height: Math.round(70 * root.sf); radius: Math.round(10 * root.sf)
-                                color: Qt.rgba(37/255, 99/255, 235/255, 0.1); border.color: Qt.rgba(37/255, 99/255, 235/255, 0.2); border.width: 1
+                                color: "#1a2744"; border.color: "#2a4070"; border.width: 1
                                 Column {
                                     anchors.centerIn: parent; spacing: Math.round(3 * root.sf)
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Ubuntu Package Store"; font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: (totalAvailable > 0 ? totalAvailable.toLocaleString() + " packages" : "Packages") + " from official Ubuntu repos"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Ubuntu Package Store"; font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: "#e2e8f0" }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: (totalAvailable > 0 ? totalAvailable.toLocaleString() + " packages" : "Packages") + " from official Ubuntu repos"; font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8" }
                                 }
                             }
 
-                            Text { text: "QUICK SEARCH"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.textMuted; topPadding: Math.round(4 * root.sf) }
+                            Text { text: "QUICK SEARCH"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#4a5568"; topPadding: Math.round(4 * root.sf) }
                             Flow {
                                 width: parent.width; spacing: Math.round(5 * root.sf)
                                 Repeater {
                                     model: ["browser", "editor", "image editor", "video player", "music", "office", "game", "terminal", "file manager", "email", "chat", "pdf", "screenshot", "disk", "archive", "network"]
                                     delegate: Rectangle {
                                         width: cLbl.width + Math.round(14 * root.sf); height: Math.round(24 * root.sf)
-                                        radius: Math.round(12 * root.sf); color: cMa.containsMouse ? Qt.rgba(37/255, 99/255, 235/255, 0.12) : Qt.rgba(0,0,0,0.03)
-                                        border.color: cMa.containsMouse ? root.accentBlue : root.borderColor; border.width: 1
-                                        Text { id: cLbl; anchors.centerIn: parent; text: modelData; font.pixelSize: Math.round(10 * root.sf); color: cMa.containsMouse ? root.accentBlue : root.textSecondary }
+                                        radius: Math.round(12 * root.sf); color: cMa.containsMouse ? "#1e3a5f" : "#1e1e30"
+                                        border.color: cMa.containsMouse ? "#3b82f6" : "#333348"; border.width: 1
+                                        Text { id: cLbl; anchors.centerIn: parent; text: modelData; font.pixelSize: Math.round(10 * root.sf); color: cMa.containsMouse ? "#93c5fd" : "#94a3b8" }
                                         MouseArea { id: cMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                             onClicked: { searchInput.text = modelData; searchQuery = modelData; searchStore(modelData); }
                                         }
@@ -549,37 +553,37 @@ Rectangle {
                                 }
                             }
 
-                            Text { visible: featuredApps.length > 0; text: "POPULAR PACKAGES"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.textMuted; topPadding: Math.round(6 * root.sf) }
+                            Text { visible: featuredApps.length > 0; text: "POPULAR PACKAGES"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#4a5568"; topPadding: Math.round(6 * root.sf) }
                             Repeater {
                                 model: featuredApps
                                 delegate: Rectangle {
                                     width: parent.width; height: Math.round(56 * root.sf); radius: Math.round(8 * root.sf)
-                                    color: fMa.containsMouse ? Qt.rgba(0,0,0,0.04) : root.bgCard
-                                    border.color: fMa.containsMouse ? accentFor(modelData.pkg) : root.borderColor; border.width: 1
+                                    color: fMa.containsMouse ? "#262640" : "#1e1e30"
+                                    border.color: fMa.containsMouse ? accentFor(modelData.pkg) : "#2a2a3a"; border.width: 1
                                     MouseArea { id: fMa; anchors.fill: parent; hoverEnabled: true }
                                     Row {
                                         anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); spacing: Math.round(10 * root.sf)
                                         Rectangle {
                                             width: Math.round(36 * root.sf); height: Math.round(36 * root.sf)
-                                            radius: Math.round(10 * root.sf); color: Qt.rgba(0,0,0,0.03)
+                                            radius: Math.round(10 * root.sf); color: "#181828"
                                             border.color: accentFor(modelData.pkg); border.width: 1; anchors.verticalCenter: parent.verticalCenter
                                             Text { anchors.centerIn: parent; text: modelData.pkg.charAt(0).toUpperCase(); font.pixelSize: Math.round(15 * root.sf); font.weight: Font.Bold; color: accentFor(modelData.pkg) }
                                         }
                                         Column {
                                             width: parent.width - Math.round(140 * root.sf); spacing: Math.round(2 * root.sf); anchors.verticalCenter: parent.verticalCenter
-                                            Text { text: modelData.pkg; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary; elide: Text.ElideRight; width: parent.width }
-                                            Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: root.textSecondary; elide: Text.ElideRight; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
+                                            Text { text: modelData.pkg; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#e2e8f0"; elide: Text.ElideRight; width: parent.width }
+                                            Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: "#94a3b8"; elide: Text.ElideRight; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
                                         }
                                         Rectangle {
                                             width: Math.round(76 * root.sf); height: Math.round(26 * root.sf); radius: Math.round(6 * root.sf)
                                             anchors.verticalCenter: parent.verticalCenter
-                                            color: isPkgBusy(modelData.pkg) ? Qt.rgba(0,0,0,0.04) : isPkgInstalled(modelData.pkg) ? Qt.rgba(22/255, 163/255, 74/255, 0.12) : (fBtnMa.containsMouse ? Qt.darker(root.accentBlue, 1.15) : root.accentBlue)
-                                            border.color: isPkgBusy(modelData.pkg) ? root.accentOrange : isPkgInstalled(modelData.pkg) ? root.accentGreen : root.accentBlue; border.width: 1
+                                            color: isPkgBusy(modelData.pkg) ? "#1a1a2a" : isPkgInstalled(modelData.pkg) ? "#112211" : (fBtnMa.containsMouse ? "#1e3a5f" : "#192844")
+                                            border.color: isPkgBusy(modelData.pkg) ? "#f59e0b" : isPkgInstalled(modelData.pkg) ? "#22c55e" : "#3b82f6"; border.width: 1
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: isPkgBusy(modelData.pkg) ? "Installing..." : isPkgInstalled(modelData.pkg) ? "Installed" : "Install"
                                                 font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold
-                                                color: isPkgBusy(modelData.pkg) ? root.accentOrange : isPkgInstalled(modelData.pkg) ? root.accentGreen : "#ffffff"
+                                                color: isPkgBusy(modelData.pkg) ? "#f59e0b" : isPkgInstalled(modelData.pkg) ? "#22c55e" : "#93c5fd"
                                             }
                                             MouseArea {
                                                 id: fBtnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor

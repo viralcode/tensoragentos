@@ -82,9 +82,9 @@ ClipboardCompositor {
             readonly property real sf: userScale * Math.max(0.5, Math.min(2.5, Math.min(root.width / 1024.0, root.height / 768.0)))
 
             // ── Global State ──
-            property bool loggedIn: true
-            property string currentUser: "ainux"
-            property string sessionId: "system"
+            property bool loggedIn: false
+            property string currentUser: ""
+            property string sessionId: ""
             property var openWindows: []
             property string settingsOpenTab: ""  // Set before opening Settings to jump to a tab
 
@@ -92,21 +92,11 @@ ClipboardCompositor {
             // searchName/cmd are optional — used for native app surface matching
             function openAppWindow(appId, title, icon, searchName, cmd) {
                 for (var i = 0; i < openWindows.length; i++) {
-                    if (openWindows[i].appId === appId) {
-                        focusWindow(appId);
-                        return;
-                    }
+                    if (openWindows[i].appId === appId) return;
                 }
                 var wins = openWindows.slice();
                 wins.push({ appId: appId, title: title, icon: icon, searchName: searchName || "", cmd: cmd || "" });
                 openWindows = wins;
-
-                // Launch the native app immediately here (only once!)
-                var isNative = appId.indexOf("native-") === 0 || appId.indexOf("wayland-") === 0;
-                if (isNative && cmd && cmd.length > 0) {
-                    console.log("WhaleOS: Launching native app via openAppWindow:", title, cmd);
-                    sysManager.launchNativeApp(cmd);
-                }
             }
 
             // ── Launch a native app directly (no loader window) ──
@@ -123,23 +113,23 @@ ClipboardCompositor {
             // ── API ──
             property string apiBase: "http://127.0.0.1:7777/dashboard/api"
 
-            // ── Theme Constants — Warm Light ──
-            readonly property color bgVoid: "#f8f9fa"
-            readonly property color bgSurface: Qt.rgba(1, 1, 1, 0.92)
-            readonly property color bgElevated: Qt.rgba(1, 1, 1, 0.96)
-            readonly property color bgCard: Qt.rgba(1, 1, 1, 0.85)
-            readonly property color borderColor: Qt.rgba(0, 0, 0, 0.08)
-            readonly property color borderLight: Qt.rgba(0, 0, 0, 0.05)
-            readonly property color textPrimary: "#000000"
-            readonly property color textSecondary: "#111827"
-            readonly property color textMuted: "#374151"
-            readonly property color accentBlue: "#2563eb"
-            readonly property color accentGreen: "#16a34a"
-            readonly property color accentRed: "#dc2626"
-            readonly property color accentOrange: "#ea580c"
-            readonly property color accentPurple: "#7c3aed"
-            readonly property color accentPink: "#db2777"
-            readonly property color accentCyan: "#0891b2"
+            // ── Theme Constants — Cyber Glass ──
+            readonly property color bgVoid: "#030712"
+            readonly property color bgSurface: "#0a0e1a"
+            readonly property color bgElevated: "#111827"
+            readonly property color bgCard: "#1a1f36"
+            readonly property color borderColor: "#1e293b"
+            readonly property color borderLight: "#334155"
+            readonly property color textPrimary: "#f0f4ff"
+            readonly property color textSecondary: "#94a3b8"
+            readonly property color textMuted: "#64748b"
+            readonly property color accentBlue: "#00e5ff"
+            readonly property color accentGreen: "#00e676"
+            readonly property color accentRed: "#ff1744"
+            readonly property color accentOrange: "#ff9100"
+            readonly property color accentPurple: "#b388ff"
+            readonly property color accentPink: "#ff4081"
+            readonly property color accentCyan: "#00e5ff"
             readonly property int radiusSm: Math.round(6 * sf)
             readonly property int radiusMd: Math.round(10 * sf)
             readonly property int radiusLg: Math.round(14 * sf)
@@ -168,12 +158,6 @@ ClipboardCompositor {
                 win.z = nextZ;
             }
 
-            function focusWindow(appId) {
-                if (desktopLoader.status === Loader.Ready && desktopLoader.item) {
-                    desktopLoader.item.focusWindow(appId);
-                }
-            }
-
             // ── Assign a Wayland surface to an AppWindow ──
             function assignSurface(toplevel, xdgSurface) {
                 // Try immediate match first
@@ -187,17 +171,8 @@ ClipboardCompositor {
             }
 
             function tryMatchSurface(toplevel, xdgSurface) {
-                var appTitle = (toplevel.title || "").toLowerCase();
-                var appId = (toplevel.appId || "").toLowerCase();
-
-                // Skip background/helper utilities (like clipboard bridge)
-                var isBackground = (appId.indexOf("clipboard") >= 0 || appTitle.indexOf("clipboard") >= 0 ||
-                                    appId.indexOf("cutsel") >= 0 || appTitle.indexOf("cutsel") >= 0 ||
-                                    appId.indexOf("xclip") >= 0 || appTitle.indexOf("xsel") >= 0);
-                if (isBackground) {
-                    console.log("WhaleOS: Ignoring background helper surface:", toplevel.title, toplevel.appId);
-                    return true; // consume and discard
-                }
+                var appTitle = toplevel.title || "";
+                var appId = toplevel.appId || "";
 
                 // First: try to match an existing AppWindow waiting for a surface
                 for (var i = 0; i < openWindows.length; i++) {
@@ -205,8 +180,8 @@ ClipboardCompositor {
                     if (win.appId && win.appId.indexOf("native-") === 0 && !win.surface) {
                         var searchName = win.searchName || "";
                         if (searchName.length > 0 && (appTitle.length > 0 || appId.length > 0) &&
-                            (appTitle.indexOf(searchName.toLowerCase()) >= 0 ||
-                             appId.indexOf(searchName.toLowerCase()) >= 0)) {
+                            (appTitle.toLowerCase().indexOf(searchName.toLowerCase()) >= 0 ||
+                             appId.toLowerCase().indexOf(searchName.toLowerCase()) >= 0)) {
                             var wins = openWindows.slice();
                             wins[i] = {
                                 appId: win.appId,
@@ -226,8 +201,8 @@ ClipboardCompositor {
                 // Second: auto-create an AppWindow for this surface
                 // Skip empty/clipboard surfaces that have no title or appId
                 if (!appTitle && !appId) {
-                    console.log("WhaleOS: Empty surface title/appId — return false to retry matching");
-                    return false;
+                    console.log("WhaleOS: Ignoring empty WlShell surface (likely clipboard/system)");
+                    return true; // consume but don't create a window
                 }
                 root.autoSurfaceCounter++;
                 var windowTitle = appTitle || appId || "App";
@@ -312,7 +287,7 @@ ClipboardCompositor {
                     toastIcon.text = "✕";
                     toastIcon.color = "#fff";
                 } else {
-                    toastBg.color = Qt.rgba(0.22, 0.74, 0.97, 0.92);
+                    toastBg.color = Qt.rgba(0.0, 0.90, 1.0, 0.92);
                     toastIcon.text = "ℹ";
                     toastIcon.color = "#030712";
                 }
@@ -334,7 +309,7 @@ ClipboardCompositor {
                 Rectangle {
                     id: toastBg
                     anchors.fill: parent; radius: Math.round(12 * root.sf)
-                    color: Qt.rgba(0.22, 0.74, 0.97, 0.92)
+                    color: Qt.rgba(0.0, 0.90, 1.0, 0.92)
 
                     Row {
                         id: toastRow

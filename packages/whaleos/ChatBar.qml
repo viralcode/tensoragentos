@@ -81,10 +81,10 @@ Rectangle {
         // Code blocks: ```...``` -> monospace
         s = s.replace(/```[\s\S]*?```/g, function(m) {
             var code = m.replace(/```\w*\n?/g, "").replace(/```/g, "");
-            return "<br><font color='#090d16' face='monospace'>" + code.replace(/\n/g, "<br>") + "</font><br>";
+            return "<br><font color='#94a3b8' face='monospace'>" + code.replace(/\n/g, "<br>") + "</font><br>";
         });
         // Inline code
-        s = s.replace(/`([^`]+)`/g, "<font color='#1d4ed8' face='monospace'>$1</font>");
+        s = s.replace(/`([^`]+)`/g, "<font color='#93c5fd' face='monospace'>$1</font>");
         // Bold
         s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
         // Italic
@@ -195,8 +195,8 @@ Rectangle {
         anchors.fill: parent; radius: parent.radius
         visible: chatExpanded
         opacity: chatContentOpacity
-        color: Qt.rgba(1, 1, 1, 0.94)
-        border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
+        color: Qt.rgba(0.02, 0.03, 0.07, 0.94)
+        border.color: Qt.rgba(0.0, 0.90, 1.0, 0.08); border.width: 1
     }
     // Inner top highlight for glass depth
     Rectangle {
@@ -213,7 +213,7 @@ Rectangle {
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
         height: Math.round(52 * root.sf); visible: chatExpanded
         opacity: chatContentOpacity
-        color: Qt.rgba(1, 1, 1, 0.98); radius: root.radiusLg
+        color: Qt.rgba(0.02, 0.03, 0.06, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: parent.radius; color: parent.color }
         // Accent gradient line at bottom of header
@@ -222,9 +222,9 @@ Rectangle {
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.2; color: Qt.rgba(0.15, 0.39, 0.92, 0.18) }
+                GradientStop { position: 0.2; color: Qt.rgba(0.0, 0.90, 1.0, 0.25) }
                 GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.35) }
-                GradientStop { position: 0.8; color: Qt.rgba(0.15, 0.39, 0.92, 0.18) }
+                GradientStop { position: 0.8; color: Qt.rgba(0.0, 0.90, 1.0, 0.25) }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -232,33 +232,33 @@ Rectangle {
         RowLayout {
             anchors.fill: parent; anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
 
-            Text { text: "◉"; font.pixelSize: Math.round(16 * root.sf); color: root.accentBlue; Layout.alignment: Qt.AlignVCenter }
+            Text { text: "◉"; font.pixelSize: Math.round(16 * root.sf); color: "#00e5ff"; Layout.alignment: Qt.AlignVCenter }
 
             Text {
                 text: getAgentName()
-                font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary
+                font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
             }
 
             // Active model badge
             Rectangle {
                 visible: activeModel.length > 0
                 width: modelBadgeText.width + Math.round(12 * root.sf); height: Math.round(18 * root.sf); radius: Math.round(9 * root.sf)
-                color: Qt.rgba(0.15, 0.39, 0.92, 0.10)
+                color: Qt.rgba(0.0, 0.90, 1.0, 0.12)
                 Text {
                     id: modelBadgeText; anchors.centerIn: parent
                     text: activeModel
-                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium; color: root.accentBlue
+                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium; color: "#00e5ff"
                 }
             }
 
             Rectangle {
                 width: agentSelectorRow.width + Math.round(12 * root.sf); height: Math.round(20 * root.sf); radius: Math.round(4 * root.sf)
-                color: agentPickerMa.containsMouse ? Qt.rgba(0.15, 0.39, 0.92, 0.15) : Qt.rgba(0.22, 0.74, 0.97, 0.1)
+                color: agentPickerMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.2) : Qt.rgba(0.0, 0.90, 1.0, 0.1)
                 visible: true
 
                 Row { id: agentSelectorRow; anchors.centerIn: parent; spacing: Math.round(3 * root.sf)
-                    Text { text: "▾"; font.pixelSize: Math.round(8 * root.sf); color: root.accentBlue; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "switch"; font.pixelSize: Math.round(9 * root.sf); color: root.accentBlue; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "▾"; font.pixelSize: Math.round(8 * root.sf); color: "#00e5ff"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "switch"; font.pixelSize: Math.round(9 * root.sf); color: "#00e5ff"; anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 MouseArea {
@@ -291,7 +291,7 @@ Rectangle {
                 color: newChatMa.containsMouse ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : "transparent"
                 visible: !isSending
 
-                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: root.accentBlue }
+                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#00e5ff" }
 
                 MouseArea {
                     id: newChatMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -302,10 +302,10 @@ Rectangle {
             // Conversation history button
             Rectangle {
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
-                color: convListMa.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
+                color: convListMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 visible: !isSending
 
-                Text { anchors.centerIn: parent; text: "\u2261"; font.pixelSize: Math.round(14 * root.sf); color: showConversationList ? root.accentBlue : root.textSecondary }
+                Text { anchors.centerIn: parent; text: "\u2261"; font.pixelSize: Math.round(14 * root.sf); color: showConversationList ? "#00e5ff" : "#c0cfe0" }
 
                 MouseArea {
                     id: convListMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -315,16 +315,16 @@ Rectangle {
 
             Rectangle {
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
-                color: fsMa.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
+                color: fsMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
 
-                Text { anchors.centerIn: parent; text: chatFullScreen ? "▣" : "□"; font.pixelSize: Math.round(13 * root.sf); color: chatFullScreen ? root.accentBlue : root.textSecondary }
+                Text { anchors.centerIn: parent; text: chatFullScreen ? "▣" : "□"; font.pixelSize: Math.round(13 * root.sf); color: chatFullScreen ? "#00e5ff" : "#c0cfe0" }
 
                 MouseArea { id: fsMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { if (chatFullScreen) { chatFullScreen = false; chatExpanded = false; } else { chatFullScreen = true; } } }
             }
 
             Rectangle {
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(6 * root.sf)
-                color: collMa.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
+                color: collMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Text { anchors.centerIn: parent; text: "▾"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                 MouseArea { id: collMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { chatExpanded = false; chatFullScreen = false; } }
             }
@@ -338,7 +338,7 @@ Rectangle {
         anchors.left: parent.left; anchors.leftMargin: Math.round(12 * root.sf)
         width: Math.round(220 * root.sf); height: apCol.height + Math.round(12 * root.sf)
         radius: root.radiusMd; z: 100
-        color: Qt.rgba(1, 1, 1, 0.97)
+        color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
         border.color: Qt.rgba(0.35, 0.55, 1.0, 0.2); border.width: 1
         visible: showAgentPicker && chatExpanded
 
@@ -354,7 +354,7 @@ Rectangle {
                 Rectangle {
                     width: apCol.width; height: Math.round(32 * root.sf); radius: Math.round(4 * root.sf)
                     color: modelData.id === selectedAgent ? Qt.rgba(0.35, 0.55, 1.0, 0.15) :
-                           apItemMa.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
+                           apItemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
 
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
@@ -365,7 +365,7 @@ Rectangle {
                         }
 
                         Column { Layout.fillWidth: true; spacing: 0
-                            Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textPrimary }
+                            Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#fff" }
                         }
 
                         Text {
@@ -383,7 +383,7 @@ Rectangle {
             }
 
             // Divider
-            Rectangle { width: parent.width - Math.round(12 * root.sf); height: 1; color: Qt.rgba(0,0,0,0.04); anchors.horizontalCenter: parent.horizontalCenter }
+            Rectangle { width: parent.width - Math.round(12 * root.sf); height: 1; color: Qt.rgba(1,1,1,0.06); anchors.horizontalCenter: parent.horizontalCenter }
 
             // Fan-Out (Multi-Agent) option
             Rectangle {
@@ -412,7 +412,7 @@ Rectangle {
                         }
                         onSChanged: requestPaint()
                     }
-                    Text { text: "Fan-Out (Multi-Agent)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.accentPurple; Layout.fillWidth: true }
+                    Text { text: "Fan-Out (Multi-Agent)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#a78bfa"; Layout.fillWidth: true }
                 }
 
                 MouseArea {
@@ -431,8 +431,8 @@ Rectangle {
         anchors.right: parent.right; anchors.rightMargin: Math.round(12 * root.sf)
         width: Math.round(280 * root.sf); height: Math.min(convCol.height + Math.round(12 * root.sf), Math.round(350 * root.sf))
         radius: root.radiusMd; z: 100
-        color: Qt.rgba(1, 1, 1, 0.97)
-        border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
+        color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
+        border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
         visible: chatExpanded && showConversationList
         clip: true
 
@@ -459,7 +459,7 @@ Rectangle {
                     delegate: Rectangle {
                         width: convCol.width; height: convItemCol.height + Math.round(10 * root.sf)
                         radius: Math.round(6 * root.sf)
-                        color: modelData.id === currentConversationId ? Qt.rgba(0.35, 0.55, 1.0, 0.12) : convItemMa.containsMouse ? Qt.rgba(0, 0, 0, 0.03) : "transparent"
+                        color: modelData.id === currentConversationId ? Qt.rgba(0.35, 0.55, 1.0, 0.12) : convItemMa.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
 
                         Column {
                             id: convItemCol
@@ -472,7 +472,7 @@ Rectangle {
                             Text {
                                 text: modelData.title || "New Chat"
                                 font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
-                                color: modelData.id === currentConversationId ? root.accentBlue : "#1e293b"
+                                color: modelData.id === currentConversationId ? "#60a5fa" : "#e4e4e7"
                                 elide: Text.ElideRight; width: parent.width
                             }
                             Text {
@@ -513,7 +513,7 @@ Rectangle {
         anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
         height: maPanel.height + Math.round(12 * root.sf)
         radius: Math.round(8 * root.sf)
-        color: Qt.rgba(0.96, 0.96, 0.97, 0.9)
+        color: Qt.rgba(0.08, 0.10, 0.16, 0.9)
         border.color: Qt.rgba(0.4, 0.5, 1.0, 0.15); border.width: 1
         visible: chatExpanded && Object.keys(liveAgentRuns).length > 0
 
@@ -524,11 +524,11 @@ Rectangle {
             Row {
                 spacing: Math.round(6 * root.sf)
                 Text { text: "▸"; font.pixelSize: Math.round(11 * root.sf); color: root.accentBlue }
-                Text { text: "Agent Activity"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+                Text { text: "Agent Activity"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#e4e4e7" }
                 Rectangle {
                     width: maBadge.width + Math.round(8 * root.sf); height: Math.round(16 * root.sf); radius: 8
                     color: Qt.rgba(0.35, 0.55, 1.0, 0.2)
-                    Text { id: maBadge; anchors.centerIn: parent; text: Object.keys(liveAgentRuns).length.toString(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.accentBlue }
+                    Text { id: maBadge; anchors.centerIn: parent; text: Object.keys(liveAgentRuns).length.toString(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#60a5fa" }
                 }
             }
 
@@ -538,8 +538,8 @@ Rectangle {
                 Rectangle {
                     property var run: liveAgentRuns[modelData]
                     width: maPanel.width; height: maRunRow.height + Math.round(10 * root.sf); radius: Math.round(6 * root.sf)
-                    color: Qt.rgba(0.95, 0.95, 0.96, 0.8)
-                    border.color: run.status === "running" ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(0,0,0,0.04); border.width: 1
+                    color: Qt.rgba(0.06, 0.06, 0.10, 0.8)
+                    border.color: run.status === "running" ? Qt.rgba(0.35, 0.55, 1.0, 0.2) : Qt.rgba(1,1,1,0.06); border.width: 1
 
                     Row {
                         id: maRunRow; anchors.left: parent.left; anchors.right: parent.right
@@ -553,7 +553,7 @@ Rectangle {
                         }
                         Column {
                             spacing: 1; width: parent.width - Math.round(80 * root.sf)
-                            Text { text: run.agentId || "Agent"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: root.textPrimary }
+                            Text { text: run.agentId || "Agent"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: "#e4e4e7" }
                             Text { text: (run.task || "...").substring(0, 60); font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; elide: Text.ElideRight; width: parent.width }
                         }
                         Text {
@@ -607,12 +607,12 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "How can I help you today?"
                 font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold
-                color: root.textPrimary
+                color: Qt.rgba(1, 1, 1, 0.45)
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Ask me anything — code, files, system tasks"
-                font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary
+                font.pixelSize: Math.round(11 * root.sf); color: Qt.rgba(1, 1, 1, 0.22)
             }
 
             // Quick suggestion chips
@@ -624,13 +624,13 @@ Rectangle {
                     Rectangle {
                         width: chipText.width + Math.round(16 * root.sf); height: Math.round(26 * root.sf)
                         radius: Math.round(13 * root.sf)
-                        color: chipMa.containsMouse ? Qt.rgba(0.15, 0.39, 0.92, 0.10) : Qt.rgba(0, 0, 0, 0.03)
-                        border.color: chipMa.containsMouse ? Qt.rgba(0.15, 0.39, 0.92, 0.18) : Qt.rgba(0, 0, 0, 0.06)
+                        color: chipMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+                        border.color: chipMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.25) : Qt.rgba(1, 1, 1, 0.08)
                         border.width: 1
                         Text {
                             id: chipText; anchors.centerIn: parent
                             text: modelData; font.pixelSize: Math.round(10 * root.sf)
-                            color: chipMa.containsMouse ? root.accentBlue : root.textSecondary
+                            color: chipMa.containsMouse ? "#7dd3fc" : Qt.rgba(1, 1, 1, 0.35)
                         }
                         MouseArea {
                             id: chipMa; anchors.fill: parent; hoverEnabled: true
@@ -728,11 +728,11 @@ Rectangle {
                                 radius: Math.round(16 * root.sf)
 
                                 color: modelData.role === "user"
-                                    ? Qt.rgba(0.2, 0.45, 0.80, 0.12)
-                                    : Qt.rgba(0.95, 0.95, 0.97, 0.4)
+                                    ? Qt.rgba(0.0, 0.45, 0.80, 0.15)
+                                    : Qt.rgba(0.05, 0.06, 0.12, 0.4)
                                 border.color: modelData.role === "user"
-                                    ? Qt.rgba(0.15, 0.39, 0.92, 0.10)
-                                    : Qt.rgba(0, 0, 0, 0.03)
+                                    ? Qt.rgba(0.0, 0.90, 1.0, 0.12)
+                                    : Qt.rgba(1, 1, 1, 0.04)
                                 border.width: 1
 
                                 TextMetrics {
@@ -753,7 +753,7 @@ Rectangle {
                                         Text {
                                             text: modelData.role === "user" ? "" : (modelData.agent || getAgentName())
                                             font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
-                                            color: root.accentPurple
+                                            color: "#a3e635"
                                             visible: modelData.role !== "user"
                                         }
                                         Text {
@@ -767,7 +767,7 @@ Rectangle {
                                         width: parent.width
                                         text: modelData.role === "user" ? (modelData.content || "") : mdToStyled(modelData.content || "")
                                         font.pixelSize: Math.round(13.5 * root.sf)
-                                        color: modelData.role === "user" ? root.textPrimary : root.textPrimary
+                                        color: modelData.role === "user" ? "#e0e7ff" : "#e4e4e7"
                                         wrapMode: Text.Wrap; lineHeight: 1.6
                                         textFormat: modelData.role === "user" ? Text.PlainText : Text.StyledText
                                     }
@@ -794,8 +794,8 @@ Rectangle {
                         visible: activePlan !== null
                         width: parent.width * 0.88; height: planCol.height + Math.round(16 * root.sf)
                         radius: Math.round(10 * root.sf)
-                        color: Qt.rgba(0.15, 0.39, 0.92, 0.04)
-                        border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15); border.width: 1
+                        color: Qt.rgba(0.1, 0.1, 0.2, 0.7)
+                        border.color: Qt.rgba(0.35, 0.55, 1.0, 0.25); border.width: 1
 
                         Column {
                             id: planCol; anchors.left: parent.left; anchors.right: parent.right
@@ -803,7 +803,7 @@ Rectangle {
 
                             Text {
                                 text: "≣ " + (activePlan ? activePlan.title || "Plan" : "")
-                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: root.accentPurple
+                                font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Bold; color: "#60a5fa"
                             }
 
                             Repeater {
@@ -813,12 +813,12 @@ Rectangle {
                                     Text {
                                         text: modelData.status === "completed" ? "✓" : (modelData.status === "in_progress" ? "⋯" : (modelData.status === "skipped" ? "—" : "○"))
                                         font.pixelSize: Math.round(10 * root.sf)
-                                        color: modelData.status === "completed" ? root.accentGreen : (modelData.status === "in_progress" ? root.accentBlue : root.textMuted)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#60a5fa" : root.textMuted)
                                     }
                                     Text {
                                         text: modelData.description || modelData.title || ""
                                         font.pixelSize: Math.round(10 * root.sf)
-                                        color: modelData.status === "completed" ? root.accentGreen : (modelData.status === "in_progress" ? root.textPrimary : root.textMuted)
+                                        color: modelData.status === "completed" ? "#34d399" : (modelData.status === "in_progress" ? "#e4e4e7" : root.textMuted)
                                     }
                                 }
                             }
@@ -832,12 +832,12 @@ Rectangle {
                         Rectangle {
                             width: parent.width * 0.88; height: stepRow.height + Math.round(12 * root.sf)
                             radius: Math.round(8 * root.sf)
-                            color: modelData.type === "error" ? Qt.rgba(239, 68, 68, 0.08) :
-                                   modelData.type === "tool" ? Qt.rgba(34, 197, 94, 0.08) :
-                                   Qt.rgba(59, 130, 246, 0.08)
-                            border.color: modelData.type === "error" ? Qt.rgba(239, 68, 68, 0.15) :
-                                          modelData.type === "tool" ? Qt.rgba(34, 197, 94, 0.15) :
-                                          Qt.rgba(59, 130, 246, 0.15)
+                            color: modelData.type === "error" ? Qt.rgba(0.3, 0.1, 0.1, 0.6) :
+                                   modelData.type === "tool" ? Qt.rgba(0.1, 0.15, 0.1, 0.6) :
+                                   Qt.rgba(0.1, 0.1, 0.15, 0.6)
+                            border.color: modelData.type === "error" ? Qt.rgba(0.9, 0.2, 0.2, 0.2) :
+                                          modelData.type === "tool" ? Qt.rgba(0.2, 0.8, 0.4, 0.2) :
+                                          Qt.rgba(0.4, 0.5, 1.0, 0.15)
                             border.width: 1
 
                             Row {
@@ -850,9 +850,6 @@ Rectangle {
                                           modelData.type === "tool" ? "⚡" :
                                           modelData.type === "error" ? "✗" : "•"
                                     font.pixelSize: Math.round(11 * root.sf)
-                                    color: modelData.type === "error" ? root.accentRed :
-                                           modelData.type === "tool" ? root.accentGreen :
-                                           root.accentBlue
                                 }
 
                                 Text {
@@ -869,7 +866,7 @@ Rectangle {
                                     }
                                     font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Medium
                                     color: modelData.type === "error" ? root.accentRed :
-                                           modelData.type === "tool" ? root.accentGreen : root.accentBlue
+                                           modelData.type === "tool" ? "#34d399" : "#93c5fd"
                                     width: parent.width - Math.round(40 * root.sf)
                                     elide: Text.ElideRight
                                 }
@@ -905,12 +902,12 @@ Rectangle {
 
                                 Text {
                                     text: getAgentName()
-                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.accentPurple
+                                    font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#a3e635"
                                 }
                                 Text {
                                     width: parent.width
                                     text: mdToStyled(streamingContent)
-                                    font.pixelSize: Math.round(13 * root.sf); color: root.textPrimary
+                                    font.pixelSize: Math.round(13 * root.sf); color: "#e4e4e7"
                                     wrapMode: Text.Wrap; lineHeight: 1.5
                                     textFormat: Text.StyledText
                                 }
@@ -954,7 +951,7 @@ Rectangle {
                             width: streamCol.width - Math.round(48 * root.sf)
                             height: thinkingBubbleCol.height + Math.round(20 * root.sf)
                             radius: Math.round(14 * root.sf)
-                            color: Qt.rgba(0.94, 0.95, 0.96, 0.6)
+                            color: Qt.rgba(0.08, 0.10, 0.14, 0.6)
                             border.color: Qt.rgba(0.35, 0.55, 1.0, 0.1); border.width: 1
 
                             Column {
@@ -979,7 +976,7 @@ Rectangle {
                                     Repeater {
                                         model: 3
                                         Rectangle {
-                                            width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#38bdf8"
+                                            width: Math.round(5 * root.sf); height: Math.round(5 * root.sf); radius: width / 2; color: "#00e5ff"
                                             anchors.verticalCenter: parent.verticalCenter
                                             SequentialAnimation on opacity {
                                                 running: isSending; loops: Animation.Infinite
@@ -1014,7 +1011,7 @@ Rectangle {
         anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf)
         width: sugCol.width + Math.round(16 * root.sf); height: sugCol.height + Math.round(12 * root.sf)
         radius: root.radiusMd; z: 50
-        color: Qt.rgba(1, 1, 1, 0.97)
+        color: Qt.rgba(0.08, 0.08, 0.14, 0.97)
         border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15); border.width: 1
         visible: showSuggestions && chatExpanded
 
@@ -1038,7 +1035,7 @@ Rectangle {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter; leftPadding: Math.round(8 * root.sf)
-                        text: modelData; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; color: root.textPrimary
+                        text: modelData; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; color: "#00e5ff"
                     }
 
                     MouseArea {
@@ -1058,8 +1055,8 @@ Rectangle {
         anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
         anchors.bottomMargin: Math.round(10 * root.sf)
         height: Math.round(50 * root.sf); radius: Math.round(16 * root.sf)
-        color: Qt.rgba(1, 1, 1, 0.96)
-        border.color: chatInput.activeFocus ? Qt.rgba(0.15, 0.39, 0.92, 0.25) : Qt.rgba(0, 0, 0, 0.06)
+        color: Qt.rgba(0.03, 0.03, 0.07, 0.96)
+        border.color: chatInput.activeFocus ? Qt.rgba(0.0, 0.90, 1.0, 0.40) : Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
 
         // Inner shadow effect at top
@@ -1067,7 +1064,7 @@ Rectangle {
             anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
             anchors.leftMargin: Math.round(16 * root.sf); anchors.rightMargin: Math.round(16 * root.sf)
             anchors.topMargin: 1; height: 1; radius: 1
-            color: Qt.rgba(0, 0, 0, 0.03)
+            color: Qt.rgba(1, 1, 1, 0.04)
         }
 
         // PERF: Removed border.color Behavior — triggers repaint on every focus change
@@ -1079,8 +1076,8 @@ Rectangle {
             Rectangle {
                 visible: !chatExpanded
                 width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
-                color: expandIconMa.containsMouse ? Qt.rgba(0.15, 0.39, 0.92, 0.15) : Qt.rgba(0, 0, 0, 0.06)
-                Text { anchors.centerIn: parent; text: "◉"; font.pixelSize: Math.round(14 * root.sf); color: root.accentBlue }
+                color: expandIconMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.2) : Qt.rgba(0.0, 0.90, 1.0, 0.08)
+                Text { anchors.centerIn: parent; text: "◉"; font.pixelSize: Math.round(14 * root.sf); color: "#00e5ff" }
                 MouseArea {
                     id: expandIconMa; anchors.fill: parent; hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
@@ -1092,12 +1089,12 @@ Rectangle {
             Rectangle {
                 visible: !chatExpanded && messages.length > 0
                 width: collapsedBadge.width + Math.round(10 * root.sf); height: Math.round(20 * root.sf); radius: 10
-                color: Qt.rgba(0.15, 0.39, 0.92, 0.12)
+                color: Qt.rgba(0.0, 0.90, 1.0, 0.15)
 
                 Text {
                     id: collapsedBadge; anchors.centerIn: parent
                     text: messages.length + " msgs"
-                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: root.accentBlue
+                    font.pixelSize: Math.round(9 * root.sf); font.weight: Font.DemiBold; color: "#00e5ff"
                 }
 
                 MouseArea {
@@ -1110,12 +1107,12 @@ Rectangle {
                 id: chatInput
                 Layout.fillWidth: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: root.textPrimary; font.pixelSize: Math.round(14 * root.sf)
+                color: "#e4e4e7"; font.pixelSize: Math.round(14 * root.sf)
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Ask TensorAgent AI anything..."
-                    color: Qt.rgba(0, 0, 0, 0.35); font.pixelSize: Math.round(13 * root.sf)
+                    color: Qt.rgba(1, 1, 1, 0.25); font.pixelSize: Math.round(13 * root.sf)
                     visible: !parent.text && !parent.activeFocus
                 }
 
@@ -1164,15 +1161,15 @@ Rectangle {
 
                 Text {
                     id: agentPillText; anchors.centerIn: parent
-                    text: getAgentName(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.accentGreen
+                    text: getAgentName(); font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: "#00e676"
                 }
             }
 
             Rectangle {
                 width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: Math.round(12 * root.sf)
 
-                color: chatInput.text.trim() ? root.accentBlue : Qt.rgba(0, 0, 0, 0.04)
-                border.color: chatInput.text.trim() ? "transparent" : root.borderColor
+                color: chatInput.text.trim() ? "#00b0ff" : Qt.rgba(1, 1, 1, 0.05)
+                border.color: chatInput.text.trim() ? Qt.rgba(0.0, 0.90, 1.0, 0.4) : "transparent"
                 border.width: 1
                 // PERF: Removed color Behavior on send button
 
@@ -1188,7 +1185,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = active ? "#fff" : root.textMuted;
+                        ctx.strokeStyle = active ? "#fff" : "#555";
                         ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
                         // Up arrow
                         ctx.beginPath();
@@ -1445,7 +1442,7 @@ Rectangle {
             width: Math.min(Math.round(400 * root.sf), parent.width - Math.round(40 * root.sf))
             height: fanOutCol.height + Math.round(32 * root.sf)
             radius: root.radiusLg
-            color: Qt.rgba(1, 1, 1, 0.98)
+            color: Qt.rgba(0.03, 0.03, 0.08, 0.98)
             border.color: Qt.rgba(0.70, 0.53, 1.0, 0.25); border.width: 1
 
             MouseArea { anchors.fill: parent } // prevent close on card click
@@ -1457,7 +1454,7 @@ Rectangle {
                 // Header
                 RowLayout {
                     width: parent.width
-                    Text { text: "Multi-Agent Task"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: root.textPrimary; Layout.fillWidth: true }
+                    Text { text: "Multi-Agent Task"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
                     Rectangle {
                         width: Math.round(24 * root.sf); height: Math.round(24 * root.sf); radius: 12; color: closeFoMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                         Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
@@ -1474,11 +1471,11 @@ Rectangle {
                 Text { text: "Task Description"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textSecondary }
                 Rectangle {
                     width: parent.width; height: Math.round(60 * root.sf); radius: root.radiusMd
-                    color: Qt.rgba(0, 0, 0, 0.04); border.color: fanOutTaskInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                    color: Qt.rgba(0.08, 0.08, 0.14, 0.9); border.color: fanOutTaskInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.3) : Qt.rgba(1,1,1,0.1); border.width: 1
                     TextInput {
                         id: fanOutTaskInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf)
-                        color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextInput.Wrap
-                        Text { visible: !parent.text; text: "Describe the task..."; color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf) }
+                        color: "#e4e4e7"; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextInput.Wrap
+                        Text { visible: !parent.text; text: "Describe the task..."; color: Qt.rgba(1,1,1,0.25); font.pixelSize: Math.round(12 * root.sf) }
                     }
                 }
 
@@ -1491,17 +1488,17 @@ Rectangle {
                         model: agentList
                         Rectangle {
                             width: parent.width; height: Math.round(32 * root.sf); radius: Math.round(6 * root.sf)
-                            color: foAgentMa.containsMouse ? Qt.rgba(0,0,0,0.03) : "transparent"
+                            color: foAgentMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
 
                             RowLayout {
                                 anchors.fill: parent; anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                                 Rectangle {
                                     width: Math.round(16 * root.sf); height: Math.round(16 * root.sf); radius: Math.round(3 * root.sf)
-                                    border.color: fanOutChecked[modelData.id] ? root.accentBlue : root.borderColor; border.width: 1
-                                    color: fanOutChecked[modelData.id] ? Qt.rgba(0.15, 0.39, 0.92, 0.15) : "transparent"
-                                    Text { anchors.centerIn: parent; text: fanOutChecked[modelData.id] ? "✓" : ""; font.pixelSize: Math.round(10 * root.sf); color: root.accentBlue }
+                                    border.color: fanOutChecked[modelData.id] ? "#00e5ff" : Qt.rgba(1,1,1,0.2); border.width: 1
+                                    color: fanOutChecked[modelData.id] ? Qt.rgba(0.0, 0.90, 1.0, 0.2) : "transparent"
+                                    Text { anchors.centerIn: parent; text: fanOutChecked[modelData.id] ? "✓" : ""; font.pixelSize: Math.round(10 * root.sf); color: "#00e5ff" }
                                 }
-                                Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; Layout.fillWidth: true }
+                                Text { text: modelData.name || modelData.id; font.pixelSize: Math.round(11 * root.sf); color: "#e4e4e7"; Layout.fillWidth: true }
                             }
 
                             MouseArea {
@@ -1519,7 +1516,7 @@ Rectangle {
                 // Run button
                 Rectangle {
                     width: parent.width; height: Math.round(36 * root.sf); radius: Math.round(10 * root.sf)
-                    color: runFoMa.containsMouse ? Qt.darker(root.accentBlue, 1.1) : root.accentBlue
+                    color: runFoMa.containsMouse ? "#0091ea" : "#00b0ff"
 
                     Text { anchors.centerIn: parent; text: "⚡ Run Multi-Agent Task"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Bold; color: "#fff" }
 
