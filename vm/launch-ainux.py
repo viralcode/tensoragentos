@@ -2,11 +2,11 @@
 """
 AInux — One-Command Custom Linux Distro Builder & Runner
  
-Downloads Ubuntu Server 24.04 LTS ARM64 cloud image, injects cloud-init
-config that auto-installs everything, boots in QEMU with HVF acceleration.
+Downloads Debian ARM64 generic image, injects cloud-init config
+that auto-installs everything, boots in QEMU with HVF acceleration.
 
-First boot: cloud-init runs (~3-5 min), installs OpenWhale, Qt6, WhaleOS
-Second boot: boots straight into WhaleOS native desktop shell
+First boot: cloud-init runs (~3-5 min), installs OpenWhale, Firefox, Cage
+Second boot: boots straight into OpenWhale GUI in Firefox kiosk mode
 
 Usage: python3 vm/launch-ainux.py
 """
@@ -20,7 +20,7 @@ VM_DIR = os.path.dirname(os.path.abspath(__file__))
 AINUX_ROOT = os.path.dirname(VM_DIR)
 
 DISK    = os.path.join(VM_DIR, "ainux.qcow2")
-BASE    = os.path.join(VM_DIR, "ubuntu-server.qcow2")
+BASE    = os.path.join(VM_DIR, "debian-generic.qcow2")
 UEFI_FW = "/opt/homebrew/share/qemu/edk2-aarch64-code.fd"
 UEFI_VARS = os.path.join(VM_DIR, "efivars.fd")
 SEED_IMG = os.path.join(VM_DIR, "seed.img")
@@ -49,7 +49,7 @@ else:
 # Read WhaleOS files (source + assets, recursive)
 WHALEOS_DIR = os.path.join(AINUX_ROOT, "packages", "whaleos")
 WHALEOS_FILES = {}
-WHALEOS_EXTENSIONS = ('.qml', '.js', '.mjs', '.cpp', '.h', '.sh', '.png', '.wav', '.jpg', '.svg', '.ttf', '.otf')
+WHALEOS_EXTENSIONS = ('.qml', '.js', '.cpp', '.h', '.sh', '.png', '.wav', '.jpg', '.svg', '.ttf', '.otf')
 
 if os.path.isdir(WHALEOS_DIR):
     for dirpath, dirnames, filenames in os.walk(WHALEOS_DIR):
@@ -109,7 +109,6 @@ packages:
   - python3
   - g++
   - pkg-config
-  - software-properties-common
   - cage
   - xwayland
   - xdotool
@@ -142,6 +141,7 @@ packages:
   - libqt6opengl6-dev
   - galculator
   - mousepad
+  - firefox-esr
   - qt6-wayland-dev
   - qml6-module-qtwayland-compositor
   - wl-clipboard
@@ -154,6 +154,7 @@ packages:
   - network-manager
   - isc-dhcp-client
   - libpam0g-dev
+  - linux-image-arm64
 
 write_files:
   - path: /opt/ainux/ainux-login.b64
@@ -172,24 +173,9 @@ write_files:
 
 bootcmd:
   # ── Restrict cloud-init datasources IMMEDIATELY to avoid 120s EC2/OpenStack probe timeouts ──
+  # Without this, cloud-init tries AWS/OpenStack/VMware on every boot (all unreachable in QEMU)
   - mkdir -p /etc/cloud/cloud.cfg.d
   - 'echo "datasource_list: [NoCloud, None]" > /etc/cloud/cloud.cfg.d/99-datasource.cfg'
-  # ── Enable universe repo for ARM64 (needed for cage, seatd, Qt6, etc.) ──
-  # Must run in bootcmd so it's available BEFORE the packages: phase
-  - |
-    cat > /etc/apt/sources.list.d/ubuntu.sources << 'SRCEOF'
-    Types: deb
-    URIs: http://ports.ubuntu.com/ubuntu-ports
-    Suites: noble noble-updates noble-backports
-    Components: main restricted universe multiverse
-    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-    Types: deb
-    URIs: http://ports.ubuntu.com/ubuntu-ports
-    Suites: noble-security
-    Components: main restricted universe multiverse
-    Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-    SRCEOF
   # Enable VGA console output so QEMU window shows boot
   - 'sed -i "s/console=ttyAMA0/console=tty0 console=ttyAMA0/" /etc/default/grub 2>/dev/null || true'
   - 'update-grub 2>/dev/null || true'
@@ -202,10 +188,10 @@ runcmd:
   # Enable seatd and add user to required groups
   - systemctl enable seatd
   - systemctl start seatd
-  - usermod -aG seat ainux 2>/dev/null || adduser ainux seat 2>/dev/null || true
-  - usermod -aG render ainux 2>/dev/null || true
-  - usermod -aG video ainux 2>/dev/null || true
-  - usermod -aG input ainux 2>/dev/null || true
+  - adduser ainux seat 2>/dev/null || true
+  - adduser ainux render 2>/dev/null || true
+  - adduser ainux video 2>/dev/null || true
+  - adduser ainux input 2>/dev/null || true
 
   # ── Fix boot speed: disable wait-online (QEMU network is always up via DHCP) ──
   # Without this, systemd waits 90s+ for network before starting SSH / other services
@@ -251,7 +237,9 @@ runcmd:
   - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   - apt-get install -y nodejs
 
-  # Ubuntu cloud image already ships a graphics-capable kernel — no purge needed
+  # ── Remove cloud kernels to boot into standard graphics-enabled kernel by default ──
+  - DEBIAN_FRONTEND=noninteractive apt-get purge -y linux-image-cloud-arm64 linux-image-6.1.0-49-cloud-arm64 linux-image-6.1.0-43-cloud-arm64 2>/dev/null || true
+  - update-grub 2>/dev/null || true
   
   # Install global node tools  
   - npm install -g pnpm tsx @anthropic-ai/chrome-devtools-mcp 2>/dev/null || npm install -g pnpm tsx
@@ -359,7 +347,7 @@ runcmd:
     
     [Service]
     Type=simple
-    ExecStart=/usr/bin/Xorg :0 vt1
+    ExecStart=/usr/bin/Xorg :0 -nocursor vt1
     Restart=always
     RestartSec=3
     
@@ -386,12 +374,8 @@ runcmd:
     Environment=QT_QUICK_BACKEND=software
     Environment=QSG_RENDER_LOOP=basic
     Environment=LIBGL_ALWAYS_SOFTWARE=1
-    Environment=XCURSOR_THEME=Adwaita
-    Environment=XCURSOR_SIZE=24
-    ExecStartPre=/bin/bash -c "mkdir -p /run/user/1000 && chown ainux:ainux /run/user/1000 && chmod 700 /run/user/1000"
-    ExecStartPre=/bin/bash -c "DISPLAY=:0 xsetroot -cursor_name left_ptr"
     ExecStartPre=/bin/sleep 2
-    ExecStart=/bin/bash -c "DISPLAY=:0 xrandr --auto || true; export SCREEN_RES=$$(xdotool getdisplaygeometry 2>/dev/null || echo '1024 768'); export SCREEN_WIDTH=$$(echo $$SCREEN_RES | awk '{print $$1}'); export SCREEN_HEIGHT=$$(echo $$SCREEN_RES | awk '{print $$2}'); exec /opt/ainux/whaleos/whaleos"
+    ExecStart=/opt/ainux/whaleos/whaleos
     Restart=always
     RestartSec=3
     
@@ -399,50 +383,11 @@ runcmd:
     WantedBy=multi-user.target
     WGUIEOF
 
-  # Create GUI watchdog script — auto-restarts if display goes black
-  - |
-    cat > /opt/ainux/whaleos/gui-watchdog.sh << 'GWEOF'
-    #!/bin/bash
-    while true; do
-        sleep 30
-        if systemctl is-active --quiet whaleos-gui; then
-            DISPLAY=:0 xdpyinfo >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                systemctl restart xorg
-                sleep 2
-                systemctl restart whaleos-gui
-            fi
-        fi
-    done
-    GWEOF
-    chmod +x /opt/ainux/whaleos/gui-watchdog.sh
-
-  # Create watchdog service
-  - |
-    cat > /etc/systemd/system/gui-watchdog.service << 'GWSEOF'
-    [Unit]
-    Description=WhaleOS GUI Watchdog
-    After=whaleos-gui.service
-
-    [Service]
-    Type=simple
-    ExecStart=/opt/ainux/whaleos/gui-watchdog.sh
-    Restart=always
-    RestartSec=5
-
-    [Install]
-    WantedBy=multi-user.target
-    GWSEOF
-
-  # Enable lingering so systemd creates /run/user/1000 on boot
-  - loginctl enable-linger ainux 2>/dev/null || true
-
   # Enable services
   - systemctl daemon-reload
   - systemctl enable openwhale.service
   - systemctl enable xorg.service
   - systemctl enable whaleos-gui.service
-  - systemctl enable gui-watchdog.service
   - systemctl mask getty@tty1.service
   - systemctl set-default multi-user.target
   
@@ -457,29 +402,17 @@ runcmd:
     
     MOTDEOF
   
-  # ── Install Firefox and Chromium from PPAs (Ubuntu snap versions won't work on server) ──
+  # ── Ensure Firefox ESR is preinstalled and Wayland-ready ──
   - |
     set -e
-    add-apt-repository -y ppa:mozillateam/ppa 2>/dev/null || true
-    add-apt-repository -y ppa:xtradeb/apps 2>/dev/null || true
-    
-    echo 'Package: *
-    Pin: release o=LP-PPA-mozillateam
-    Pin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
-    
-    echo 'Package: chromium*
-    Pin: release o=LP-PPA-xtradeb-apps
-    Pin-Priority: 1001' > /etc/apt/preferences.d/xtradeb-chromium
-    
-    apt-get update -qq
-    apt-get install -y firefox chromium 2>/dev/null || true
+    apt-get install -y firefox-esr 2>/dev/null || true
     cat > /usr/local/bin/firefox-wayland << 'FFEOF'
     #!/bin/bash
     export DISPLAY=:0
     export XAUTHORITY=/home/ainux/.Xauthority
     export XDG_RUNTIME_DIR=/run/user/1000
     export MOZ_ENABLE_WAYLAND=1
-    exec /usr/bin/firefox "$@"
+    exec /usr/bin/firefox-esr "$@"
     FFEOF
     chmod +x /usr/local/bin/firefox-wayland
 
@@ -493,18 +426,16 @@ runcmd:
     #!/bin/bash
     sleep 4
     export DISPLAY=:0
-    OUTPUT_NAME=$(xrandr | grep " connected" | awk '{print $1}' | head -n 1)
-    if [ -z "$OUTPUT_NAME" ]; then OUTPUT_NAME="XWAYLAND0"; fi
     xrandr --newmode "1920x1080_60.00" 173.00 1920 2048 2248 2576 1080 1083 1088 1120 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1920x1080_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1920x1080_60.00" 2>/dev/null
     xrandr --newmode "1600x900_60.00" 118.25 1600 1696 1856 2112 900 903 908 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1600x900_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1600x900_60.00" 2>/dev/null
     xrandr --newmode "1440x900_60.00" 106.50 1440 1528 1672 1904 900 903 909 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1440x900_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1440x900_60.00" 2>/dev/null
     xrandr --newmode "1366x768_60.00" 85.25 1366 1440 1576 1784 768 771 781 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1366x768_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1366x768_60.00" 2>/dev/null
     xrandr --newmode "1024x768_60.00" 63.50 1024 1072 1176 1328 768 771 775 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode "$OUTPUT_NAME" "1024x768_60.00" 2>/dev/null
+    xrandr --addmode XWAYLAND0 "1024x768_60.00" 2>/dev/null
     DMEOF
   - chmod +x /opt/ainux/whaleos/add-display-modes.sh
   
@@ -515,22 +446,14 @@ runcmd:
     export DISPLAY=:0
     export WAYLAND_DISPLAY=wayland-0
     export XDG_RUNTIME_DIR=/run/user/1000
-     # Start autocutsel to persist X11 clipboard when apps close
-     autocutsel -s CLIPBOARD -fork 2>/dev/null
-     autocutsel -fork 2>/dev/null
-     
-     # Start VMware user tools agent if available for host-guest sync
-     if command -v vmware-user-suid-wrapper &>/dev/null; then
-         vmware-user-suid-wrapper &
-     elif command -v vmware-user &>/dev/null; then
-         vmware-user &
-     fi
-     
-     LAST_X11=""
-     LAST_WL=""
+    # Start autocutsel to persist X11 clipboard when apps close
+    autocutsel -s CLIPBOARD -fork 2>/dev/null
+    autocutsel -fork 2>/dev/null
+    LAST_X11=""
+    LAST_WL=""
     while true; do
-        X11_CLIP=$(timeout 0.2 xclip -selection clipboard -o 2>/dev/null) || X11_CLIP=""
-        WL_CLIP=$(timeout 0.2 wl-paste --no-newline 2>/dev/null) || WL_CLIP=""
+        X11_CLIP=$(xclip -selection clipboard -o 2>/dev/null) || X11_CLIP=""
+        WL_CLIP=$(wl-paste --no-newline 2>/dev/null) || WL_CLIP=""
         if [ -n "$X11_CLIP" ] && [ "$X11_CLIP" != "$LAST_X11" ] && [ "$X11_CLIP" != "$WL_CLIP" ]; then
             printf '%s' "$X11_CLIP" | wl-copy 2>/dev/null
             LAST_X11="$X11_CLIP"; LAST_WL="$X11_CLIP"
@@ -559,26 +482,6 @@ runcmd:
     WantedBy=multi-user.target
     CSEOF
   - systemctl enable clipboard-sync.service
-  
-  # Create WhaleOS Helper service
-  - |
-    cat > /etc/systemd/system/whaleos-helper.service << 'HELPERSERVICEEOF'
-    [Unit]
-    Description=WhaleOS Helper Service
-    After=network.target openwhale.service
-    
-    [Service]
-    Type=simple
-    ExecStart=/usr/bin/node /opt/ainux/whaleos/whaleos-helper.mjs
-    User=ainux
-    Restart=always
-    RestartSec=3
-    Environment=HOME=/home/ainux
-    
-    [Install]
-    WantedBy=multi-user.target
-    HELPERSERVICEEOF
-  - systemctl enable whaleos-helper.service
   
   # Signal completion
   - echo "AINUX_SETUP_COMPLETE" > /var/log/ainux-setup.log
@@ -646,7 +549,7 @@ print("  [3/4] Preparing AInux disk image...")
 
 if not os.path.exists(BASE):
     print("    ✗ No base image! Download with:")
-    print('    curl -L -o vm/ubuntu-server.qcow2 "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"')
+    print('    curl -L -o vm/debian-generic.qcow2 "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-arm64.qcow2"')
     sys.exit(1)
 
 # Copy base image and resize 
@@ -664,13 +567,12 @@ print("  [4/4] Booting AInux in QEMU...")
 print("")
 print("  🐋 ═══════════════════════════════════════════════")
 print("  🐋  FIRST BOOT — cloud-init will install everything")
-print("  🐋  Base: Ubuntu Server 24.04 LTS (Noble)")
 print("  🐋  This takes ~3-5 minutes. Watch the QEMU window.")
 print("  🐋")
 print("  🐋  What happens automatically:")
 print("  🐋   • Node.js 22.x + tsx installed")
 print("  🐋   • OpenWhale cloned & npm installed")
-print("  🐋   • Qt6 QML + Wayland compositor installed")
+print("  🐋   • Qt6 QML + Cage (Wayland compositor) installed")
 print("  🐋   • WhaleOS native desktop shell compiled")
 print("  🐋   • AInux OS Login Screen injected")
 print("  🐋   • systemd services created & enabled")

@@ -653,17 +653,27 @@ Type=simple
 User=ainux
 Group=ainux
 WorkingDirectory=/opt/ainux/openwhale
+
+# Kill any process squatting on port 7777 before we start.
+# Prevents EADDRINUSE on systemd restart after a crash that orphaned a Node process.
 ExecStartPre=/bin/sh -c "fuser -k 7777/tcp 2>/dev/null; sleep 0.5; exit 0"
+
 ExecStart=/usr/bin/node openwhale.mjs
 Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux AINUX_MODE=true
 Environment=OPENWHALE_SANDBOX=true OPENWHALE_REQUIRE_APPROVAL=true
+
+# on-failure: don't restart on clean exit (avoids port-contention restart loops)
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 StartLimitIntervalSec=120
+
+# Kill the entire cgroup on stop — ensures tsx/node sub-processes don't outlive the unit
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutStopSec=10
+
+# Security hardening (enterprise)
 NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/home/ainux /opt/ainux/openwhale/data /tmp /home/ainux/Works
@@ -682,6 +692,8 @@ RestrictRealtime=true
 RestrictNamespaces=true
 PrivateDevices=true
 RemoveIPC=true
+
+# Logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=openwhale
