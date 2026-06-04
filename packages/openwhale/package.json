@@ -12,7 +12,9 @@
     "openwhale": "./openwhale.mjs"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node scripts/dev-server.mjs",
+    "dev:raw": "tsx watch src/index.ts",
+    "kill:port": "lsof -ti :${PORT:-7777} | xargs kill -9 2>/dev/null || echo 'Port clear'",
     "cli": "tsx src/cli.ts",
     "chat": "tsx src/cli.ts chat",
     "build": "tsc && node scripts/copy-dashboard.mjs",

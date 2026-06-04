@@ -37,11 +37,8 @@ log "Detected hypervisor: $HYPERVISOR"
 
 case "$HYPERVISOR" in
     vmware)
-        log "VMware detected — using software renderer with linuxfb fallback"
-        export GALLIUM_DRIVER=llvmpipe
-        modprobe vmwgfx 2>/dev/null || true
-        # Try eglfs first, fall back to linuxfb if it fails
-        export QT_QPA_EGLFS_KMS_CONFIG=""
+        log "VMware detected — forcing linuxfb platform"
+        export QT_QPA_PLATFORM=linuxfb
         ;;
     qemu|kvm)
         log "QEMU/KVM detected — using virtio-gpu"

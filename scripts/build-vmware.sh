@@ -101,7 +101,7 @@ mkdir -p "$BUNDLE_DIR"
 
 # Convert qcow2 → VMDK (VMware compatible)
 echo "  → Converting qcow2 → VMDK (this may take a minute)..."
-qemu-img convert -f qcow2 -O vmdk -o subformat=streamOptimized "$QCOW2_DISK" "$VMDK_DISK"
+qemu-img convert -f qcow2 -O vmdk -o subformat=monolithicSparse "$QCOW2_DISK" "$VMDK_DISK"
 echo "  ✓ VMDK created ($(du -h "$VMDK_DISK" | cut -f1))"
 
 # Also convert the cloud-init seed image if it exists
@@ -133,9 +133,9 @@ SEED_VMX_ENTRY=""
 if [ "$HAS_SEED" = true ]; then
     SEED_VMX_ENTRY='
 # Cloud-init seed disk
-sata0:1.present = "TRUE"
-sata0:1.fileName = "seed.vmdk"
-sata0:1.deviceType = "disk"'
+nvme0:1.present = "TRUE"
+nvme0:1.fileName = "seed.vmdk"
+nvme0:1.deviceType = "disk"'
 fi
 
 cat > "$VMX_FILE" << VMXEOF
@@ -146,6 +146,21 @@ displayName = "AInux - TensorAgent OS"
 config.version = "8"
 virtualHW.version = "21"
 guestOS = "arm-debian-12-64"
+
+# PCIe Root Ports (needed for VMware Fusion ARM64 to attach PCIe devices)
+pciBridge0.present = "TRUE"
+pciBridge4.present = "TRUE"
+pciBridge4.virtualDev = "pcieRootPort"
+pciBridge4.functions = "8"
+pciBridge5.present = "TRUE"
+pciBridge5.virtualDev = "pcieRootPort"
+pciBridge5.functions = "8"
+pciBridge6.present = "TRUE"
+pciBridge6.virtualDev = "pcieRootPort"
+pciBridge6.functions = "8"
+pciBridge7.present = "TRUE"
+pciBridge7.virtualDev = "pcieRootPort"
+pciBridge7.functions = "8"
 
 # ── CPU & Memory ─────────────────────────────────────────────
 numvcpus = "4"
@@ -159,19 +174,19 @@ uefi.secureBoot.enabled = "FALSE"
 # ── Display ──────────────────────────────────────────────────
 svga.autodetect = "TRUE"
 svga.vramSize = "268435456"
-mks.enable3d = "FALSE"
+mks.enable3d = "TRUE"
 
-# ── Main Boot Disk (SATA) ───────────────────────────────────
-sata0.present = "TRUE"
-sata0:0.present = "TRUE"
-sata0:0.fileName = "ainux.vmdk"
-sata0:0.deviceType = "disk"
+# ── Main Boot Disk (NVMe) ───────────────────────────────────
+nvme0.present = "TRUE"
+nvme0:0.present = "TRUE"
+nvme0:0.fileName = "ainux.vmdk"
+nvme0:0.deviceType = "disk"
 ${SEED_VMX_ENTRY}
 
 # ── Networking (NAT — auto DHCP) ────────────────────────────
 ethernet0.present = "TRUE"
 ethernet0.connectionType = "nat"
-ethernet0.virtualDev = "e1000e"
+ethernet0.virtualDev = "vmxnet3"
 ethernet0.addressType = "generated"
 ethernet0.wakeOnPcktRcv = "FALSE"
 

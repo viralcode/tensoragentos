@@ -10,12 +10,28 @@ User=ainux
 Group=ainux
 WorkingDirectory=/opt/ainux/openwhale
 
+# Kill any process squatting on port 7777 before we start.
+# This prevents EADDRINUSE when systemd restarts the service after a crash
+# that left a zombie Node process behind.
+ExecStartPre=/bin/sh -c "fuser -k 7777/tcp 2>/dev/null; sleep 0.5; exit 0"
+
 ExecStart=/usr/bin/node openwhale.mjs
 
-Restart=always
+# on-failure: restart on non-zero exit but NOT on clean stop (code 0).
+# 'always' would restart even when we intentionally stop the service,
+# creating a restart loop when the port is already taken.
+Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 StartLimitIntervalSec=120
+
+# KillMode=control-group ensures systemd kills the ENTIRE cgroup on stop,
+# not just the direct child PID. This prevents Node from spawning sub-
+# processes (tsx watch, better-sqlite3 workers) that outlive the service.
+KillMode=control-group
+KillSignal=SIGTERM
+# Give the process 10 seconds to shut down gracefully, then SIGKILL.
+TimeoutStopSec=10
 
 # Environment
 Environment=NODE_ENV=production

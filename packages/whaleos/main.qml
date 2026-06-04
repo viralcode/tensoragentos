@@ -11,7 +11,7 @@ ClipboardCompositor {
     id: comp
 
     // Our custom Wayland socket — native apps connect here
-    socketName: "whaleos-0"
+    socketName: "wayland-0"
 
     // Enable retained selection — when a Wayland client (Chromium) copies,
     // Qt reads the data via pipe FD and calls retainedSelectionReceived()
@@ -28,6 +28,8 @@ ClipboardCompositor {
             visible: true
             visibility: Window.FullScreen
             flags: Qt.FramelessWindowHint | Qt.Window
+            width: Screen.width
+            height: Screen.height
             title: "TensorAgent OS"
             color: "#0d0d0d"
 

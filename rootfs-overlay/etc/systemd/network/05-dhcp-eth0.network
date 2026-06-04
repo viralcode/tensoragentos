@@ -1,0 +1,21 @@
+# TensorAgent OS — systemd-networkd DHCP fallback for eth0
+#
+# Some QEMU configurations (especially older builds or those without
+# predictable interface naming) present the primary NIC as 'eth0'.
+# This file is an explicit fallback to ensure those environments work.
+#
+# Lower priority number (05) means this file takes precedence over the
+# catch-all (10) when the interface is literally named 'eth0'.
+
+[Match]
+Name=eth0
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+
+[DHCP]
+ClientIdentifier=mac
+UseDNS=yes
+UseNTP=yes
+RouteMetric=50

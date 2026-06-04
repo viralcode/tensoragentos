@@ -76,7 +76,7 @@ meta_data = json.dumps({"instance-id": "ainux-001", "local-hostname": "ainux"})
 user_data = """#cloud-config
 hostname: ainux
 manage_etc_hosts: true
-locale: en_US.UTF-8
+locale: C.UTF-8
 timezone: UTC
 
 datasource_list: [NoCloud]
@@ -113,6 +113,9 @@ packages:
   - xwayland
   - xdotool
   - seatd
+  - xserver-xorg
+  - xserver-xorg-legacy
+  - xinit
   - fonts-dejavu
   - dbus
   - dbus-x11
@@ -150,6 +153,8 @@ packages:
   - net-tools
   - network-manager
   - isc-dhcp-client
+  - libpam0g-dev
+  - linux-image-arm64
 
 write_files:
   - path: /opt/ainux/ainux-login.b64
@@ -231,6 +236,10 @@ runcmd:
   # ── Install Node.js 22.x ──
   - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   - apt-get install -y nodejs
+
+  # ── Remove cloud kernels to boot into standard graphics-enabled kernel by default ──
+  - DEBIAN_FRONTEND=noninteractive apt-get purge -y linux-image-cloud-arm64 linux-image-6.1.0-49-cloud-arm64 linux-image-6.1.0-43-cloud-arm64 2>/dev/null || true
+  - update-grub 2>/dev/null || true
   
   # Install global node tools  
   - npm install -g pnpm tsx @anthropic-ai/chrome-devtools-mcp 2>/dev/null || npm install -g pnpm tsx
@@ -312,67 +321,74 @@ runcmd:
     WantedBy=multi-user.target
     OWEOF
   
-  # ── GUI: Use getty autologin + .bash_profile to launch Cage ──
-  # This is the CORRECT approach for a kiosk Wayland compositor.
-  # A proper agetty login gives Cage a real VT session so seatd can
-  # grant access to /dev/input/* devices. Without this, Cage runs
-  # without VT ownership and ALL input (mouse/keyboard) is dead.
+  # ── X11 Configuration for universal virtual graphics ──
   - |
-    mkdir -p /etc/systemd/system/getty@tty1.service.d
-    cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << 'AEOF'
-    [Service]
-    ExecStart=
-    ExecStart=-/sbin/agetty --autologin ainux --noclear %I $TERM
-    AEOF
+    cat > /etc/X11/xorg.conf << 'XEOF'
+    Section "Device"
+        Identifier "VMware Graphics"
+        Driver     "modesetting"
+    EndSection
+    XEOF
   - |
     cat > /home/ainux/.bash_profile << 'BPEOF'
-    # Auto-start WhaleOS GUI on virtual console login
-    if [[ -t 0 ]] && [[ -z "$DISPLAY" ]] && [[ -z "$WAYLAND_DISPLAY" ]]; then
-        mkdir -p /run/user/1000
-        chown ainux:ainux /run/user/1000
-        chmod 700 /run/user/1000
-        export HOME=/home/ainux
-        export XDG_RUNTIME_DIR=/run/user/1000
-        export XDG_SESSION_TYPE=wayland
-        export WLR_RENDERER=pixman
-        export WLR_NO_HARDWARE_CURSORS=1
-        export WLR_DRM_NO_ATOMIC=1
-        export QT_QPA_PLATFORM=wayland
-        export QT_QUICK_BACKEND=software
-        export QSG_RENDER_LOOP=basic
-        export LIBGL_ALWAYS_SOFTWARE=1
-        exec /usr/bin/cage -- /opt/ainux/whaleos/whaleos
-    fi
+    # Sourced on login
+    [ -f ~/.bashrc ] && . ~/.bashrc
     BPEOF
   - chown ainux:ainux /home/ainux/.bash_profile
-  
-  # Create OpenWhale systemd service (standalone, no GUI dep)
+
+  # Create Xorg systemd service
   - |
-    cat > /etc/systemd/system/openwhale.service << 'OWEOF'
+    cat > /etc/systemd/system/xorg.service << 'XSVCEOF'
     [Unit]
-    Description=OpenWhale AI Platform
-    After=network-online.target
-    Wants=network-online.target
+    Description=Xorg Display Server on tty1
+    After=systemd-user-sessions.service seatd.service
+    Conflicts=getty@tty1.service
+    Before=multi-user.target
+    
+    [Service]
+    Type=simple
+    ExecStart=/usr/bin/Xorg :0 -nocursor vt1
+    Restart=always
+    RestartSec=3
+    
+    [Install]
+    WantedBy=multi-user.target
+    XSVCEOF
+
+  # Create WhaleOS GUI systemd service
+  - |
+    cat > /etc/systemd/system/whaleos-gui.service << 'WGUIEOF'
+    [Unit]
+    Description=WhaleOS Desktop Shell
+    After=xorg.service openwhale.service
+    Wants=openwhale.service
+    Conflicts=getty@tty1.service
     
     [Service]
     Type=simple
     User=ainux
-    WorkingDirectory=/opt/ainux/openwhale
-    ExecStart=/usr/bin/node /opt/ainux/openwhale/openwhale.mjs
     Environment=HOME=/home/ainux
-    Environment=PORT=7777
-    Environment=NODE_ENV=production
+    Environment=XDG_RUNTIME_DIR=/run/user/1000
+    Environment=DISPLAY=:0
+    Environment=QT_QPA_PLATFORM=xcb
+    Environment=QT_QUICK_BACKEND=software
+    Environment=QSG_RENDER_LOOP=basic
+    Environment=LIBGL_ALWAYS_SOFTWARE=1
+    ExecStartPre=/bin/sleep 2
+    ExecStart=/opt/ainux/whaleos/whaleos
     Restart=always
-    RestartSec=5
+    RestartSec=3
     
     [Install]
     WantedBy=multi-user.target
-    OWEOF
-  
+    WGUIEOF
+
   # Enable services
   - systemctl daemon-reload
   - systemctl enable openwhale.service
-  - systemctl enable getty@tty1.service
+  - systemctl enable xorg.service
+  - systemctl enable whaleos-gui.service
+  - systemctl mask getty@tty1.service
   - systemctl set-default multi-user.target
   
   # Set MOTD

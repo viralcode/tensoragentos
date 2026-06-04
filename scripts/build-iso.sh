@@ -239,6 +239,24 @@ NMCONF
     # Disable ifupdown networking service so it does not conflict
     systemctl disable networking 2>/dev/null || true
 
+    # ── systemd-networkd: early-boot wired DHCP ──────────────────────────
+    # NetworkManager handles WiFi and user-session interfaces, but it starts
+    # late. systemd-networkd provides DHCP on first boot before NM is ready,
+    # fixing the "no connectivity" issue in UTM/QEMU without any manual steps.
+    systemctl enable systemd-networkd 2>/dev/null || true
+    systemctl enable systemd-resolved  2>/dev/null || true
+
+    # Point /etc/resolv.conf at systemd-resolved's stub resolver.
+    # This is a symlink — NM will not overwrite it, it manages DNS separately.
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+    # Tell NM to use systemd-resolved for DNS (avoids /etc/resolv.conf fights)
+    cat > /etc/NetworkManager/conf.d/20-dns-resolved.conf << NMRES
+[main]
+dns=systemd-resolved
+NMRES
+
     # Flatpak (dynamic package management) — optional, skip if unavailable
     apt-get install -y -qq flatpak 2>/dev/null || echo "  [SKIP] flatpak not available in repos"
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
@@ -311,6 +329,20 @@ if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/ainux/ainux.conf" ]; then
     sudo mkdir -p "${ROOTFS_DIR}/etc/ainux"
     sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/ainux/ainux.conf" "${ROOTFS_DIR}/etc/ainux/ainux.conf"
     echo "  ✓ ainux.conf deployed"
+fi
+
+# ── Deploy systemd-networkd config overlay (DHCP for all VM types) ───────
+# Files in rootfs-overlay/etc/systemd/network/ are baked in here so that
+# every fresh boot — UTM, QEMU, VMware, bare metal — gets DHCP automatically
+# without any manual systemd-networkd setup inside the image.
+NETWORK_OVERLAY="${AINUX_ROOT}/rootfs-overlay/etc/systemd/network"
+if [ -d "${NETWORK_OVERLAY}" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/systemd/network"
+    sudo cp -v "${NETWORK_OVERLAY}/"*.network "${ROOTFS_DIR}/etc/systemd/network/"
+    echo "  ✓ systemd-networkd DHCP configs deployed:"
+    ls -1 "${NETWORK_OVERLAY}/"*.network | while read f; do echo "      $(basename $f)"; done
+else
+    echo "  ⚠ No network overlay files found at ${NETWORK_OVERLAY} — skipping"
 fi
 
 # ─── Install Ollama ────────────────────────────────────────────
@@ -400,10 +432,24 @@ After=network.target
 Type=simple
 User=ainux
 WorkingDirectory=/opt/ainux/openwhale
+
+# Kill any process squatting on port 7777 before we start.
+# Prevents EADDRINUSE on systemd restart after a crash that orphaned a Node process.
+ExecStartPre=/bin/sh -c "fuser -k 7777/tcp 2>/dev/null; sleep 0.5; exit 0"
+
 ExecStart=/usr/bin/node openwhale.mjs
 Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux AINUX_MODE=true
+
+# on-failure: don't restart on clean exit (avoids port-contention restart loops)
 Restart=on-failure
 RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+# Kill the entire cgroup on stop — ensures tsx/node sub-processes don't outlive the unit
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=10
 
 # Security
 NoNewPrivileges=false
@@ -495,11 +541,8 @@ log "Detected hypervisor: $HYPERVISOR"
 
 case "$HYPERVISOR" in
     vmware)
-        log "VMware detected — using software renderer with linuxfb fallback"
-        export GALLIUM_DRIVER=llvmpipe
-        modprobe vmwgfx 2>/dev/null || true
-        # Try eglfs first, fall back to linuxfb if it fails
-        export QT_QPA_EGLFS_KMS_CONFIG=""
+        log "VMware detected — forcing linuxfb platform"
+        export QT_QPA_PLATFORM=linuxfb
         ;;
     qemu|kvm)
         log "QEMU/KVM detected — using virtio-gpu"

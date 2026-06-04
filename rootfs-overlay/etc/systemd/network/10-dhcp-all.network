@@ -1,0 +1,31 @@
+# TensorAgent OS — systemd-networkd DHCP (catch-all)
+#
+# Matches all wired / virtio Ethernet interfaces regardless of naming scheme:
+#   UTM (Apple Silicon):  enp0s1
+#   QEMU/KVM (x86_64):    ens3, ens4, enp3s0
+#   VMware Fusion:         ens33, ens160
+#   Bare metal (udev):    enpXsY, ethX
+#
+# This fires early in boot (before NetworkManager is ready) so that
+# package installs, curl calls, and OpenWhale's first-run AI setup
+# all have network access without any manual intervention.
+#
+# NetworkManager will take over the interface once it starts — it will
+# honour the existing DHCP lease and not re-negotiate.
+
+[Match]
+# Match all Ethernet-class devices. The 'e*' prefix covers:
+#   en* (predictable names)   eth* (legacy / some VMs)
+Name=en* eth* ens* enp*
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+
+[DHCP]
+# Use a persistent client identifier so the DHCP server gives the
+# same IP across reboots (important for dev-push SSH workflows).
+ClientIdentifier=mac
+UseDNS=yes
+UseNTP=yes
+RouteMetric=100
