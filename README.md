@@ -5,7 +5,7 @@
 <h1 align="center">TensorAgent OS</h1>
 
 <p align="center">
-  <strong>An experimental AI-native operating system.</strong>
+  <strong>An  AI-native operating system.</strong>
 </p>
 
 <p align="center">
@@ -22,19 +22,15 @@
 
 ---
 
-> 📣 **Heads up**
->
-> - 🌐 **Official website** — coming soon.
-> - 🏢 **Enterprise support, deployments & custom integrations** — coming soon.
 > - 📧 **Contact / inquiries:** [jijojohnx@outlook.com](mailto:jijojohnx@outlook.com)
 
 ---
 
 > ## ⚠️ Early Version — Here Be Dragons
 >
-> **TensorAgent OS is in very early development. It has many, many bugs.**
+> **TensorAgent OS is in very early development.**
 >
-> Treat it as a research prototype, not a daily driver. Expect:
+Expect:
 >
 > - **The x86_64 build is not ready.** Only the ARM64 path (UTM / QEMU on
 >   Apple Silicon) is currently usable end-to-end. The `build-iso.sh` x86_64
