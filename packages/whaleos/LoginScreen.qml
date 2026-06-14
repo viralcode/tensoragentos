@@ -5,58 +5,124 @@ import QtQuick.Layouts
 Rectangle {
     id: loginScreen
     anchors.fill: parent
-    color: "#030712"
+    color: root.bgVoid
 
     property bool loginBusy: false
-    // PERF: Removed glowPhase timer (was 60ms = 16 repaints/sec, ran even after login)
 
-    // ── Background: Aurora (original style) ──
+    // ── Background: Warm Sandy/Rose Light Gradient ──
     Rectangle {
         anchors.fill: parent
-        color: "#030712"
+        gradient: Gradient {
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0; color: "#fed7aa" } // Warm peach
+            GradientStop { position: 0.4; color: "#ffedd5" } // Orange-50
+            GradientStop { position: 0.8; color: "#fdf2f8" } // Pink-50
+            GradientStop { position: 1.0; color: "#fce7f3" } // Pink-100
+        }
     }
 
-    // Cyan nebula - top
+    // Large warm orange aurora — top sweep
     Rectangle {
-        x: parent.width * 0.15; y: parent.height * 0.0
-        width: parent.width * 0.7; height: parent.height * 0.5
-        radius: width / 2; opacity: 0.12; rotation: -5
-        color: "#00e5ff"
+        x: -parent.width * 0.1
+        y: -parent.height * 0.1
+        width: parent.width * 0.85
+        height: parent.height * 0.65
+        radius: width / 2
+        opacity: 0.25
+        rotation: -10
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#f59e0b" } // Amber
+            GradientStop { position: 0.35; color: "#f97316" } // Orange
+            GradientStop { position: 0.7; color: "#ea580c" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
-    // Indigo nebula - center
+    // Warm rose nebula — center
     Rectangle {
-        x: parent.width * 0.2; y: parent.height * 0.1
-        width: parent.width * 0.65; height: parent.height * 0.55
-        radius: width / 2; opacity: 0.14; rotation: 10
-        color: "#b388ff"
+        x: parent.width * 0.1
+        y: parent.height * 0.0
+        width: parent.width * 0.75
+        height: parent.height * 0.65
+        radius: width / 2
+        opacity: 0.15
+        rotation: 6
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#db2777" }
+            GradientStop { position: 0.4; color: "#e11d48" }
+            GradientStop { position: 0.8; color: "#be123c" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
-    // Rose accent - bottom
+    // Soft amber accent — right
     Rectangle {
-        x: parent.width * 0.5; y: parent.height * 0.5
-        width: parent.width * 0.5; height: parent.height * 0.4
-        radius: width / 2; opacity: 0.08
-        color: "#ff4081"
+        x: parent.width * 0.35
+        y: parent.height * 0.05
+        width: parent.width * 0.6
+        height: parent.height * 0.5
+        radius: width / 2
+        opacity: 0.20
+        rotation: 15
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#fbbf24" }
+            GradientStop { position: 0.5; color: "#f59e0b" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
-    // Star field
+    // Warm rose glow — bottom right
+    Rectangle {
+        x: parent.width * 0.4
+        y: parent.height * 0.5
+        width: parent.width * 0.6
+        height: parent.height * 0.45
+        radius: width / 2
+        opacity: 0.15
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#f472b6" }
+            GradientStop { position: 0.5; color: "#db2777" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Peach glow — bottom left
+    Rectangle {
+        x: -parent.width * 0.08
+        y: parent.height * 0.55
+        width: parent.width * 0.5
+        height: parent.height * 0.4
+        radius: width / 2
+        opacity: 0.15
+        rotation: -6
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#ffedd5" }
+            GradientStop { position: 0.6; color: "#fed7aa" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Particle dust (warm sparkles)
     Canvas {
         anchors.fill: parent; opacity: 0.4
         onPaint: {
             var ctx = getContext("2d");
             var seed = 42;
             function rand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; }
-            for (var i = 0; i < 90; i++) {
+            for (var i = 0; i < 80; i++) {
                 var sx = rand() * width; var sy = rand() * height;
-                var sr = rand() * 1.2 + 0.3; var so = rand() * 0.5 + 0.1;
-                ctx.beginPath(); ctx.fillStyle = "rgba(255, 255, 255, " + so + ")";
+                var sr = rand() * 1.5 + 0.3; var so = rand() * 0.3 + 0.1;
+                ctx.beginPath(); ctx.fillStyle = "rgba(124, 58, 237, " + so + ")"; // Soft purple
                 ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+            }
+            for (var j = 0; j < 40; j++) {
+                var bx = rand() * width; var by = rand() * height;
+                var br = rand() * 1.5 + 0.3; var bo = rand() * 0.4 + 0.1;
+                ctx.beginPath(); ctx.fillStyle = "rgba(234, 88, 12, " + bo + ")"; // Soft orange
+                ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
             }
         }
     }
-
-    // PERF: Removed scan line animation (was causing continuous repaints)
 
     // ── Clock (top center) ──
     Column {
@@ -73,14 +139,14 @@ Rectangle {
             font.pixelSize: Math.round(52 * root.sf)
             font.weight: Font.Light
             font.letterSpacing: Math.round(4 * root.sf)
-            color: "#ffffff"
+            color: root.textPrimary
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatDate(new Date(), "dddd, MMMM d")
             font.pixelSize: Math.round(13 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.45)
+            color: root.textSecondary
             font.letterSpacing: Math.round(1 * root.sf)
         }
 
@@ -106,41 +172,39 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.round(120 * root.sf); height: Math.round(120 * root.sf)
 
-            // Outer rotating ring
+            // Outer ring
             Rectangle {
                 id: outerRing
                 anchors.centerIn: parent
                 width: Math.round(110 * root.sf); height: width; radius: width / 2
                 color: "transparent"
-                border.color: Qt.rgba(0.0, 0.90, 1.0, 0.12)
+                border.color: root.borderColor
                 border.width: Math.round(1 * root.sf)
-                // PERF: Removed infinite rotation animation
 
                 // Accent dot on ring
                 Rectangle {
                     width: Math.round(4 * root.sf); height: Math.round(4 * root.sf)
-                    radius: width / 2; color: "#00e5ff"
+                    radius: width / 2; color: root.accentBlue
                     x: parent.width / 2 - width / 2
                     y: -height / 2
                     opacity: 0.8
                 }
             }
 
-            // Middle pulsing ring
+            // Middle ring
             Rectangle {
                 anchors.centerIn: parent
                 width: Math.round(90 * root.sf); height: width; radius: width / 2
                 color: "transparent"
-                border.color: Qt.rgba(0.70, 0.53, 1.0, 0.10); border.width: Math.round(1 * root.sf)
-                // PERF: Removed infinite pulsing color animation
+                border.color: Qt.rgba(0, 0, 0, 0.05); border.width: Math.round(1 * root.sf)
             }
 
             // Inner circle (glass)
             Rectangle {
                 anchors.centerIn: parent
                 width: Math.round(74 * root.sf); height: width; radius: width / 2
-                color: Qt.rgba(0.04, 0.04, 0.10, 0.6)
-                border.color: Qt.rgba(0.0, 0.90, 1.0, 0.15); border.width: 1
+                color: Qt.rgba(255, 255, 255, 0.5)
+                border.color: root.borderColor; border.width: 1
             }
 
             // Whale logo
@@ -160,7 +224,7 @@ Rectangle {
             font.pixelSize: Math.round(13 * root.sf)
             font.weight: Font.Medium
             font.letterSpacing: Math.round(2 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.5)
+            color: root.textSecondary
         }
 
         // Spacer
@@ -171,8 +235,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.round(280 * root.sf); height: Math.round(42 * root.sf)
             radius: Math.round(21 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.04)
-            border.color: userField.activeFocus ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.06)
+            color: Qt.rgba(255, 255, 255, 0.7)
+            border.color: userField.activeFocus ? root.accentBlue : root.borderColor
             border.width: 1
             Behavior on border.color { ColorAnimation { duration: 200 } }
 
@@ -189,7 +253,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = focused ? "#00e5ff" : "rgba(255,255,255,0.3)";
+                        ctx.strokeStyle = focused ? root.accentBlue : root.textMuted;
                         ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.arc(7, 5, 2.8, 0, Math.PI * 2); ctx.stroke();
                         ctx.beginPath(); ctx.arc(7, 15, 5.5, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
@@ -202,12 +266,12 @@ Rectangle {
                     id: userField
                     width: parent.width - Math.round(22 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "#e2e8f0"; font.pixelSize: Math.round(13 * root.sf); clip: true
+                    color: root.textPrimary; font.pixelSize: Math.round(13 * root.sf); clip: true
                     text: "ainux"  // pre-fill default user
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Username"; color: Qt.rgba(1, 1, 1, 0.2)
+                        text: "Username"; color: Qt.rgba(0, 0, 0, 0.3)
                         font.pixelSize: Math.round(13 * root.sf)
                         visible: !parent.text && !parent.activeFocus
                     }
@@ -222,8 +286,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.round(280 * root.sf); height: Math.round(42 * root.sf)
             radius: Math.round(21 * root.sf)
-            color: Qt.rgba(1, 1, 1, 0.04)
-            border.color: passField.activeFocus ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.06)
+            color: Qt.rgba(255, 255, 255, 0.7)
+            border.color: passField.activeFocus ? root.accentBlue : root.borderColor
             border.width: 1
             Behavior on border.color { ColorAnimation { duration: 200 } }
 
@@ -240,7 +304,7 @@ Rectangle {
                     onPaint: {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s, s);
-                        ctx.strokeStyle = focused ? "#00e5ff" : "rgba(255,255,255,0.3)";
+                        ctx.strokeStyle = focused ? root.accentBlue : root.textMuted;
                         ctx.lineWidth = 1.2; ctx.lineCap = "round";
                         ctx.strokeRect(3, 7, 8, 6);
                         ctx.beginPath(); ctx.arc(7, 7, 2.5, Math.PI, 0); ctx.stroke();
@@ -253,12 +317,12 @@ Rectangle {
                     id: passField
                     width: parent.width - loginArrow.width - Math.round(38 * root.sf)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "#e2e8f0"; font.pixelSize: Math.round(13 * root.sf)
+                    color: root.textPrimary; font.pixelSize: Math.round(13 * root.sf)
                     echoMode: TextInput.Password; clip: true
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Password"; color: Qt.rgba(1, 1, 1, 0.2)
+                        text: "Password"; color: Qt.rgba(0, 0, 0, 0.3)
                         font.pixelSize: Math.round(13 * root.sf)
                         visible: !parent.text && !parent.activeFocus
                     }
@@ -272,7 +336,7 @@ Rectangle {
                     id: loginArrow
                     width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
                     radius: width / 2; anchors.verticalCenter: parent.verticalCenter
-                    color: loginMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.4) : Qt.rgba(0.0, 0.90, 1.0, 0.15)
+                    color: loginMouse.containsMouse ? Qt.darker(root.accentBlue, 1.15) : root.accentBlue
 
                     Canvas {
                         anchors.centerIn: parent
@@ -302,7 +366,7 @@ Rectangle {
             id: errorText
             anchors.horizontalCenter: parent.horizontalCenter
             text: loginBusy ? "Authenticating..." : ""
-            color: loginBusy ? Qt.rgba(0.0, 0.90, 1.0, 0.5) : "#ff1744"
+            color: loginBusy ? root.accentBlue : root.accentRed
             font.pixelSize: Math.round(11 * root.sf)
             font.letterSpacing: Math.round(0.5 * root.sf)
             visible: text !== ""
@@ -329,7 +393,7 @@ Rectangle {
         // Restart
         Rectangle {
             width: Math.round(34 * root.sf); height: Math.round(34 * root.sf)
-            radius: width / 2; color: loginRestartMa.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+            radius: width / 2; color: loginRestartMa.containsMouse ? Qt.rgba(0, 0, 0, 0.05) : "transparent"
 
             Canvas {
                 anchors.centerIn: parent
@@ -338,7 +402,7 @@ Rectangle {
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = hov ? "#ff9100" : "rgba(255,255,255,0.35)";
+                    ctx.strokeStyle = hov ? root.accentOrange : root.textMuted;
                     ctx.lineWidth = 1.4; ctx.lineCap = "round";
                     ctx.beginPath(); ctx.arc(7, 7, 4.5, -0.5, Math.PI * 1.5); ctx.stroke();
                     ctx.fillStyle = ctx.strokeStyle;
@@ -353,7 +417,7 @@ Rectangle {
         // Shut Down
         Rectangle {
             width: Math.round(34 * root.sf); height: Math.round(34 * root.sf)
-            radius: width / 2; color: loginShutdownMa.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+            radius: width / 2; color: loginShutdownMa.containsMouse ? Qt.rgba(0, 0, 0, 0.05) : "transparent"
 
             Canvas {
                 anchors.centerIn: parent
@@ -362,7 +426,7 @@ Rectangle {
                 onPaint: {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
-                    ctx.strokeStyle = hov ? "#ff1744" : "rgba(255,255,255,0.35)";
+                    ctx.strokeStyle = hov ? root.accentRed : root.textMuted;
                     ctx.lineWidth = 1.6; ctx.lineCap = "round";
                     ctx.beginPath(); ctx.moveTo(7, 1.5); ctx.lineTo(7, 6); ctx.stroke();
                     ctx.beginPath(); ctx.arc(7, 7, 4.5, -1.2, Math.PI + 1.2); ctx.stroke();
@@ -374,10 +438,7 @@ Rectangle {
         }
     }
 
-    // ════════════════════════════════════════
     // ── Auth Logic ──
-    // ════════════════════════════════════════
-
     Timer {
         id: xhrTimeout; interval: 5000; running: false; repeat: false
         property string pendingUser: ""

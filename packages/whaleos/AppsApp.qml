@@ -77,7 +77,7 @@ Rectangle {
                                     width: Math.round(56 * root.sf); height: Math.round(22 * root.sf); radius: 11
                                     color: modelData.enabled ?
                                         Qt.rgba(0.13, 0.77, 0.37, 0.15) :
-                                        Qt.rgba(1, 1, 1, 0.06)
+                                        Qt.rgba(0, 0, 0, 0.04)
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.enabled ? "On" : "Off"
@@ -104,9 +104,9 @@ Rectangle {
                                 Repeater {
                                     model: [
                                         { label: "Run", color: root.accentBlue },
-                                        { label: "Toggle", color: Qt.rgba(1,1,1,0.06) },
-                                        { label: "Delete", color: Qt.rgba(1,1,1,0.06) },
-                                        { label: "Edit", color: Qt.rgba(1,1,1,0.06) }
+                                        { label: "Toggle", color: Qt.rgba(0,0,0,0.03) },
+                                        { label: "Delete", color: Qt.rgba(0,0,0,0.03) },
+                                        { label: "Edit", color: Qt.rgba(0,0,0,0.03) }
                                     ]
 
                                     delegate: Rectangle {

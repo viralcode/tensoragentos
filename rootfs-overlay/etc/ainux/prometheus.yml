@@ -1,0 +1,47 @@
+# TensorAgent OS — Prometheus Configuration Template
+# /etc/ainux/prometheus.yml
+#
+# Defines metrics collection for TensorAgent OS monitoring.
+# Use with Prometheus server + Grafana for dashboarding.
+#
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+  external_labels:
+    cluster: 'tensoragent-fleet'
+    environment: 'production'
+
+# ─── Scrape Targets ──────────────────────────────────────────────
+scrape_configs:
+  # Node Exporter — system metrics (CPU, RAM, disk, network)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          instance: 'tensoragent'
+
+  # OpenWhale AI Platform metrics
+  - job_name: 'openwhale'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['localhost:7777']
+        labels:
+          service: 'openwhale'
+
+  # Ollama LLM metrics
+  - job_name: 'ollama'
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['localhost:11434']
+        labels:
+          service: 'ollama'
+
+# ─── Alerting Rules ──────────────────────────────────────────────
+# Place rule files in /etc/ainux/prometheus-rules/
+
+rule_files:
+  - '/etc/ainux/prometheus-rules/*.yml'

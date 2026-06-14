@@ -1,0 +1,76 @@
+# AppArmor profile for OpenWhale AI Agent Platform
+# /etc/apparmor.d/opt.ainux.openwhale
+#
+# Restricts the OpenWhale Node.js process to only access paths it needs.
+# Prevents the AI agent from accessing sensitive system files even if
+# the sandbox layer is bypassed.
+
+#include <tunables/global>
+
+/usr/bin/node flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/ssl_certs>
+
+  # Node.js binary and libraries
+  /usr/bin/node                    mrix,
+  /usr/lib/node_modules/**         r,
+  /usr/share/nodejs/**             r,
+
+  # OpenWhale application
+  /opt/ainux/openwhale/             r,
+  /opt/ainux/openwhale/**           r,
+  /opt/ainux/openwhale/data/        rw,
+  /opt/ainux/openwhale/data/**      rwk,
+  /opt/ainux/openwhale/node_modules/** mr,
+
+  # User workspace (AI agent writes here)
+  owner /home/ainux/                r,
+  owner /home/ainux/Works/          rw,
+  owner /home/ainux/Works/**        rwk,
+  owner /home/ainux/.ainux/         rw,
+  owner /home/ainux/.ainux/**       rwk,
+  owner /home/ainux/.openwhale/     rw,
+  owner /home/ainux/.openwhale/**   rwk,
+
+  # Temp files
+  owner /tmp/**                    rw,
+
+  # Network access (API server, external AI providers)
+  network inet stream,
+  network inet dgram,
+  network inet6 stream,
+  network inet6 dgram,
+  network unix stream,
+
+  # Proc filesystem (Node.js needs this)
+  @{PROC}/@{pid}/stat              r,
+  @{PROC}/@{pid}/status            r,
+  @{PROC}/@{pid}/fd/               r,
+  @{PROC}/sys/kernel/random/uuid   r,
+  @{PROC}/meminfo                  r,
+  @{PROC}/cpuinfo                  r,
+
+  # System libraries
+  /usr/lib/**                      mr,
+  /lib/**                          mr,
+  /etc/ld.so.cache                 r,
+  /etc/ld.so.conf                  r,
+  /etc/ld.so.conf.d/               r,
+  /etc/ld.so.conf.d/**             r,
+  /etc/resolv.conf                 r,
+  /etc/hosts                       r,
+  /etc/nsswitch.conf               r,
+  /etc/ssl/**                      r,
+
+  # DENY sensitive paths explicitly
+  deny /etc/shadow                 r,
+  deny /etc/gshadow                r,
+  deny /etc/sudoers                r,
+  deny /etc/sudoers.d/**           r,
+  deny /root/**                    rwx,
+  deny /boot/**                    rwx,
+  deny /etc/ssh/ssh_host_*         r,
+  deny /etc/apparmor.d/**          w,
+  deny /sys/firmware/**            rwx,
+}

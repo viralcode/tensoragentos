@@ -36,6 +36,27 @@ deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe mult
 deb http://security.ubuntu.com/ubuntu noble-security main restricted universe multiverse
 SOURCES
 apt-get update -qq
+apt-get install -y -qq software-properties-common
+
+# Add PPAs for non-snap packages
+add-apt-repository -y ppa:mozillateam/ppa
+add-apt-repository -y ppa:xtradeb/apps
+
+# Pin Firefox to Mozilla PPA
+cat > /etc/apt/preferences.d/mozilla-firefox << 'MOZPIN'
+Package: *
+Pin: release o=LP-PPA-mozillateam
+Pin-Priority: 1001
+MOZPIN
+
+# Pin Chromium to xtradeb PPA
+cat > /etc/apt/preferences.d/xtradeb-chromium << 'CHROMPIN'
+Package: chromium*
+Pin: release o=LP-PPA-xtradeb-apps
+Pin-Priority: 1001
+CHROMPIN
+
+apt-get update -qq
 echo "  ✓ Sources configured"
 
 # ─── 2. Install system packages ────────────────────────────────
@@ -43,6 +64,7 @@ echo "[2/9] Installing system packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get install -y -qq \
     bash curl wget git openssh-server sudo htop tmux \
+    chromium \
     mesa-utils libgl1-mesa-dri libegl-mesa0 \
     wayland-protocols libwayland-dev cage xwayland seatd \
     qt6-base-dev qt6-declarative-dev \
@@ -219,7 +241,7 @@ After=network.target openwhale.service
 [Service]
 Type=simple
 ExecStart=/usr/bin/node /opt/ainux/whaleos/whaleos-helper.mjs
-User=root
+User=ainux
 Restart=always
 RestartSec=3
 Environment=HOME=/home/ainux

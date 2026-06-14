@@ -37,6 +37,18 @@ StartLimitIntervalSec=120
 TTYPath=/dev/tty1
 TTYVTDisallocate=yes
 
+# ─── Security Hardening (Enterprise) ─────────────────────────────
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ainux /tmp /run/user/1000
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+SystemCallArchitectures=native
+LockPersonality=true
+RestrictRealtime=true
+
 # Logging
 StandardOutput=journal
 StandardError=journal

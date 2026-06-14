@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import "api.js" as API
 
 Rectangle {
@@ -17,12 +18,24 @@ Rectangle {
         root.openWindows = wins;
     }
 
+    function focusWindow(appId) {
+        for (var i = 0; i < windowRepeater.count; i++) {
+            var win = windowRepeater.itemAt(i);
+            if (win && win.appId === appId) {
+                root.bringToFront(win);
+                win.focusNativeSurface();
+                break;
+            }
+        }
+    }
+
     // ── Wallpaper State ──
-    property string currentWallpaper: "default"
+    property string currentWallpaper: "warm-desert"
     property bool wpExpanded: false
     property bool displayExpanded: false
     property var wallpaperList: [
         { id: "default",        name: "Default Aurora",    file: "" },
+        { id: "warm-desert",    name: "☀ Warm Desert",     file: "assets/wallpapers/warm-desert.png" },
         { id: "nebula",         name: "★ Nebula",          file: "assets/wallpapers/nebula.png" },
         { id: "cyber-grid",     name: "◈ Cyber Grid",      file: "assets/wallpapers/cyber-grid.png" },
         { id: "aurora",         name: "◌ Aurora",          file: "assets/wallpapers/aurora.png" },
@@ -52,10 +65,10 @@ Rectangle {
             return "";
         }
 
-        // Subtle dark overlay to keep UI readable
+        // Very subtle overlay to keep UI readable
         Rectangle {
             anchors.fill: parent
-            color: Qt.rgba(0, 0, 0, 0.25)
+            color: Qt.rgba(0, 0, 0, 0.08)
         }
     }
 
@@ -64,77 +77,96 @@ Rectangle {
         anchors.fill: parent
         visible: currentWallpaper === "default"
 
-        // Base deep blue-purple gradient
+        // Base warm gradient
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: "#030712" }
-                GradientStop { position: 0.3; color: "#0a1128" }
-                GradientStop { position: 0.6; color: "#0c1633" }
-                GradientStop { position: 1.0; color: "#050a18" }
+                GradientStop { position: 0.0; color: "#e8d5c4" }
+                GradientStop { position: 0.15; color: "#dcc4b0" }
+                GradientStop { position: 0.4; color: "#c9a88a" }
+                GradientStop { position: 0.7; color: "#b89878" }
+                GradientStop { position: 1.0; color: "#a08060" }
             }
         }
 
-        // Aurora glow - top left (teal/cyan)
+        // Large cyan aurora — top-left sweep
         Rectangle {
-            x: -parent.width * 0.1
+            x: -parent.width * 0.15
+            y: -parent.height * 0.05
+            width: parent.width * 0.8
+            height: parent.height * 0.6
+            radius: width / 2
+            opacity: 0.28
+            rotation: -12
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#38bdf8" }
+                GradientStop { position: 0.35; color: "#0ea5e9" }
+                GradientStop { position: 0.7; color: "#0284c7" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Deep purple nebula — center
+        Rectangle {
+            x: parent.width * 0.15
             y: parent.height * 0.05
             width: parent.width * 0.7
+            height: parent.height * 0.6
+            radius: width / 2
+            opacity: 0.24
+            rotation: 8
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#a78bfa" }
+                GradientStop { position: 0.4; color: "#7c3aed" }
+                GradientStop { position: 0.8; color: "#6d28d9" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Electric blue ribbon — right side
+        Rectangle {
+            x: parent.width * 0.35
+            y: parent.height * 0.1
+            width: parent.width * 0.6
             height: parent.height * 0.5
             radius: width / 2
-            opacity: 0.18
-            rotation: -15
+            opacity: 0.20
+            rotation: 18
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#00e5ff" }
-                GradientStop { position: 0.4; color: "#00bcd4" }
+                GradientStop { position: 0.0; color: "#0ea5e9" }
+                GradientStop { position: 0.5; color: "#2563eb" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
-        // Aurora glow - center (purple/indigo)
+        // Rose/magenta accent — bottom right
         Rectangle {
-            x: parent.width * 0.2
-            y: parent.height * 0.1
-            width: parent.width * 0.65
-            height: parent.height * 0.55
-            radius: width / 2
-            opacity: 0.16
-            rotation: 10
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#b388ff" }
-                GradientStop { position: 0.5; color: "#7c3aed" }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
-
-        // Aurora glow - right (blue/electric)
-        Rectangle {
-            x: parent.width * 0.4
-            y: parent.height * 0.15
+            x: parent.width * 0.45
+            y: parent.height * 0.5
             width: parent.width * 0.55
             height: parent.height * 0.45
             radius: width / 2
-            opacity: 0.14
-            rotation: 20
+            opacity: 0.16
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#00b0ff" }
-                GradientStop { position: 0.5; color: "#2979ff" }
+                GradientStop { position: 0.0; color: "#f472b6" }
+                GradientStop { position: 0.5; color: "#ec4899" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
-        // Warm accent glow - bottom right (rose/pink)
+        // Teal secondary glow — bottom left
         Rectangle {
-            x: parent.width * 0.5
-            y: parent.height * 0.5
+            x: -parent.width * 0.05
+            y: parent.height * 0.55
             width: parent.width * 0.5
             height: parent.height * 0.4
             radius: width / 2
-            opacity: 0.10
+            opacity: 0.12
+            rotation: -8
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#ff4081" }
-                GradientStop { position: 0.5; color: "#f50057" }
+                GradientStop { position: 0.0; color: "#2dd4bf" }
+                GradientStop { position: 0.6; color: "#14b8a6" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -146,21 +178,31 @@ Rectangle {
                 var ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
 
-                // Draw stars
                 var seed = 42;
                 function pseudoRandom() {
                     seed = (seed * 16807 + 0) % 2147483647;
                     return seed / 2147483647;
                 }
 
-                for (var i = 0; i < 80; i++) {
+                // More stars, varied sizes for depth
+                for (var i = 0; i < 120; i++) {
                     var sx = pseudoRandom() * width;
                     var sy = pseudoRandom() * height;
-                    var sr = pseudoRandom() * 1.2 + 0.3;
-                    var so = pseudoRandom() * 0.4 + 0.1;
+                    var sr = pseudoRandom() * 1.5 + 0.2;
+                    var so = pseudoRandom() * 0.5 + 0.1;
                     ctx.beginPath();
                     ctx.fillStyle = "rgba(255, 255, 255, " + so + ")";
                     ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // A few brighter accent stars
+                for (var j = 0; j < 8; j++) {
+                    var bx = pseudoRandom() * width;
+                    var by = pseudoRandom() * height;
+                    ctx.beginPath();
+                    ctx.fillStyle = "rgba(56, 189, 248, 0.3)";
+                    ctx.arc(bx, by, 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
@@ -194,8 +236,8 @@ Rectangle {
         width: Math.round(220 * root.sf)
         height: menuCol.height + Math.round(16 * root.sf)
         radius: root.radiusMd
-        color: Qt.rgba(0.03, 0.05, 0.10, 0.94)
-        border.color: Qt.rgba(0.0, 0.90, 1.0, 0.12)
+        color: root.bgElevated
+        border.color: root.borderColor
         border.width: 1
         z: 500
 
@@ -216,7 +258,7 @@ Rectangle {
             // ── Copy ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: copyMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
+                color: copyMa.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
@@ -237,7 +279,7 @@ Rectangle {
             // ── Paste ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: pasteMa2.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
+                color: pasteMa2.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
@@ -258,18 +300,18 @@ Rectangle {
             }
 
             // Separator
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
             // ── Open Works Folder ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: worksMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
+                color: worksMa.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
                 Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
                     Canvas {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.fillStyle = "#00e5ff";
+                            ctx.fillStyle = "#38bdf8";
                             ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(6,5); ctx.lineTo(7,3); ctx.lineTo(1,3); ctx.closePath(); ctx.fill();
                             ctx.beginPath(); ctx.moveTo(1,5); ctx.lineTo(13,5); ctx.lineTo(13,13); ctx.lineTo(1,13); ctx.closePath(); ctx.fill();
                             ctx.fillStyle = "#00b0ff";
@@ -283,12 +325,12 @@ Rectangle {
             }
 
             // Separator
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+            Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
             // ── Wallpaper Section (expandable/collapsible) ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: wpHeaderMa.containsMouse ? Qt.rgba(0.70, 0.53, 1.0, 0.10) : "transparent"
+                color: wpHeaderMa.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
                 Row {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
@@ -297,8 +339,8 @@ Rectangle {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.strokeStyle = "#b388ff"; ctx.lineWidth = 1.2; ctx.strokeRect(1, 1, 12, 12);
-                            ctx.fillStyle = "#b388ff";
+                            ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 1.2; ctx.strokeRect(1, 1, 12, 12);
+                            ctx.fillStyle = "#a78bfa";
                             ctx.beginPath(); ctx.moveTo(3,10); ctx.lineTo(5,6); ctx.lineTo(7,8); ctx.lineTo(9,4); ctx.lineTo(11,10); ctx.closePath(); ctx.fill();
                             ctx.restore(); }
                         onSChanged: requestPaint()
@@ -316,8 +358,8 @@ Rectangle {
                     width: parent.width
                     height: Math.round(36 * root.sf)
                     radius: root.radiusSm
-                    color: wpItemMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) :
-                           desktop.currentWallpaper === modelData.id ? Qt.rgba(0.0, 0.90, 1.0, 0.06) :
+                    color: wpItemMouse.containsMouse ? Qt.rgba(0, 0, 0, 0.04) :
+                           desktop.currentWallpaper === modelData.id ? Qt.rgba(0, 0, 0, 0.02) :
                            "transparent"
 
                     Row {
@@ -333,7 +375,7 @@ Rectangle {
                             width: Math.round(26 * root.sf); height: Math.round(26 * root.sf)
                             radius: Math.round(4 * root.sf)
                             color: modelData.file === "" ? "#0f1628" : "transparent"
-                            border.color: desktop.currentWallpaper === modelData.id ? root.accentBlue : Qt.rgba(1, 1, 1, 0.15)
+                            border.color: desktop.currentWallpaper === modelData.id ? root.accentBlue : root.borderColor
                             border.width: desktop.currentWallpaper === modelData.id ? 1.5 : 1
                             clip: true
                             anchors.verticalCenter: parent.verticalCenter
@@ -412,13 +454,13 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: root.borderColor
             }
 
             // ── Display Settings Section (expandable) ──
             Rectangle {
                 width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
-                color: dispHeaderMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
+                color: dispHeaderMa.containsMouse ? Qt.rgba(0.22, 0.74, 0.97, 0.08) : "transparent"
                 Row {
                     anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                     anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
@@ -427,7 +469,7 @@ Rectangle {
                         width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); anchors.verticalCenter: parent.verticalCenter
                         property real s: root.sf
                         onPaint: { var ctx = getContext("2d"); ctx.clearRect(0,0,width,height); ctx.save(); ctx.scale(s,s);
-                            ctx.strokeStyle = "#00e5ff"; ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = root.accentBlue; ctx.lineWidth = 1.2;
                             ctx.strokeRect(1, 2, 12, 8);
                             ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(10, 10); ctx.lineTo(10, 12); ctx.lineTo(4, 12); ctx.closePath(); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(3, 12); ctx.lineTo(11, 12); ctx.stroke();
@@ -460,14 +502,14 @@ Rectangle {
 
                     delegate: Rectangle {
                         width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
-                        color: resCtxMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
+                        color: resCtxMa.containsMouse ? Qt.rgba(0.22, 0.74, 0.97, 0.08) : "transparent"
                         Row {
                             anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.right: parent.right
                             anchors.leftMargin: Math.round(30 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(6 * root.sf)
-                            Text { text: "●"; font.pixelSize: Math.round(8 * root.sf); color: "#00e5ff"; visible: false /* TODO: check current */ }
+                            Text { text: "●"; font.pixelSize: Math.round(8 * root.sf); color: root.accentBlue; visible: false /* TODO: check current */ }
                             Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                             Item { width: Math.round(4 * root.sf); height: 1 }
-                            Text { text: modelData.tag; font.pixelSize: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.25) }
+                            Text { text: modelData.tag; font.pixelSize: Math.round(8 * root.sf); color: root.textMuted }
                         }
                         MouseArea {
                             id: resCtxMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -487,10 +529,11 @@ Rectangle {
                                         ));
                                         var modeline = (cvtResult.stdout || "").trim();
                                         if (modeline) {
+                                            var outputName = sysManager.getActiveOutputName();
                                             sysManager[runFn](
                                                 "xrandr --newmode " + modeline + " 2>/dev/null; " +
-                                                "xrandr --addmode XWAYLAND0 '" + modeName + "' 2>/dev/null; " +
-                                                "xrandr --output XWAYLAND0 --mode '" + modeName + "' 2>/dev/null", "/"
+                                                "xrandr --addmode " + outputName + " '" + modeName + "' 2>/dev/null; " +
+                                                "xrandr --output " + outputName + " --mode '" + modeName + "' 2>/dev/null", "/"
                                             );
                                             root.showToast("Resolution set to " + modelData.label + " (mode added)", "success");
                                         } else {
@@ -507,7 +550,7 @@ Rectangle {
                 }
 
                 // Separator
-                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.04); visible: desktop.displayExpanded }
+                Rectangle { width: parent.width; height: 1; color: root.borderColor; visible: desktop.displayExpanded }
 
                 // Scaling label
                 Text { text: "UI Scaling"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted; leftPadding: Math.round(30 * root.sf); topPadding: Math.round(4 * root.sf) }
@@ -524,12 +567,12 @@ Rectangle {
 
                     delegate: Rectangle {
                         width: parent.width; height: Math.round(26 * root.sf); radius: root.radiusSm
-                        color: dscaleMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
+                        color: dscaleMa.containsMouse ? Qt.rgba(0.22, 0.74, 0.97, 0.08) : "transparent"
                         Row {
                             anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
                             anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(8 * root.sf)
-                            Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#00e5ff" : root.textMuted }
-                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? "#00e5ff" : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
+                            Text { text: Math.abs(root.userScale - modelData.scale) < 0.01 ? "●" : "○"; font.pixelSize: Math.round(10 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? root.accentBlue : root.textMuted }
+                            Text { text: modelData.label; font.pixelSize: Math.round(11 * root.sf); color: Math.abs(root.userScale - modelData.scale) < 0.01 ? root.accentBlue : root.textSecondary; font.bold: Math.abs(root.userScale - modelData.scale) < 0.01 }
                         }
                         MouseArea {
                             id: dscaleMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -543,12 +586,12 @@ Rectangle {
                 }
 
                 // Separator
-                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.04) }
+                Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
                 // Open Display Settings (full)
                 Rectangle {
                     width: parent.width; height: Math.round(28 * root.sf); radius: root.radiusSm
-                    color: openDispMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
+                    color: openDispMa.containsMouse ? Qt.rgba(0.22, 0.74, 0.97, 0.08) : "transparent"
                     Row {
                         anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
                         anchors.leftMargin: Math.round(30 * root.sf); spacing: Math.round(6 * root.sf)
@@ -569,7 +612,7 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: root.borderColor
             }
 
             // Close option
@@ -577,7 +620,7 @@ Rectangle {
                 width: parent.width
                 height: Math.round(30 * root.sf)
                 radius: root.radiusSm
-                color: closeMenuMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.08) : "transparent"
+                color: closeMenuMouse.containsMouse ? Qt.rgba(0.22, 0.74, 0.97, 0.08) : "transparent"
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -599,13 +642,14 @@ Rectangle {
         }
     }
 
-    // ── Works Folder Desktop Icon ──
+    // ── Works Folder Desktop Icon (hidden when dashboard is showing) ──
     Rectangle {
         id: worksIcon
         x: Math.round(24 * root.sf); y: Math.round(60 * root.sf)
         width: Math.round(72 * root.sf); height: Math.round(78 * root.sf)
         radius: root.radiusMd; z: 10
-        color: worksIconMa.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.10) : "transparent"
+        visible: root.openWindows.length > 0
+        color: worksIconMa.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
 
         Column {
             anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -617,7 +661,7 @@ Rectangle {
                     var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                     ctx.save(); ctx.scale(s, s);
                     // Folder shape
-                    ctx.fillStyle = "#00e5ff";
+                    ctx.fillStyle = "#38bdf8";
                     ctx.beginPath();
                     ctx.moveTo(2, 10); ctx.lineTo(2, 30); ctx.lineTo(34, 30);
                     ctx.lineTo(34, 12); ctx.lineTo(18, 12); ctx.lineTo(15, 8);
@@ -649,36 +693,522 @@ Rectangle {
         }
     }
 
-    // ── Whale Logo Watermark ──
-    Column {
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: Math.round(-20 * root.sf)
-        spacing: Math.round(14 * root.sf)
-        opacity: currentWallpaper === "default" ? 0.35 : 0.20
+    // ── Dashboard Home Screen ──
+    Item {
+        id: dashboardHome
+        anchors.top: topBar.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: appDock.top
+        anchors.topMargin: Math.round(12 * root.sf)
+        anchors.leftMargin: Math.round(40 * root.sf)
+        anchors.rightMargin: Math.round(40 * root.sf)
+        anchors.bottomMargin: Math.round(12 * root.sf)
+        visible: root.openWindows.length === 0
+        z: 2
 
-        Rectangle {
-            width: Math.round(90 * root.sf); height: Math.round(90 * root.sf); radius: width / 2
-            color: Qt.rgba(0.0, 0.45, 0.80, 0.15)
-            border.color: Qt.rgba(0.0, 0.90, 1.0, 0.30)
-            border.width: 1.5
-            anchors.horizontalCenter: parent.horizontalCenter
+        // Dashboard data
+        property var providersList: []
+        property var agentsList: []
+        property var activeRunsList: []
+        property var toolsList: []
+        property var skillsList: []
+        property int totalTools: 0
+        property int totalSkills: 0
+        property int activeProviders: 0
+        property int totalAgents: 0
+        property bool dataLoaded: false
+        property bool authSuccessful: false
 
-            Image {
-                anchors.centerIn: parent
-                width: Math.round(56 * root.sf); height: Math.round(56 * root.sf)
-                source: "assets/whale_logo.png"
-                fillMode: Image.PreserveAspectFit
-                smooth: true; mipmap: true
+        // Timer to periodically refresh dashboard data
+        Timer {
+            id: refreshTimer
+            interval: 10000 // 10 seconds
+            running: root.loggedIn
+            repeat: true
+            onTriggered: {
+                console.log("Dashboard refresh timer triggered...");
+                dashboardHome.loadDashboardData(true);
             }
         }
 
-        Text {
-            text: "T E N S O R A G E N T   O S"
-            font.pixelSize: Math.round(13 * root.sf)
-            font.weight: Font.Normal
-            font.letterSpacing: Math.round(2 * root.sf)
-            color: "#7dd3fc"
-            anchors.horizontalCenter: parent.horizontalCenter
+        function loadDashboardData(force) {
+            if (dataLoaded && !force) return;
+
+            // Check if we need to auto-authenticate
+            if (root.sessionId === "system" || root.sessionId === "" || !authSuccessful) {
+                console.log("No valid active dashboard session, attempting auto-login...");
+                var loginUser = (root.currentUser && root.currentUser !== "") ? root.currentUser : "ainux";
+                var loginPass = loginUser; // System convention: username is password
+                
+                API.login(loginUser, loginPass, function(status, data) {
+                    if (status === 200 && data && data.ok && data.sessionId) {
+                        console.log("Auto-login as " + loginUser + " succeeded. Session:", data.sessionId);
+                        root.sessionId = data.sessionId;
+                        API.setSession(data.sessionId);
+                        authSuccessful = true;
+                        fetchDashboardData();
+                    } else {
+                        // Fallback to admin/admin
+                        console.log("Auto-login as " + loginUser + " failed. Trying admin/admin...");
+                        API.login("admin", "admin", function(status2, data2) {
+                            if (status2 === 200 && data2 && data2.ok && data2.sessionId) {
+                                console.log("Auto-login as admin succeeded. Session:", data2.sessionId);
+                                root.sessionId = data2.sessionId;
+                                API.setSession(data2.sessionId);
+                                authSuccessful = true;
+                                fetchDashboardData();
+                            } else {
+                                console.warn("All auto-login attempts failed. Status:", status2);
+                                // We will retry on the next timer tick
+                            }
+                        });
+                    }
+                });
+            } else {
+                fetchDashboardData();
+            }
+        }
+
+        function fetchDashboardData() {
+            API.getProviders(function(s, d) {
+                if (s === 200 && d) {
+                    var provs = d.providers || d || [];
+                    var arr = [];
+                    var active = 0;
+                    for (var k in provs) {
+                        if (provs.hasOwnProperty(k)) {
+                            var p = provs[k];
+                            var configured = (p && p.configured) || false;
+                            arr.push({ name: k, configured: configured, model: (p && p.model) || "" });
+                            if (configured) active++;
+                        }
+                    }
+                    providersList = arr;
+                    activeProviders = active;
+                    dataLoaded = true;
+                }
+            });
+            API.getTools(function(s, d) {
+                if (s === 200 && d) {
+                    var t = d.tools || d || [];
+                    totalTools = (typeof t.length !== "undefined") ? t.length : 0;
+                    toolsList = t;
+                    dataLoaded = true;
+                }
+            });
+            API.getSkills(function(s, d) {
+                if (s === 200 && d) {
+                    var sk = d.skills || d || [];
+                    totalSkills = (typeof sk.length !== "undefined") ? sk.length : 0;
+                    skillsList = sk;
+                    dataLoaded = true;
+                }
+            });
+            API.getAgents(function(s, d) {
+                if (s === 200 && d) {
+                    var ag = d.agents || d || [];
+                    agentsList = ag;
+                    totalAgents = (typeof ag.length !== "undefined") ? ag.length : 0;
+                    dataLoaded = true;
+                }
+            });
+            API.getActiveRuns(function(s, d) {
+                if (s === 200 && d) {
+                    var r = d.runs || d || [];
+                    activeRunsList = r;
+                }
+            });
+        }
+
+        Component.onCompleted: {
+            console.log("Desktop completed. loggedIn:", root.loggedIn, "openWindows length:", root.openWindows.length);
+            if (root.loggedIn) loadDashboardData();
+        }
+
+        Connections {
+            target: root
+            function onLoggedInChanged() {
+                if (root.loggedIn) dashboardHome.loadDashboardData();
+            }
+        }
+
+        // Dashboard content — fits viewport
+        Flickable {
+            anchors.fill: parent
+            contentHeight: dashCol.height + Math.round(20 * root.sf)
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            interactive: contentHeight > height
+
+            Column {
+                id: dashCol
+                width: parent.width
+                spacing: Math.round(20 * root.sf)
+
+                // ── Greeting ──
+                Column {
+                    width: parent.width
+                    spacing: Math.round(4 * root.sf)
+                    topPadding: Math.round(8 * root.sf)
+
+                    Text {
+                        text: {
+                            var h = new Date().getHours();
+                            var greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+                            return "👋  " + greeting + ", " + (root.currentUser || "user");
+                        }
+                        font.pixelSize: Math.round(24 * root.sf)
+                        font.weight: Font.Bold
+                        color: root.textPrimary
+                    }
+                    Text {
+                        text: "Your AI workspace is ready. What shall we build today?"
+                        font.pixelSize: Math.round(13 * root.sf)
+                        color: root.textSecondary
+                    }
+                }
+
+                // ── Launchpad Cards ──
+                Column {
+                    width: parent.width
+                    spacing: Math.round(10 * root.sf)
+
+                    Text {
+                        text: "Launchpad"
+                        font.pixelSize: Math.round(14 * root.sf)
+                        font.weight: Font.DemiBold
+                        color: root.textPrimary
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: Math.round(12 * root.sf)
+
+                        Repeater {
+                            model: [
+                                { title: "Create Agent",  sub: "Build a new AI agent\nfrom scratch", icon: "\uf544", accent: "#38bdf8", appId: "agents",   appTitle: "Agents",   appIcon: "agents" },
+                                { title: "New Task",      sub: "Send a task to your\nAI agents",     icon: "\uf0ae", accent: "#34d399", appId: "",          appTitle: "",         appIcon: "" },
+                                { title: "Browse Skills", sub: "Discover and install\nskills",        icon: "\uf0e7", accent: "#fb923c", appId: "skills",   appTitle: "Skills",   appIcon: "skills" },
+                                { title: "Open Terminal", sub: "Command line\naccess",               icon: "\uf120", accent: "#a78bfa", appId: "terminal", appTitle: "Terminal", appIcon: "terminal" }
+                            ]
+
+                            delegate: Rectangle {
+                                width: (dashCol.width - Math.round(36 * root.sf)) / 4
+                                height: Math.round(130 * root.sf)
+                                radius: root.radiusMd
+                                color: lpMa.containsMouse
+                                    ? Qt.rgba(1, 1, 1, 0.95)
+                                    : Qt.rgba(1, 1, 1, 0.85)
+                                border.color: lpMa.containsMouse
+                                    ? Qt.rgba(0, 0, 0, 0.12)
+                                    : Qt.rgba(0, 0, 0, 0.06)
+                                border.width: 1
+
+                                Behavior on color { ColorAnimation { duration: 200 } }
+                                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                                transform: Translate {
+                                    y: lpMa.containsMouse ? Math.round(-3 * root.sf) : 0
+                                    Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                                }
+
+                                Column {
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.margins: Math.round(16 * root.sf)
+                                    spacing: Math.round(10 * root.sf)
+
+                                    // Icon circle
+                                    Rectangle {
+                                        width: Math.round(40 * root.sf); height: width
+                                        radius: Math.round(10 * root.sf)
+                                        color: Qt.rgba(Qt.color(modelData.accent).r, Qt.color(modelData.accent).g, Qt.color(modelData.accent).b, 0.15)
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.icon
+                                            font.family: root.iconFont
+                                            font.weight: Font.Black
+                                            font.pixelSize: Math.round(18 * root.sf)
+                                            color: modelData.accent
+                                        }
+                                    }
+
+                                    Text {
+                                        text: modelData.title
+                                        font.pixelSize: Math.round(13 * root.sf)
+                                        font.weight: Font.DemiBold
+                                        color: root.textPrimary
+                                    }
+                                    Text {
+                                        text: modelData.sub
+                                        font.pixelSize: Math.round(10 * root.sf)
+                                        color: root.textSecondary
+                                        lineHeight: 1.3
+                                    }
+                                }
+
+                                // Arrow icon bottom-right
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    anchors.margins: Math.round(14 * root.sf)
+                                    text: "\u2192"
+                                    font.pixelSize: Math.round(16 * root.sf)
+                                    font.weight: Font.Bold
+                                    color: lpMa.containsMouse ? modelData.accent : root.textSecondary
+                                    Behavior on color { ColorAnimation { duration: 200 } }
+                                }
+
+                                MouseArea {
+                                    id: lpMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (modelData.appId === "") {
+                                            // New Task → Open dialog to specify prompt and agent
+                                            newTaskDialog.open();
+                                        } else {
+                                            root.openAppWindow(modelData.appId, modelData.appTitle, modelData.appIcon);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Active Agent Tasks Table (real API) ──
+                Rectangle {
+                    width: parent.width
+                    height: agentsTableCol.height + Math.round(24 * root.sf)
+                    radius: root.radiusMd
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    border.color: Qt.rgba(0, 0, 0, 0.06)
+                    border.width: 1
+
+                    Column {
+                        id: agentsTableCol
+                        width: parent.width - Math.round(24 * root.sf)
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.topMargin: Math.round(12 * root.sf)
+                        spacing: Math.round(2 * root.sf)
+
+                        // Header
+                        Row {
+                            width: parent.width
+                            spacing: 0
+                            Text {
+                                text: "Active Agent Tasks"
+                                font.pixelSize: Math.round(14 * root.sf)
+                                font.weight: Font.DemiBold
+                                color: root.textPrimary
+                                width: parent.width * 0.5
+                            }
+                            Text {
+                                text: "View all tasks"
+                                font.pixelSize: Math.round(11 * root.sf)
+                                color: root.accentBlue
+                                width: parent.width * 0.5
+                                horizontalAlignment: Text.AlignRight
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.openAppWindow("agents", "Agents", "agents")
+                                }
+                            }
+                        }
+
+                        Item { width: 1; height: Math.round(8 * root.sf) }
+
+                        // Column headers
+                        Rectangle {
+                            width: parent.width
+                            height: Math.round(32 * root.sf)
+                            color: Qt.rgba(0, 0, 0, 0.03)
+                            radius: root.radiusSm
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: Math.round(12 * root.sf)
+                                anchors.rightMargin: Math.round(12 * root.sf)
+                                spacing: 0
+
+                                Text { text: "Task / Prompt";    width: parent.width * 0.40; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; verticalAlignment: Text.AlignVCenter; height: parent.height }
+                                Text { text: "Agent";          width: parent.width * 0.20; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; verticalAlignment: Text.AlignVCenter; height: parent.height }
+                                Text { text: "Status";         width: parent.width * 0.15; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; verticalAlignment: Text.AlignVCenter; height: parent.height }
+                                Text { text: "Model";          width: parent.width * 0.25; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: root.textSecondary; verticalAlignment: Text.AlignVCenter; height: parent.height; horizontalAlignment: Text.AlignRight }
+                            }
+                        }
+
+                        // Task runs rows — real data from /api/agents/runs
+                        Repeater {
+                            model: dashboardHome.activeRunsList
+
+                            delegate: Rectangle {
+                                width: parent.width
+                                height: Math.round(44 * root.sf)
+                                color: agentRowMa.containsMouse ? Qt.rgba(0, 0, 0, 0.03) : "transparent"
+                                radius: root.radiusSm
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: Math.round(12 * root.sf)
+                                    anchors.rightMargin: Math.round(12 * root.sf)
+                                    spacing: 0
+
+                                    // Task description elided
+                                    Text {
+                                        text: modelData.task || "No description"
+                                        width: parent.width * 0.40
+                                        font.pixelSize: Math.round(12 * root.sf)
+                                        font.weight: Font.Medium
+                                        color: root.textPrimary
+                                        verticalAlignment: Text.AlignVCenter
+                                        height: parent.height
+                                        elide: Text.ElideRight
+                                    }
+
+                                    // Agent ID
+                                    Text {
+                                        text: modelData.agentId || "main"
+                                        width: parent.width * 0.20
+                                        font.pixelSize: Math.round(12 * root.sf)
+                                        color: root.textSecondary
+                                        verticalAlignment: Text.AlignVCenter
+                                        height: parent.height
+                                        elide: Text.ElideRight
+                                    }
+
+                                    // Status
+                                    Row {
+                                        width: parent.width * 0.15
+                                        height: parent.height
+                                        spacing: Math.round(4 * root.sf)
+
+                                        Rectangle {
+                                            width: Math.round(6 * root.sf); height: width
+                                            radius: width / 2
+                                            color: {
+                                                var st = (modelData.status || "").toLowerCase();
+                                                if (st === "running") return "#22c55e";     // green
+                                                if (st === "pending") return "#f97316";     // orange
+                                                if (st === "paused") return "#eab308";      // yellow
+                                                if (st === "completed") return "#3b82f6";   // blue
+                                                if (st === "error" || st === "stopped") return "#ef4444"; // red
+                                                return "#94a3b8"; // gray
+                                            }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                        Text {
+                                            text: (modelData.status || "pending").charAt(0).toUpperCase() + (modelData.status || "pending").slice(1)
+                                            font.pixelSize: Math.round(11 * root.sf)
+                                            font.weight: Font.Medium
+                                            color: {
+                                                var st = (modelData.status || "").toLowerCase();
+                                                if (st === "running") return "#22c55e";
+                                                if (st === "pending") return "#f97316";
+                                                if (st === "paused") return "#eab308";
+                                                if (st === "completed") return "#3b82f6";
+                                                if (st === "error" || st === "stopped") return "#ef4444";
+                                                return root.textSecondary;
+                                            }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+
+                                    // Model
+                                    Text {
+                                        text: modelData.model || "default"
+                                        width: parent.width * 0.25
+                                        font.pixelSize: Math.round(11 * root.sf)
+                                        color: root.textSecondary
+                                        verticalAlignment: Text.AlignVCenter
+                                        horizontalAlignment: Text.AlignRight
+                                        height: parent.height
+                                        elide: Text.ElideRight
+                                        font.family: "monospace"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: agentRowMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.openAppWindow("agents", "Agents", "agents")
+                                }
+                            }
+                        }
+
+                        // Empty state
+                        Text {
+                            visible: dashboardHome.activeRunsList.length === 0
+                            text: "No active agent tasks running. Click \"New Task\" to start a background task."
+                            font.pixelSize: Math.round(11 * root.sf)
+                            color: root.textSecondary
+                            topPadding: Math.round(16 * root.sf)
+                            bottomPadding: Math.round(16 * root.sf)
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+
+                // ── System Stats ──
+                Rectangle {
+                    width: parent.width
+                    height: Math.round(100 * root.sf)
+                    radius: root.radiusMd
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    border.color: Qt.rgba(0, 0, 0, 0.06)
+                    border.width: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: Math.round(16 * root.sf)
+                        spacing: Math.round(8 * root.sf)
+
+                        Text {
+                            text: "System Health"
+                            font.pixelSize: Math.round(13 * root.sf)
+                            font.weight: Font.DemiBold
+                            color: root.textPrimary
+                        }
+
+                        Row {
+                            spacing: Math.round(32 * root.sf)
+                            Column {
+                                spacing: Math.round(2 * root.sf)
+                                Text { text: "Agents"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                Text { text: "" + dashboardHome.totalAgents; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Bold; color: root.accentBlue }
+                            }
+                            Column {
+                                spacing: Math.round(2 * root.sf)
+                                Text { text: "Providers"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                Text { text: dashboardHome.activeProviders + " / " + dashboardHome.providersList.length; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Bold; color: root.accentPurple }
+                            }
+                            Column {
+                                spacing: Math.round(2 * root.sf)
+                                Text { text: "Tools"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                Text { text: "" + dashboardHome.totalTools; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Bold; color: root.accentGreen }
+                            }
+                            Column {
+                                spacing: Math.round(2 * root.sf)
+                                Text { text: "Skills"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                Text { text: "" + dashboardHome.totalSkills; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Bold; color: root.accentOrange }
+                            }
+                        }
+
+                        Row {
+                            spacing: Math.round(4 * root.sf)
+                            Rectangle { width: Math.round(6 * root.sf); height: width; radius: width/2; color: root.accentGreen; anchors.verticalCenter: parent.verticalCenter }
+                            Text { text: "All systems operational"; font.pixelSize: Math.round(10 * root.sf); color: root.accentGreen; anchors.verticalCenter: parent.verticalCenter }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -702,6 +1232,7 @@ Rectangle {
 
     // ── App Windows ──
     Repeater {
+        id: windowRepeater
         model: root.openWindows
         delegate: AppWindow {
             windowTitle: modelData.title
@@ -776,6 +1307,332 @@ Rectangle {
         anchors.bottomMargin: chatBarItem.chatFullScreen ? 0 : Math.round(24 * root.sf)
         width: chatBarItem.chatFullScreen ? parent.width : Math.min(parent.width - Math.round(32 * root.sf), Math.round(620 * root.sf))
         z: 20
+    }
+
+    // ── Launch Agent Task Dialog Overlay ──
+    Item {
+        id: newTaskDialog
+        anchors.fill: parent
+        visible: false
+        z: 1000 // float on top of everything!
+
+        function open() {
+            taskPromptArea.text = "";
+            selectedAgentId = "main";
+            agentSelector.currentIndex = 0;
+            agentSelector.expanded = false;
+            visible = true;
+            taskPromptArea.forceActiveFocus();
+        }
+
+        function close() {
+            visible = false;
+        }
+
+        property string selectedAgentId: "main"
+
+        // Backdrop
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.45)
+            MouseArea {
+                anchors.fill: parent
+                onClicked: newTaskDialog.close()
+            }
+        }
+
+        // Dialog Card
+        Rectangle {
+            id: dialogCard
+            width: Math.round(480 * root.sf)
+            height: Math.round(360 * root.sf)
+            anchors.centerIn: parent
+            radius: root.radiusLg
+            color: root.bgElevated
+            border.color: root.borderColor
+            border.width: 1
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {} // Prevent click-through
+            }
+
+            Column {
+                anchors.fill: parent
+                anchors.margins: Math.round(24 * root.sf)
+                spacing: Math.round(16 * root.sf)
+
+                // Title
+                Row {
+                    width: parent.width
+                    Text {
+                        text: "Launch AI Agent Task"
+                        font.pixelSize: Math.round(16 * root.sf)
+                        font.weight: Font.DemiBold
+                        color: root.textPrimary
+                        width: parent.width - closeBtn.width
+                    }
+                    Text {
+                        id: closeBtn
+                        text: "✕"
+                        font.pixelSize: Math.round(14 * root.sf)
+                        color: root.textSecondary
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: newTaskDialog.close()
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: root.borderColor
+                }
+
+                // Dropdown/Selector: Agent
+                Column {
+                    width: parent.width
+                    spacing: Math.round(6 * root.sf)
+
+                    Text {
+                        text: "Select Agent"
+                        font.pixelSize: Math.round(11 * root.sf)
+                        font.weight: Font.DemiBold
+                        color: root.textSecondary
+                    }
+
+                    Rectangle {
+                        id: agentSelector
+                        width: parent.width
+                        height: Math.round(36 * root.sf)
+                        radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.03)
+                        border.color: root.borderColor
+                        border.width: 1
+                        z: expanded ? 100 : 1
+
+                        property int currentIndex: 0
+                        property bool expanded: false
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: Math.round(10 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: {
+                                var list = dashboardHome.agentsList;
+                                if (list && list.length > agentSelector.currentIndex) {
+                                    return list[agentSelector.currentIndex].name + " (" + list[agentSelector.currentIndex].id + ")";
+                                }
+                                return "Select an agent...";
+                            }
+                            font.pixelSize: Math.round(12 * root.sf)
+                            color: root.textPrimary
+                        }
+
+                        Text {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Math.round(10 * root.sf)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "▼"
+                            font.pixelSize: Math.round(10 * root.sf)
+                            color: root.textSecondary
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: agentSelector.expanded = !agentSelector.expanded
+                        }
+                    }
+                }
+
+                // Prompt Input Text Area
+                Column {
+                    width: parent.width
+                    spacing: Math.round(6 * root.sf)
+
+                    Text {
+                        text: "Task Prompt / Instructions"
+                        font.pixelSize: Math.round(11 * root.sf)
+                        font.weight: Font.DemiBold
+                        color: root.textSecondary
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: Math.round(110 * root.sf)
+                        radius: root.radiusSm
+                        color: Qt.rgba(0, 0, 0, 0.03)
+                        border.color: taskPromptArea.activeFocus ? root.accentBlue : root.borderColor
+                        border.width: 1
+
+                        Flickable {
+                            anchors.fill: parent
+                            anchors.margins: Math.round(8 * root.sf)
+                            contentHeight: taskPromptArea.height
+                            clip: true
+
+                            TextEdit {
+                                id: taskPromptArea
+                                width: parent.width
+                                wrapMode: TextEdit.Wrap
+                                font.pixelSize: Math.round(12 * root.sf)
+                                color: root.textPrimary
+                                selectByMouse: true
+                                focus: true
+                            }
+
+                            Text {
+                                visible: taskPromptArea.text === ""
+                                text: "What task should the agent perform in the background?"
+                                font.pixelSize: Math.round(12 * root.sf)
+                                color: root.textMuted
+                                wrapMode: Text.Wrap
+                                width: parent.width
+                            }
+                        }
+                    }
+                }
+
+                // Action buttons
+                Row {
+                    width: parent.width
+                    spacing: Math.round(10 * root.sf)
+                    layoutDirection: Qt.RightToLeft
+
+                    // Start Button
+                    Rectangle {
+                        width: Math.round(100 * root.sf)
+                        height: Math.round(32 * root.sf)
+                        radius: root.radiusSm
+                        color: startMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.3) : root.accentBlue
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Start Task"
+                            font.pixelSize: Math.round(12 * root.sf)
+                            font.weight: Font.DemiBold
+                            color: "#ffffff"
+                        }
+
+                        MouseArea {
+                            id: startMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (taskPromptArea.text.trim().length === 0) {
+                                    root.showToast("Please enter a task prompt", "error");
+                                    return;
+                                }
+                                var agentId = newTaskDialog.selectedAgentId;
+                                var prompt = taskPromptArea.text.trim();
+                                newTaskDialog.close();
+                                root.showToast("Starting background task...", "info");
+
+                                API.startAgentRun(agentId, prompt, "", function(status, data) {
+                                    if (status === 200 && data && data.ok) {
+                                        root.showToast("Task started successfully in background", "success");
+                                        dashboardHome.loadDashboardData(true);
+                                    } else {
+                                        root.showToast("Failed to start task: " + (data.error || "Unknown error"), "error");
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // Cancel Button
+                    Rectangle {
+                        width: Math.round(80 * root.sf)
+                        height: Math.round(32 * root.sf)
+                        radius: root.radiusSm
+                        color: cancelBtnMa.containsMouse ? Qt.rgba(0, 0, 0, 0.08) : "transparent"
+                        border.color: root.borderColor
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Cancel"
+                            font.pixelSize: Math.round(12 * root.sf)
+                            color: root.textSecondary
+                        }
+
+                        MouseArea {
+                            id: cancelBtnMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: newTaskDialog.close()
+                        }
+                    }
+                }
+            }
+
+            // Dropdown list popup (placed inside dialogCard to escape column positioning and clipping)
+            Rectangle {
+                id: dropdownList
+                visible: agentSelector.expanded
+                // Position it dynamically relative to agentSelector
+                x: agentSelector.parent.parent.x + agentSelector.x
+                y: agentSelector.parent.parent.y + agentSelector.y + agentSelector.height + Math.round(4 * root.sf)
+                width: agentSelector.width
+                height: Math.min(Math.round(150 * root.sf), dropdownCol.height + Math.round(8 * root.sf))
+                radius: root.radiusSm
+                color: root.bgElevated
+                border.color: root.borderColor
+                border.width: 1
+                z: 2000 // Float on top of prompt instructions area and other column elements!
+
+                Flickable {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(4 * root.sf)
+                    contentHeight: dropdownCol.height
+                    clip: true
+
+                    Column {
+                        id: dropdownCol
+                        width: parent.width
+                        spacing: 1
+
+                        Repeater {
+                            model: dashboardHome.agentsList
+
+                            delegate: Rectangle {
+                                width: dropdownCol.width
+                                height: Math.round(30 * root.sf)
+                                radius: root.radiusSm
+                                color: itemMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.1) : "transparent"
+
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: Math.round(8 * root.sf)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.name + " (" + modelData.id + ")"
+                                    font.pixelSize: Math.round(12 * root.sf)
+                                    color: root.textPrimary
+                                }
+
+                                MouseArea {
+                                    id: itemMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        agentSelector.currentIndex = index;
+                                        newTaskDialog.selectedAgentId = modelData.id;
+                                        agentSelector.expanded = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
     }
 
     // Load persisted OS config on startup

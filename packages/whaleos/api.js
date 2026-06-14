@@ -14,6 +14,7 @@ function request(method, endpoint, body, callback) {
     xhr.setRequestHeader("Content-Type", "application/json");
     if (sessionId) {
         xhr.setRequestHeader("Cookie", "owSessionId=" + sessionId);
+        xhr.setRequestHeader("Authorization", "Bearer " + sessionId);
     }
     xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -49,6 +50,10 @@ function chat(message, callback) {
 
 function getProviders(callback) {
     request("GET", "/dashboard/api/providers", null, callback);
+}
+
+function getAgents(callback) {
+    request("GET", "/dashboard/api/agents", null, callback);
 }
 
 function saveProvider(type, config, callback) {
@@ -139,6 +144,7 @@ function getHealth(callback) {
     xhr.timeout = 3000;
     if (sessionId) {
         xhr.setRequestHeader("Cookie", "owSessionId=" + sessionId);
+        xhr.setRequestHeader("Authorization", "Bearer " + sessionId);
     }
     xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -155,6 +161,7 @@ function execCommand(cmd, callback) {
     xhr.setRequestHeader("Content-Type", "application/json");
     if (sessionId) {
         xhr.setRequestHeader("Cookie", "owSessionId=" + sessionId);
+        xhr.setRequestHeader("Authorization", "Bearer " + sessionId);
     }
     xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -168,4 +175,12 @@ function execCommand(cmd, callback) {
 
 function getLogs(lines, callback) {
     execCommand("Run this exact command and return the full raw output: journalctl -u openwhale -n " + lines + " --no-pager", callback);
+}
+
+function getActiveRuns(callback) {
+    request("GET", "/dashboard/api/agents/runs?active=true", null, callback);
+}
+
+function startAgentRun(agentId, task, model, callback) {
+    request("POST", "/dashboard/api/agents/runs/start", { agentId: agentId, task: task, model: model }, callback);
 }

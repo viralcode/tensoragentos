@@ -1,0 +1,126 @@
+# TensorAgent OS — Enterprise Audit Rules
+# /etc/audit/rules.d/ainux-enterprise.rules
+#
+# Based on CIS Benchmark recommendations for Ubuntu 24.04.
+# These rules log security-relevant events for compliance and forensics.
+#
+# To reload: sudo augenrules --load
+
+# ─── Clear existing rules ─────────────────────────────────────────
+-D
+
+# ─── Set buffer size (increase for high-traffic systems) ──────────
+-b 8192
+
+# ─── Failure mode: 1 = printk, 2 = panic ─────────────────────────
+-f 1
+
+# ═══════════════════════════════════════════════════════════════════
+# 1. AUTHENTICATION & IDENTITY
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor login/logout events
+-w /var/log/auth.log -p wa -k auth_log
+-w /var/log/faillog -p wa -k auth_log
+-w /var/log/lastlog -p wa -k auth_log
+-w /var/log/wtmp -p wa -k session_log
+-w /var/log/btmp -p wa -k failed_login
+
+# Monitor changes to user/group databases
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/sudoers -p wa -k identity
+-w /etc/sudoers.d/ -p wa -k identity
+
+# Monitor PAM configuration
+-w /etc/pam.d/ -p wa -k pam_config
+
+# ═══════════════════════════════════════════════════════════════════
+# 2. SYSTEM CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor system configuration changes
+-w /etc/sysctl.conf -p wa -k sysconfig
+-w /etc/sysctl.d/ -p wa -k sysconfig
+-w /etc/hostname -p wa -k sysconfig
+-w /etc/hosts -p wa -k sysconfig
+-w /etc/resolv.conf -p wa -k sysconfig
+
+# SSH configuration changes
+-w /etc/ssh/sshd_config -p wa -k ssh_config
+-w /etc/ssh/sshd_config.d/ -p wa -k ssh_config
+
+# Systemd service changes
+-w /etc/systemd/ -p wa -k systemd_config
+-w /usr/lib/systemd/ -p wa -k systemd_config
+
+# Network configuration
+-w /etc/NetworkManager/ -p wa -k network_config
+-w /etc/systemd/network/ -p wa -k network_config
+
+# ═══════════════════════════════════════════════════════════════════
+# 3. AI AGENT ACTIVITY (TensorAgent-specific)
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor AI agent data directory for unexpected writes
+-w /opt/ainux/openwhale/ -p wa -k ai_agent
+-w /home/ainux/.openwhale/ -p wa -k ai_agent_data
+
+# Monitor tool execution by the AI agent
+-w /opt/ainux/core/ -p wa -k ai_kernel
+
+# Monitor AI agent extensions
+-w /home/ainux/.openwhale/extensions/ -p wa -k ai_extensions
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. PRIVILEGE ESCALATION
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor sudo usage
+-w /usr/bin/sudo -p x -k privilege_escalation
+-w /usr/bin/su -p x -k privilege_escalation
+
+# Monitor setuid/setgid changes
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=-1 -k perm_mod
+
+# Monitor user/group changes
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -F auid>=1000 -F auid!=-1 -k privilege_change
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. FILE SYSTEM INTEGRITY
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor critical binary directories
+-w /usr/bin/ -p wa -k binary_mod
+-w /usr/sbin/ -p wa -k binary_mod
+-w /usr/local/bin/ -p wa -k binary_mod
+
+# Monitor kernel modules
+-w /sbin/insmod -p x -k kernel_module
+-w /sbin/modprobe -p x -k kernel_module
+-w /sbin/rmmod -p x -k kernel_module
+
+# Monitor cron
+-w /etc/cron.d/ -p wa -k cron_config
+-w /etc/crontab -p wa -k cron_config
+-w /var/spool/cron/ -p wa -k cron_config
+
+# ═══════════════════════════════════════════════════════════════════
+# 6. FIREWALL & SECURITY TOOLS
+# ═══════════════════════════════════════════════════════════════════
+
+# Monitor firewall changes
+-w /etc/ufw/ -p wa -k firewall
+-w /etc/iptables/ -p wa -k firewall
+
+# Monitor AppArmor changes
+-w /etc/apparmor/ -p wa -k apparmor
+-w /etc/apparmor.d/ -p wa -k apparmor
+
+# ═══════════════════════════════════════════════════════════════════
+# 7. MAKE AUDIT CONFIG IMMUTABLE (must be last rule)
+# ═══════════════════════════════════════════════════════════════════
+# Uncomment the following line in production to prevent runtime changes:
+# -e 2

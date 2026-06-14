@@ -674,34 +674,97 @@ public:
     // ════════════════════════════════════════════════
 
     Q_INVOKABLE bool copyToClipboard(const QString &text) {
-        // QClipboard only — no external Wayland client tools (ghost windows!)
+        // 1. Set local QClipboard for compositor UI itself
         QClipboard *clipboard = QGuiApplication::clipboard();
         if (clipboard) {
             clipboard->setText(text);
-            qDebug() << "SystemManager: copyToClipboard OK:" << text.left(30);
-            return true;
         }
-        return false;
+
+        // 2. Set Wayland selection via wl-copy in background
+        QProcess *wlProc = new QProcess();
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        if (!env.contains("WAYLAND_DISPLAY")) env.insert("WAYLAND_DISPLAY", "wayland-0");
+        if (!env.contains("XDG_RUNTIME_DIR")) env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        if (!env.contains("DISPLAY")) env.insert("DISPLAY", ":0");
+        wlProc->setProcessEnvironment(env);
+        wlProc->setProgram("wl-copy");
+        wlProc->setArguments(QStringList() << text);
+        QObject::connect(wlProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                         wlProc, &QObject::deleteLater);
+        wlProc->start();
+
+        // 3. Set X11 selection via xclip in background (bridges to host via spice-vdagent)
+        QProcess *xProc = new QProcess();
+        xProc->setProcessEnvironment(env);
+        xProc->setProgram("xclip");
+        xProc->setArguments(QStringList() << "-selection" << "clipboard");
+        QObject::connect(xProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                         xProc, &QObject::deleteLater);
+        xProc->start();
+        xProc->write(text.toUtf8());
+        xProc->closeWriteChannel();
+
+        qDebug() << "SystemManager: copyToClipboard bridged to wayland/x11 OK:" << text.left(30);
+        return true;
     }
 
     Q_INVOKABLE QString pasteFromClipboard() {
-        // QClipboard only — no external Wayland client tools (ghost windows!)
-        QClipboard *clipboard = QGuiApplication::clipboard();
-        if (clipboard) {
-            QString text = clipboard->text();
+        // Read directly from Wayland clipboard via wl-paste synchronously (wrapped in timeout 0.2)
+        QProcess proc;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        if (!env.contains("WAYLAND_DISPLAY")) env.insert("WAYLAND_DISPLAY", "wayland-0");
+        if (!env.contains("XDG_RUNTIME_DIR")) env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        if (!env.contains("DISPLAY")) env.insert("DISPLAY", ":0");
+        proc.setProcessEnvironment(env);
+        proc.setProgram("timeout");
+        proc.setArguments(QStringList() << "0.2" << "wl-paste" << "--no-newline");
+        proc.start();
+        if (proc.waitForFinished(300)) {
+            QString text = QString::fromUtf8(proc.readAllStandardOutput());
             if (!text.isEmpty()) {
-                qDebug() << "SystemManager: pasteFromClipboard OK:" << text.left(30);
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                if (clipboard && clipboard->text() != text) {
+                    clipboard->setText(text);
+                }
                 return text;
             }
+        }
+
+        // Fallback to QClipboard
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        if (clipboard) {
+            return clipboard->text();
         }
         return "";
     }
 
     Q_INVOKABLE void pasteFromClipboardAsync() {
-        // QClipboard only — emits signal for QML
-        QClipboard *clipboard = QGuiApplication::clipboard();
-        QString text = clipboard ? clipboard->text() : "";
-        emit clipboardReady(text);
+        // Read directly from Wayland clipboard via wl-paste asynchronously (wrapped in timeout 0.2)
+        QProcess *proc = new QProcess(this);
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        if (!env.contains("WAYLAND_DISPLAY")) env.insert("WAYLAND_DISPLAY", "wayland-0");
+        if (!env.contains("XDG_RUNTIME_DIR")) env.insert("XDG_RUNTIME_DIR", "/run/user/1000");
+        if (!env.contains("DISPLAY")) env.insert("DISPLAY", ":0");
+        proc->setProcessEnvironment(env);
+        proc->setProgram("timeout");
+        proc->setArguments(QStringList() << "0.2" << "wl-paste" << "--no-newline");
+
+        connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, proc](int exitCode, QProcess::ExitStatus) {
+            QString text = QString::fromUtf8(proc->readAllStandardOutput());
+            if (text.isEmpty()) {
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                text = clipboard ? clipboard->text() : "";
+            } else {
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                if (clipboard && clipboard->text() != text) {
+                    clipboard->setText(text);
+                }
+            }
+            emit clipboardReady(text);
+            proc->deleteLater();
+        });
+        proc->start();
     }
 
 
@@ -742,6 +805,22 @@ public:
         return proc.readAllStandardOutput().trimmed();
     }
 
+    Q_INVOKABLE QString getActiveOutputName() {
+        QProcess proc;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");
+        env.insert("WAYLAND_DISPLAY", "wayland-0");
+        env.insert("XDG_RUNTIME_DIR", currentXdgRuntimeDir());
+        proc.setProcessEnvironment(env);
+        proc.start("/bin/bash", QStringList() << "-c" << "xrandr 2>/dev/null | grep ' connected' | awk '{print $1}' | head -n 1");
+        proc.waitForFinished(2000);
+        QString output = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+        if (output.isEmpty()) {
+            output = "XWAYLAND0"; // fallback
+        }
+        return output;
+    }
+
     Q_INVOKABLE bool setDisplayResolution(int w, int h) {
         QProcess proc;
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -753,9 +832,10 @@ public:
         QString mode = QString("%1x%2_60.00").arg(w).arg(h);
         if (w == 1280 && h == 800) mode = "1280x800";
 
-        proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--mode" << mode);
+        QString outputName = getActiveOutputName();
+        proc.start("xrandr", QStringList() << "--output" << outputName << "--mode" << mode);
         proc.waitForFinished(5000);
-        qDebug() << "SystemManager: setDisplayResolution" << mode << "exit:" << proc.exitCode();
+        qDebug() << "SystemManager: setDisplayResolution on" << outputName << "to" << mode << "exit:" << proc.exitCode();
         return proc.exitCode() == 0;
     }
 
@@ -768,9 +848,10 @@ public:
         proc.setProcessEnvironment(env);
 
         QString scaleStr = QString("%1x%1").arg(1.0 / scale);
-        proc.start("xrandr", QStringList() << "--output" << "XWAYLAND0" << "--scale" << scaleStr);
+        QString outputName = getActiveOutputName();
+        proc.start("xrandr", QStringList() << "--output" << outputName << "--scale" << scaleStr);
         proc.waitForFinished(5000);
-        qDebug() << "SystemManager: setDisplayScale" << scale << "exit:" << proc.exitCode();
+        qDebug() << "SystemManager: setDisplayScale on" << outputName << "to" << scale << "exit:" << proc.exitCode();
         return proc.exitCode() == 0;
     }
 
@@ -925,9 +1006,9 @@ public:
         QString home = pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
         QString runtimeDir = QString("/run/user/%1").arg(uid);
 
-        // WhaleOS compositor socket (see main.qml socketName: "whaleos-0")
-        // Native apps MUST connect here, not to Cage's wayland-0
-        QString waylandDisplay = "whaleos-0";
+        // WhaleOS compositor socket (see main.qml socketName: "wayland-0")
+        // Native apps MUST connect here
+        QString waylandDisplay = "wayland-0";
 
         // Check if our compositor socket exists
         QString socketPath = runtimeDir + "/" + waylandDisplay;

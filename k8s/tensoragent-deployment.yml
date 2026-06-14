@@ -1,0 +1,414 @@
+# TensorAgent OS — Kubernetes Deployment Manifests
+# k8s/tensoragent-deployment.yml
+#
+# Deploys TensorAgent OS (OpenWhale + Ollama) as a Kubernetes workload.
+# For cloud-native enterprise deployment.
+#
+# Usage:
+#   kubectl apply -f k8s/
+#   kubectl get pods -n tensoragent
+#
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tensoragent
+  labels:
+    app.kubernetes.io/name: tensoragent
+    app.kubernetes.io/part-of: tensoragent-os
+
+---
+# ─── ConfigMap: Security Configuration ────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensoragent-security-config
+  namespace: tensoragent
+data:
+  security.conf: |
+    [sandbox]
+    enabled=true
+    workspace=/data/workspace
+    require_approval=true
+    max_iterations=15
+
+    [network]
+    outbound_policy=unrestricted
+
+    [logging]
+    audit_level=standard
+    log_tool_calls=true
+    log_model_io=false
+
+    [authentication]
+    session_timeout=30
+    max_failed_attempts=5
+    lockout_duration=15
+
+  command-policy.conf: |
+    DENY rm -rf /
+    DENY dd if=* of=/dev/*
+    DENY curl * | bash
+    APPROVE apt install*
+    APPROVE systemctl*
+    ALLOW ls*
+    ALLOW cat*
+    ALLOW node*
+    ALLOW python3*
+    ALLOW git*
+
+---
+# ─── Secret: Dashboard Credentials ────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tensoragent-credentials
+  namespace: tensoragent
+type: Opaque
+data:
+  # Change these! base64 encoded values
+  # echo -n "admin" | base64
+  admin-username: YWRtaW4=
+  # echo -n "change-me-in-production" | base64
+  admin-password: Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24=
+
+---
+# ─── PersistentVolumeClaim: AI Data ───────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openwhale-data
+  namespace: tensoragent
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: tensoragent
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+# ─── Deployment: OpenWhale AI Platform ────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwhale
+  namespace: tensoragent
+  labels:
+    app: openwhale
+    app.kubernetes.io/name: openwhale
+    app.kubernetes.io/component: ai-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwhale
+  template:
+    metadata:
+      labels:
+        app: openwhale
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "7777"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: openwhale
+          image: ghcr.io/viralcode/openwhale:latest
+          ports:
+            - containerPort: 7777
+              name: http
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "7777"
+            - name: OPENWHALE_SANDBOX
+              value: "true"
+            - name: OPENWHALE_REQUIRE_APPROVAL
+              value: "true"
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama:11434"
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tensoragent-credentials
+                  key: admin-username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tensoragent-credentials
+                  key: admin-password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: security-config
+              mountPath: /etc/ainux
+              readOnly: true
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 7777
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 7777
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openwhale-data
+        - name: security-config
+          configMap:
+            name: tensoragent-security-config
+
+---
+# ─── Deployment: Ollama LLM Runtime ──────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: tensoragent
+  labels:
+    app: ollama
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/component: llm-runtime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+              name: http
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"  # Within pod network, not exposed externally
+          volumeMounts:
+            - name: models
+              mountPath: /home/ollama/.ollama
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "4Gi"
+            limits:
+              cpu: "4000m"
+              memory: "16Gi"
+              # Uncomment for GPU support:
+              # nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+
+---
+# ─── Service: OpenWhale ───────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: openwhale
+  namespace: tensoragent
+  labels:
+    app: openwhale
+spec:
+  selector:
+    app: openwhale
+  ports:
+    - port: 7777
+      targetPort: 7777
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+# ─── Service: Ollama ─────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: tensoragent
+  labels:
+    app: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - port: 11434
+      targetPort: 11434
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+# ─── Ingress: Dashboard Access ────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openwhale-ingress
+  namespace: tensoragent
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+        - ai.yourcompany.com
+      secretName: tensoragent-tls
+  rules:
+    - host: ai.yourcompany.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openwhale
+                port:
+                  number: 7777
+
+---
+# ─── NetworkPolicy: Zero-Trust ────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tensoragent-network-policy
+  namespace: tensoragent
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress controller to reach OpenWhale
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 7777
+    # Allow OpenWhale to reach Ollama (within namespace)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: openwhale
+      ports:
+        - port: 11434
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow HTTPS outbound (for AI API providers)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+    # Allow within namespace
+    - to:
+        - podSelector: {}
+
+---
+# ─── HorizontalPodAutoscaler ─────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: openwhale-hpa
+  namespace: tensoragent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: openwhale
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

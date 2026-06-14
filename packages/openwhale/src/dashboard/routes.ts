@@ -376,8 +376,9 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
             // First ensure tables exist
             await ensureAuthTables();
 
-            const existing = await db.select().from(dashboardUsers).limit(1);
-            if (!existing.length) {
+            // Ensure admin user exists
+            const existingAdmin = await db.select().from(dashboardUsers).where(eq(dashboardUsers.username, "admin")).limit(1);
+            if (!existingAdmin.length) {
                 await db.insert(dashboardUsers).values({
                     id: randomUUID(),
                     username: "admin",
@@ -386,8 +387,20 @@ export function createDashboardRoutes(db: DrizzleDB, _config: OpenWhaleConfig) {
                 });
                 console.log("[Dashboard] Created default admin user (admin/admin)");
             }
+
+            // Ensure ainux user exists
+            const existingAinux = await db.select().from(dashboardUsers).where(eq(dashboardUsers.username, "ainux")).limit(1);
+            if (!existingAinux.length) {
+                await db.insert(dashboardUsers).values({
+                    id: randomUUID(),
+                    username: "ainux",
+                    passwordHash: hashPassword("ainux"),
+                    role: "admin",
+                });
+                console.log("[Dashboard] Created default ainux user (ainux/ainux)");
+            }
         } catch (e) {
-            console.error("[Dashboard] Failed to create default admin:", e);
+            console.error("[Dashboard] Failed to create default users:", e);
         }
     }
 
@@ -3160,6 +3173,51 @@ echo "Hello from ${name}"
                 return c.json({ ok: false, error: "Agent not found or is default" }, 404);
             }
             return c.json({ ok: true });
+        } catch (e) {
+            return c.json({ ok: false, error: String(e) }, 500);
+        }
+    });
+
+    // Start a sub-agent task/run in the background
+    dashboard.post("/api/agents/runs/start", async (c) => {
+        const sessionId = c.req.header("Authorization")?.replace("Bearer ", "");
+        const user = await validateSession(sessionId);
+        if (!user) return c.json({ ok: false, error: "Not authenticated" }, 401);
+
+        try {
+            const body = await c.req.json();
+            const { agentId, task, model } = body;
+
+            if (!agentId || !task) {
+                return c.json({ ok: false, error: "agentId and task are required" }, 400);
+            }
+
+            const { registerRun, updateRunStatus } = await import("../agents/subagent-registry.js");
+            const { startAgentWork } = await import("../agents/coordinator.js");
+
+            // Register the run
+            const run = registerRun({
+                parentSessionId: "dashboard",
+                agentId,
+                task,
+                model,
+            });
+
+            // Set running status
+            updateRunStatus(run.runId, "running");
+
+            // Execute in background
+            startAgentWork(
+                run.runId,
+                run.childSessionKey,
+                task,
+                agentId,
+                model,
+            ).catch((err) => {
+                console.error(`[Dashboard Background Run] Error running task ${run.runId}:`, err);
+            });
+
+            return c.json({ ok: true, runId: run.runId, sessionKey: run.childSessionKey });
         } catch (e) {
             return c.json({ ok: false, error: String(e) }, 500);
         }

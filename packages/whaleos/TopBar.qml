@@ -5,22 +5,15 @@ import "api.js" as API
 Rectangle {
     id: topBar
     height: Math.round(44 * root.sf)
-    color: Qt.rgba(0.02, 0.04, 0.12, 0.82)
+    color: Qt.rgba(1, 1, 1, 0.88)
 
-    // Neon gradient bottom border
+    // Subtle bottom border
     Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.90, 1.0, 0.0) }
-            GradientStop { position: 0.15; color: Qt.rgba(0.0, 0.90, 1.0, 0.4) }
-            GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.5) }
-            GradientStop { position: 0.85; color: Qt.rgba(1.0, 0.25, 0.51, 0.4) }
-            GradientStop { position: 1.0; color: Qt.rgba(1.0, 0.25, 0.51, 0.0) }
-        }
+        color: Qt.rgba(0, 0, 0, 0.08)
     }
 
     // ── OpenWhale state ──
@@ -387,13 +380,13 @@ Rectangle {
             width: owLeftRow.width + Math.round(28 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
+            color: Qt.rgba(1, 1, 1, 0.95)
             border.width: 1
             clip: true
 
             border.color: owAreaMouse.containsMouse
-                ? Qt.rgba(0.0, 0.90, 1.0, 0.5)
-                : Qt.rgba(0.0, 0.90, 1.0, 0.12)
+                ? Qt.rgba(0, 0, 0, 0.15)
+                : Qt.rgba(0, 0, 0, 0.06)
 
             scale: owAreaMouse.containsMouse ? 1.03 : 1.0
             Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
@@ -409,9 +402,9 @@ Rectangle {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.08) }
+                    GradientStop { position: 0.4; color: Qt.rgba(0, 0, 0, 0.06) }
                     GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.15) }
-                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.08) }
+                    GradientStop { position: 0.6; color: Qt.rgba(0, 0, 0, 0.06) }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
 
@@ -465,7 +458,7 @@ Rectangle {
                     Rectangle {
                         anchors.centerIn: parent
                         width: Math.round(7 * root.sf); height: width; radius: width / 2
-                        color: owOnline ? "#00e676" : "#ff1744"
+                        color: owOnline ? "#34d399" : "#f87171"
                     }
                 }
 
@@ -474,7 +467,7 @@ Rectangle {
                     font.pixelSize: Math.round(11.5 * root.sf)
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.3
-                    color: owAreaMouse.containsMouse ? "#00e5ff" : "#e0f2fe"
+                    color: owAreaMouse.containsMouse ? root.accentBlue : root.textPrimary
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
@@ -496,51 +489,21 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         // ═══════════════════════════════════
-        // CENTER WIDGET — Clock Pill
+        // CLOCK — Small Pill (clickable for time panel)
         // ═══════════════════════════════════
         Rectangle {
             id: clockPill
             Layout.alignment: Qt.AlignVCenter
-            width: clockRow.width + Math.round(30 * root.sf)
+            width: clockRow.width + Math.round(24 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
+            color: Qt.rgba(1, 1, 1, 0.95)
             border.width: 1
-            clip: true
-
             border.color: clockMa.containsMouse
-                ? Qt.rgba(0.70, 0.53, 1.0, 0.45)
-                : Qt.rgba(0.70, 0.53, 1.0, 0.10)
+                ? Qt.rgba(0, 0, 0, 0.15)
+                : Qt.rgba(0, 0, 0, 0.04)
 
-            scale: clockMa.containsMouse ? 1.03 : 1.0
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-            Behavior on color { ColorAnimation { duration: 250 } }
-
-            // ── Shimmer sweep ──
-            Rectangle {
-                id: clockShimmer
-                width: Math.round(35 * root.sf); height: parent.height
-                radius: parent.radius; rotation: -20; opacity: 0
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.06) }
-                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.12) }
-                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.06) }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-                property real sweepX: -width
-                x: sweepX; y: 0
-
-                SequentialAnimation {
-                    running: clockMa.containsMouse
-                    loops: Animation.Infinite
-                    PropertyAction { target: clockShimmer; property: "opacity"; value: 1 }
-                    NumberAnimation { target: clockShimmer; property: "sweepX"; from: -clockShimmer.width; to: clockPill.width + clockShimmer.width; duration: 1000; easing.type: Easing.InOutQuad }
-                    PauseAnimation { duration: 800 }
-                }
-                Binding { target: clockShimmer; property: "opacity"; value: 0; when: !clockMa.containsMouse }
-            }
+            Behavior on border.color { ColorAnimation { duration: 200 } }
 
             Row {
                 id: clockRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -548,9 +511,9 @@ Rectangle {
                 Text {
                     id: clockText
                     text: Qt.formatTime(new Date(), "h:mm AP")
-                    font.pixelSize: Math.round(12.5 * root.sf)
+                    font.pixelSize: Math.round(11.5 * root.sf)
                     font.weight: Font.DemiBold
-                    color: clockMa.containsMouse ? "#b388ff" : "#e0f2fe"
+                    color: clockMa.containsMouse ? root.accentPurple : root.textPrimary
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -560,15 +523,12 @@ Rectangle {
                     }
                 }
 
-                // Animated separator — pulses
+                // Separator dot
                 Rectangle {
                     visible: currentTimezone !== ""
                     width: Math.round(3 * root.sf); height: Math.round(3 * root.sf)
                     radius: width / 2; anchors.verticalCenter: parent.verticalCenter
-                    color: Qt.rgba(1, 1, 1, 0.25)
-
-                    // PERF: Removed always-running opacity pulse on separator dot
-                    opacity: 0.4
+                    color: Qt.rgba(0, 0, 0, 0.25); opacity: 0.4
                 }
 
                 Text {
@@ -577,9 +537,9 @@ Rectangle {
                         var parts = currentTimezone.split("/");
                         return parts.length > 1 ? parts[parts.length - 1].replace(/_/g, " ") : currentTimezone;
                     }
-                    font.pixelSize: Math.round(10 * root.sf)
+                    font.pixelSize: Math.round(9.5 * root.sf)
                     font.weight: Font.Medium
-                    color: clockMa.containsMouse ? Qt.rgba(0.70, 0.53, 1.0, 0.70) : Qt.rgba(1, 1, 1, 0.40)
+                    color: clockMa.containsMouse ? root.accentPurple : root.textSecondary
                     anchors.verticalCenter: parent.verticalCenter
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
@@ -610,8 +570,8 @@ Rectangle {
             width: rightRow.width + Math.round(22 * root.sf)
             height: Math.round(32 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.03, 0.05, 0.14, 0.75)
-            border.color: Qt.rgba(0.0, 0.90, 1.0, 0.10)
+            color: Qt.rgba(1, 1, 1, 0.95)
+            border.color: Qt.rgba(0, 0, 0, 0.06)
             border.width: 1
 
             Row {
@@ -624,7 +584,7 @@ Rectangle {
                     width: Math.round(26 * root.sf)
                     height: Math.round(26 * root.sf)
                     radius: Math.round(13 * root.sf)
-                    color: settingsMouse.containsMouse ? Qt.rgba(0.0, 0.90, 1.0, 0.15) : "transparent"
+                    color: settingsMouse.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
                     anchors.verticalCenter: parent.verticalCenter
 
                     Behavior on color { ColorAnimation { duration: 200 } }
@@ -649,7 +609,7 @@ Rectangle {
                             var ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = settingsMouse.containsMouse ? "#00e5ff" : "#94a3b8";
+                            ctx.strokeStyle = settingsMouse.containsMouse ? "#38bdf8" : "#94a3b8";
                             ctx.lineWidth = 1.2;
                             ctx.beginPath();
                             var cx = 7, cy = 7;
@@ -710,20 +670,20 @@ Rectangle {
 
                             if (connType === "ethernet") {
                                 // Ethernet icon — monitor with cable
-                                ctx.strokeStyle = "#00e676"; ctx.lineWidth = 1.3;
+                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3;
                                 ctx.strokeRect(2, 1, 10, 7);
                                 ctx.beginPath(); ctx.moveTo(7, 8); ctx.lineTo(7, 11); ctx.stroke();
                                 ctx.beginPath(); ctx.moveTo(4, 11); ctx.lineTo(10, 11); ctx.stroke();
                             } else if (connType === "wifi" && enabled) {
                                 // WiFi connected — signal arcs
                                 var cx = 7, cy = 12;
-                                ctx.strokeStyle = "#00e676"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+                                ctx.strokeStyle = "#34d399"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
                                 // Three arcs
                                 ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
                                 ctx.beginPath(); ctx.arc(cx, cy, 3, -Math.PI * 0.75, -Math.PI * 0.25); ctx.stroke();
                                 // Center dot
-                                ctx.fillStyle = "#00e676";
+                                ctx.fillStyle = "#34d399";
                                 ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, Math.PI * 2); ctx.fill();
                             } else if (!enabled) {
                                 // WiFi disabled — crossed out
@@ -769,7 +729,7 @@ Rectangle {
                 // Animated separator
                 Rectangle {
                     width: 1; height: Math.round(16 * root.sf)
-                    color: Qt.rgba(1, 1, 1, 0.10)
+                    color: Qt.rgba(0, 0, 0, 0.06)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -800,11 +760,11 @@ Rectangle {
 
                             // Create rotating gradient border
                             var grad = ctx.createConicalGradient(cx, cy, ringPhase);
-                            grad.addColorStop(0.0, "#00e5ff");
-                            grad.addColorStop(0.25, "#b388ff");
-                            grad.addColorStop(0.5, "#ff4081");
-                            grad.addColorStop(0.75, "#b388ff");
-                            grad.addColorStop(1.0, "#00e5ff");
+                            grad.addColorStop(0.0, "#38bdf8");
+                            grad.addColorStop(0.25, "#a78bfa");
+                            grad.addColorStop(0.5, "#f472b6");
+                            grad.addColorStop(0.75, "#a78bfa");
+                            grad.addColorStop(1.0, "#38bdf8");
                             ctx.strokeStyle = grad;
                             ctx.beginPath();
                             ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -818,8 +778,8 @@ Rectangle {
                         height: width; radius: width / 2
 
                         gradient: Gradient {
-                            GradientStop { position: 0.0; color: "#00e5ff" }
-                            GradientStop { position: 1.0; color: "#b388ff" }
+                            GradientStop { position: 0.0; color: "#38bdf8" }
+                            GradientStop { position: 1.0; color: "#a78bfa" }
                         }
 
                         scale: avatarMa.containsMouse ? 1.1 : 1.0
@@ -893,7 +853,7 @@ Rectangle {
                         text: "TensorAgent OS"
                         font.pixelSize: Math.round(14 * root.sf)
                         font.weight: Font.DemiBold
-                        color: "#ffffff"
+                        color: root.textPrimary
                     }
                     Text {
                         text: owUptime || "Powered by OpenWhale Engine"
@@ -949,8 +909,8 @@ Rectangle {
                     Layout.fillWidth: true
                     height: Math.round(32 * root.sf)
                     radius: root.radiusSm
-                    color: restartMa.containsMouse ? Qt.rgba(0.98, 0.45, 0.09, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                    color: restartMa.containsMouse ? Qt.rgba(0.98, 0.45, 0.09, 0.15) : Qt.rgba(0, 0, 0, 0.03)
+                    border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
@@ -962,7 +922,7 @@ Rectangle {
                             onPaint: {
                                 var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                 ctx.save(); ctx.scale(s, s);
-                                ctx.strokeStyle = owRestarting ? "#f97316" : "#999"; ctx.lineWidth = 1.5;
+                                ctx.strokeStyle = owRestarting ? root.accentOrange : root.textSecondary; ctx.lineWidth = 1.5;
                                 ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
                                 ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
                                 ctx.restore();
@@ -983,8 +943,8 @@ Rectangle {
                     Layout.fillWidth: true
                     height: Math.round(32 * root.sf)
                     radius: root.radiusSm
-                    color: logsMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                    color: logsMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.15) : Qt.rgba(0, 0, 0, 0.03)
+                    border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
@@ -996,7 +956,7 @@ Rectangle {
                             onPaint: {
                                 var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                                 ctx.save(); ctx.scale(s, s);
-                                ctx.strokeStyle = owLogsFetching ? "#3b82f6" : "#999"; ctx.lineWidth = 1.2;
+                                ctx.strokeStyle = owLogsFetching ? root.accentBlue : root.textSecondary; ctx.lineWidth = 1.2;
                                 ctx.strokeRect(1, 0, 10, 12);
                                 ctx.beginPath(); ctx.moveTo(3.5, 3); ctx.lineTo(8.5, 3); ctx.stroke();
                                 ctx.beginPath(); ctx.moveTo(3.5, 6); ctx.lineTo(8.5, 6); ctx.stroke();
@@ -1018,8 +978,8 @@ Rectangle {
                 Rectangle {
                     width: Math.round(32 * root.sf); height: Math.round(32 * root.sf)
                     radius: root.radiusSm
-                    color: refreshMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                    color: refreshMa.containsMouse ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(0, 0, 0, 0.03)
+                    border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
 
                     Canvas {
                         anchors.centerIn: parent
@@ -1028,7 +988,7 @@ Rectangle {
                         onPaint: {
                             var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.5;
+                            ctx.strokeStyle = root.textSecondary; ctx.lineWidth = 1.5;
                             ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
                             ctx.restore();
@@ -1045,8 +1005,8 @@ Rectangle {
                 width: parent.width
                 height: Math.round(200 * root.sf)
                 radius: root.radiusSm
-                color: Qt.rgba(0, 0, 0, 0.4)
-                border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
+                color: "#1e1e2e"
+                border.color: Qt.rgba(0, 0, 0, 0.1); border.width: 1
                 clip: true
 
                 Rectangle {
@@ -1062,18 +1022,18 @@ Rectangle {
                         Text {
                             text: "LOGS — openwhale.service"
                             font.pixelSize: Math.round(9 * root.sf)
-                            color: root.textMuted; Layout.fillWidth: true
+                            color: "#a1a1aa"; Layout.fillWidth: true
                         }
 
                         Text {
                             text: "x"
                             font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold
-                            color: clearLogsMa.containsMouse ? root.accentRed : root.textMuted
+                            color: clearLogsMa.containsMouse ? root.accentRed : "#a1a1aa"
                             MouseArea { id: clearLogsMa; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: owLogs = "" }
                         }
                     }
 
-                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.04) }
+                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
                 }
 
                 Flickable {
@@ -1103,8 +1063,8 @@ Rectangle {
                     Layout.fillWidth: true
                     height: Math.round(34 * root.sf)
                     radius: root.radiusSm
-                    color: restartSysMa.containsMouse ? Qt.rgba(0.98, 0.62, 0.04, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                    color: restartSysMa.containsMouse ? Qt.rgba(0.98, 0.62, 0.04, 0.15) : Qt.rgba(0, 0, 0, 0.03)
+                    border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
@@ -1141,8 +1101,8 @@ Rectangle {
                     Layout.fillWidth: true
                     height: Math.round(34 * root.sf)
                     radius: root.radiusSm
-                    color: shutdownMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                    color: shutdownMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(0, 0, 0, 0.03)
+                    border.color: Qt.rgba(0, 0, 0, 0.06); border.width: 1
 
                     Row {
                         anchors.centerIn: parent
@@ -1214,7 +1174,7 @@ Rectangle {
                         var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                         ctx.save(); ctx.scale(s * 1.4, s * 1.4);
                         var cx = 7, cy = 12;
-                        ctx.strokeStyle = connectionType !== "none" ? "#00e676" : "#94a3b8";
+                        ctx.strokeStyle = connectionType !== "none" ? "#34d399" : "#94a3b8";
                         ctx.lineWidth = 1.4; ctx.lineCap = "round";
                         ctx.beginPath(); ctx.arc(cx, cy, 9, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke();
                         ctx.beginPath(); ctx.arc(cx, cy, 6, -Math.PI * 0.80, -Math.PI * 0.20); ctx.stroke();
@@ -1233,7 +1193,7 @@ Rectangle {
                         text: "Network"
                         font.pixelSize: Math.round(14 * root.sf)
                         font.weight: Font.DemiBold
-                        color: "#ffffff"
+                        color: root.textPrimary
                     }
                     Text {
                         text: connectionType === "wifi" ? "Connected to " + currentSSID
@@ -1309,8 +1269,8 @@ Rectangle {
                         visible: connectionType === "wifi"
                         width: Math.round(70 * root.sf); height: Math.round(24 * root.sf)
                         radius: Math.round(12 * root.sf)
-                        color: disconnMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1,1,1,0.05)
-                        border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                        color: disconnMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(0,0,0,0.03)
+                        border.color: Qt.rgba(0,0,0,0.06); border.width: 1
                         Text {
                             anchors.centerIn: parent; text: "Disconnect"
                             font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium
@@ -1326,8 +1286,8 @@ Rectangle {
                 width: parent.width
                 height: Math.round(40 * root.sf)
                 radius: root.radiusSm
-                color: Qt.rgba(1, 1, 1, 0.03)
-                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                color: Qt.rgba(0, 0, 0, 0.02)
+                border.color: Qt.rgba(0,0,0,0.04); border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
@@ -1337,7 +1297,7 @@ Rectangle {
                     Text {
                         text: "Wi-Fi"
                         font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium
-                        color: "#e2e8f0"; Layout.fillWidth: true
+                        color: root.textPrimary; Layout.fillWidth: true
                     }
 
                     // Toggle switch
@@ -1395,7 +1355,7 @@ Rectangle {
                         onPaint: {
                             var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = wifiScanning ? "#3b82f6" : "#999"; ctx.lineWidth = 1.5;
+                            ctx.strokeStyle = wifiScanning ? root.accentBlue : root.textSecondary; ctx.lineWidth = 1.5;
                             ctx.beginPath(); ctx.arc(6, 6, 4, -0.5, Math.PI * 1.5); ctx.stroke();
                             ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, 2.5); ctx.lineTo(6, 4); ctx.stroke();
                             ctx.restore();
@@ -1432,8 +1392,8 @@ Rectangle {
                 width: parent.width
                 height: Math.min(Math.round(240 * root.sf), netListCol.height + Math.round(4 * root.sf))
                 radius: root.radiusSm
-                color: Qt.rgba(0, 0, 0, 0.2)
-                border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                color: Qt.rgba(0, 0, 0, 0.03)
+                border.color: Qt.rgba(0,0,0,0.04); border.width: 1
                 clip: true
 
                 Flickable {
@@ -1455,7 +1415,7 @@ Rectangle {
                                 height: Math.round(42 * root.sf)
                                 radius: root.radiusSm
                                 color: netItemMa.containsMouse
-                                    ? Qt.rgba(1, 1, 1, 0.08)
+                                    ? Qt.rgba(0, 0, 0, 0.06)
                                     : modelData.connected ? Qt.rgba(0.13, 0.77, 0.37, 0.05) : "transparent"
                                 Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -1481,9 +1441,9 @@ Rectangle {
                                                     var sig = modelData.signal;
                                                     var threshold = [0, 25, 50, 75][index];
                                                     if (sig > threshold) {
-                                                        return modelData.connected ? "#34d399" : "#94a3b8";
+                                                        return modelData.connected ? root.accentGreen : root.textSecondary;
                                                     }
-                                                    return Qt.rgba(1,1,1,0.1);
+                                                    return Qt.rgba(0,0,0,0.1);
                                                 }
                                             }
                                         }
@@ -1498,7 +1458,7 @@ Rectangle {
                                             text: modelData.ssid
                                             font.pixelSize: Math.round(11.5 * root.sf)
                                             font.weight: modelData.connected ? Font.DemiBold : Font.Normal
-                                            color: modelData.connected ? "#34d399" : "#e2e8f0"
+                                            color: modelData.connected ? root.accentGreen : root.textPrimary
                                             elide: Text.ElideRight
                                             width: parent.width
                                         }
@@ -1508,7 +1468,7 @@ Rectangle {
                                                 : modelData.security !== "" && modelData.security !== "--" ? "🔒 " + modelData.security
                                                 : "Open"
                                             font.pixelSize: Math.round(9 * root.sf)
-                                            color: modelData.connected ? Qt.rgba(0.2, 0.83, 0.6, 0.6) : root.textMuted
+                                            color: modelData.connected ? root.accentGreen : root.textMuted
                                         }
                                     }
 
@@ -1518,11 +1478,11 @@ Rectangle {
                                         width: Math.round(60 * root.sf); height: Math.round(24 * root.sf)
                                         radius: Math.round(12 * root.sf)
                                         color: Qt.rgba(0.23, 0.51, 0.96, netConnMa.containsMouse ? 0.25 : 0.10)
-                                        border.color: Qt.rgba(0.23, 0.51, 0.96, 0.3); border.width: 1
+                                        border.color: root.accentBlue; border.width: 1
                                         Text {
                                             anchors.centerIn: parent; text: "Connect"
                                             font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Medium
-                                            color: "#60a5fa"
+                                            color: root.accentBlue
                                         }
                                         MouseArea {
                                             id: netConnMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -1577,21 +1537,21 @@ Rectangle {
                     Text {
                         text: "Enter password for \"" + passwordSSID + "\""
                         font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
-                        color: "#e2e8f0"; wrapMode: Text.WordWrap; width: parent.width
+                        color: root.textPrimary; wrapMode: Text.WordWrap; width: parent.width
                     }
 
                     Rectangle {
                         width: parent.width; height: Math.round(34 * root.sf)
                         radius: root.radiusSm
-                        color: Qt.rgba(0, 0, 0, 0.3)
-                        border.color: pwdInput.activeFocus ? "#60a5fa" : Qt.rgba(1,1,1,0.1)
+                        color: Qt.rgba(0, 0, 0, 0.04)
+                        border.color: pwdInput.activeFocus ? root.accentBlue : root.borderColor
                         border.width: 1
 
                         TextInput {
                             id: pwdInput
                             anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
                             font.pixelSize: Math.round(12 * root.sf)
-                            color: "#ffffff"; echoMode: TextInput.Password
+                            color: root.textPrimary; echoMode: TextInput.Password
                             clip: true
                             onTextChanged: passwordInput = text
                             onAccepted: { if (passwordInput.length > 0) connectWifi(passwordSSID, passwordInput); }
@@ -1600,7 +1560,7 @@ Rectangle {
                                 visible: parent.text === ""
                                 text: "Password"
                                 font.pixelSize: Math.round(12 * root.sf)
-                                color: Qt.rgba(1,1,1,0.3)
+                                color: Qt.rgba(0,0,0,0.3)
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -1613,8 +1573,8 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true; height: Math.round(30 * root.sf)
                             radius: root.radiusSm
-                            color: cancelPwdMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.04)
-                            border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                            color: cancelPwdMa.containsMouse ? Qt.rgba(0,0,0,0.06) : Qt.rgba(0,0,0,0.03)
+                            border.color: Qt.rgba(0,0,0,0.06); border.width: 1
                             Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
                             MouseArea { id: cancelPwdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                 onClicked: { showPasswordDialog = false; passwordInput = ""; }
@@ -1626,7 +1586,7 @@ Rectangle {
                             radius: root.radiusSm
                             color: connectPwdMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.3) : Qt.rgba(0.23, 0.51, 0.96, 0.15)
                             border.color: Qt.rgba(0.23, 0.51, 0.96, 0.4); border.width: 1
-                            Text { anchors.centerIn: parent; text: wifiConnecting ? "Connecting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: "#60a5fa" }
+                            Text { anchors.centerIn: parent; text: wifiConnecting ? "Connecting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.accentBlue }
                             MouseArea { id: connectPwdMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                 enabled: passwordInput.length > 0 && !wifiConnecting
                                 onClicked: connectWifi(passwordSSID, passwordInput)
@@ -1693,7 +1653,7 @@ Rectangle {
                     Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
                     Text {
                         text: "Date & Time"
-                        font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                        font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary
                     }
                     Text {
                         text: Qt.formatDate(new Date(), "dddd, MMMM d, yyyy")
@@ -1722,7 +1682,7 @@ Rectangle {
             // ── Current Time Display ──
             Rectangle {
                 width: parent.width; height: Math.round(54 * root.sf); radius: Math.round(8 * root.sf)
-                color: Qt.rgba(0.06, 0.06, 0.12, 0.8)
+                color: Qt.rgba(0.95, 0.95, 0.96, 0.8)
                 border.color: Qt.rgba(0.35, 0.55, 1.0, 0.15); border.width: 1
 
                 Row {
@@ -1731,7 +1691,7 @@ Rectangle {
                     Text {
                         text: Qt.formatTime(new Date(), "h:mm:ss AP")
                         font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold
-                        font.family: "monospace"; color: "#e2e8f0"
+                        font.family: "monospace"; color: root.textPrimary
                         anchors.verticalCenter: parent.verticalCenter
 
                         Timer {
@@ -1774,26 +1734,26 @@ Rectangle {
                     Text {
                         text: currentTimezone || "Loading..."
                         font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium
-                        color: "#60a5fa"
+                        color: root.accentBlue
                     }
                 }
 
                 // Timezone search
                 Rectangle {
                     width: parent.width; height: Math.round(34 * root.sf); radius: Math.round(8 * root.sf)
-                    color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                    color: Qt.rgba(0, 0, 0, 0.04); border.color: root.borderColor; border.width: 1
 
                     TextInput {
                         id: tzSearch; anchors.fill: parent
                         anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf)
-                        color: "#fff"; font.pixelSize: Math.round(12 * root.sf)
+                        color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf)
                         clip: true; verticalAlignment: TextInput.AlignVCenter
                         onTextChanged: tzSearchFilter = text.toLowerCase()
 
                         Text {
                             anchors.fill: parent; verticalAlignment: Text.AlignVCenter
                             text: "🔍 Search timezones..."
-                            color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(11 * root.sf)
+                            color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(11 * root.sf)
                             visible: !parent.text
                         }
                     }
@@ -1804,7 +1764,7 @@ Rectangle {
                     visible: tzSearchFilter.length >= 2
                     width: parent.width; height: Math.min(Math.round(180 * root.sf), tzListView.contentHeight + 4)
                     radius: Math.round(8 * root.sf)
-                    color: Qt.rgba(0, 0, 0, 0.25); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                    color: Qt.rgba(0, 0, 0, 0.04); border.color: Qt.rgba(0,0,0,0.06); border.width: 1
                     clip: true
 
                     ListView {
@@ -1831,7 +1791,7 @@ Rectangle {
                                 anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf)
                                 text: (modelData === currentTimezone ? "✓ " : "") + modelData
                                 font.pixelSize: Math.round(11 * root.sf)
-                                color: modelData === currentTimezone ? "#60a5fa" : root.textPrimary
+                                color: modelData === currentTimezone ? root.accentBlue : root.textPrimary
                                 font.weight: modelData === currentTimezone ? Font.DemiBold : Font.Normal
                             }
 
@@ -1849,7 +1809,7 @@ Rectangle {
             // ── NTP Sync Toggle ──
             Rectangle {
                 width: parent.width; height: Math.round(44 * root.sf); radius: Math.round(8 * root.sf)
-                color: Qt.rgba(0,0,0,0.15); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.06); border.width: 1
 
                 RowLayout {
                     anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); spacing: Math.round(10 * root.sf)
@@ -1867,12 +1827,11 @@ Rectangle {
                         }
                     }
 
-                    // Toggle button
                     Rectangle {
                         width: Math.round(46 * root.sf); height: Math.round(24 * root.sf)
                         radius: Math.round(12 * root.sf)
-                        color: ntpActive ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : Qt.rgba(1,1,1,0.1)
-                        border.color: ntpActive ? Qt.rgba(0.13, 0.77, 0.37, 0.5) : Qt.rgba(1,1,1,0.15)
+                        color: ntpActive ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : Qt.rgba(0, 0, 0, 0.06)
+                        border.color: ntpActive ? Qt.rgba(0.13, 0.77, 0.37, 0.5) : Qt.rgba(0, 0, 0, 0.15)
                         border.width: 1
 
                         Rectangle {
@@ -1902,7 +1861,7 @@ Rectangle {
                 visible: !ntpActive
                 width: parent.width; height: manualTimeCol.height + Math.round(16 * root.sf)
                 radius: Math.round(8 * root.sf)
-                color: Qt.rgba(0,0,0,0.15); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
+                color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.06); border.width: 1
 
                 Column {
                     id: manualTimeCol; anchors.left: parent.left; anchors.right: parent.right
@@ -1919,19 +1878,19 @@ Rectangle {
 
                         Rectangle {
                             width: Math.round(190 * root.sf); height: Math.round(32 * root.sf); radius: Math.round(6 * root.sf)
-                            color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                            color: Qt.rgba(0, 0, 0, 0.04); border.color: root.borderColor; border.width: 1
 
                             TextInput {
                                 id: manualTimeInput; anchors.fill: parent
                                 anchors.leftMargin: Math.round(8 * root.sf); anchors.rightMargin: Math.round(8 * root.sf)
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"
+                                color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"
                                 clip: true; verticalAlignment: TextInput.AlignVCenter
                                 Keys.onReturnPressed: setManualTime(text.trim())
 
                                 Text {
                                     anchors.fill: parent; verticalAlignment: Text.AlignVCenter
                                     text: Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm:ss")
-                                    color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(11 * root.sf); font.family: "monospace"
+                                    color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(11 * root.sf); font.family: "monospace"
                                     visible: !parent.text
                                 }
                             }
@@ -2015,7 +1974,7 @@ Rectangle {
                         onPaint: {
                             var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = root.textSecondary; ctx.lineWidth = 1.2;
                             ctx.beginPath(); ctx.arc(6.5, 4.5, 3, 0, Math.PI * 2); ctx.stroke();
                             ctx.beginPath(); ctx.arc(6.5, 15, 6, Math.PI * 1.2, Math.PI * 1.8); ctx.stroke();
                             ctx.restore();
@@ -2035,7 +1994,7 @@ Rectangle {
             Rectangle {
                 width: parent.width; height: Math.round(34 * root.sf)
                 radius: root.radiusSm
-                color: logoutMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                color: logoutMouse.containsMouse ? Qt.rgba(0, 0, 0, 0.04) : "transparent"
 
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
@@ -2049,7 +2008,7 @@ Rectangle {
                         onPaint: {
                             var ctx = getContext("2d"); ctx.clearRect(0, 0, width, height);
                             ctx.save(); ctx.scale(s, s);
-                            ctx.strokeStyle = "#999"; ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = root.textSecondary; ctx.lineWidth = 1.2;
                             ctx.beginPath();
                             ctx.moveTo(5, 1); ctx.lineTo(1, 1); ctx.lineTo(1, 12);
                             ctx.lineTo(5, 12); ctx.stroke();
@@ -2075,7 +2034,12 @@ Rectangle {
         userMenu.visible = false;
         owPanelVisible = false;
         for (var i = 0; i < root.openWindows.length; i++) {
-            if (root.openWindows[i].appId === appId) return;
+            if (root.openWindows[i].appId === appId) {
+                if (typeof root.focusWindow === "function") {
+                    root.focusWindow(appId);
+                }
+                return;
+            }
         }
         var wins = root.openWindows.slice();
         wins.push({ appId: appId, title: title, icon: icon });

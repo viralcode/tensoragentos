@@ -1,0 +1,304 @@
+---
+# TensorAgent OS — Fleet Management Ansible Playbook
+# ansible/playbooks/fleet-deploy.yml
+#
+# Deploys and hardens TensorAgent OS across a fleet of machines.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml ansible/playbooks/fleet-deploy.yml
+#
+# Inventory example (inventory.yml):
+#   all:
+#     hosts:
+#       tensoragent-01:
+#         ansible_host: 10.0.1.10
+#       tensoragent-02:
+#         ansible_host: 10.0.1.11
+#     vars:
+#       ansible_user: ainux
+#       ansible_become: true
+#
+
+- name: TensorAgent OS Fleet Deployment & Hardening
+  hosts: all
+  become: true
+  vars:
+    ainux_home: /opt/ainux
+    openwhale_dir: /opt/ainux/openwhale
+    security_conf: /etc/ainux/security.conf
+    ai_sandbox: true
+    require_approval: true
+    apparmor_enforce: false  # Set true after testing in complain mode
+    fleet_manager: "fleetdm"  # Options: fleetdm, standalone
+    log_server: ""  # Set to your centralized log server
+
+  tasks:
+    # ─── System Updates ─────────────────────────────────────────
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Apply security updates
+      apt:
+        upgrade: safe
+      register: apt_upgrade
+
+    # ─── Security Packages ──────────────────────────────────────
+    - name: Ensure security packages installed
+      apt:
+        name:
+          - apparmor
+          - apparmor-utils
+          - auditd
+          - audispd-plugins
+          - ufw
+          - fail2ban
+          - aide
+          - rkhunter
+          - libpam-pwquality
+          - unattended-upgrades
+        state: present
+
+    # ─── AppArmor ───────────────────────────────────────────────
+    - name: Deploy AppArmor profiles
+      copy:
+        src: "{{ item }}"
+        dest: /etc/apparmor.d/
+        mode: '0644'
+      loop:
+        - files/apparmor/opt.ainux.openwhale
+        - files/apparmor/opt.ainux.whaleos
+        - files/apparmor/usr.local.bin.ollama
+      notify: reload apparmor
+
+    - name: Set AppArmor to enforce mode
+      command: "aa-enforce /etc/apparmor.d/{{ item }}"
+      loop:
+        - opt.ainux.openwhale
+        - opt.ainux.whaleos
+        - usr.local.bin.ollama
+      when: apparmor_enforce
+      notify: reload apparmor
+
+    - name: Ensure AppArmor is running
+      systemd:
+        name: apparmor
+        state: started
+        enabled: true
+
+    # ─── Audit Rules ────────────────────────────────────────────
+    - name: Deploy enterprise audit rules
+      copy:
+        src: files/audit/ainux-enterprise.rules
+        dest: /etc/audit/rules.d/ainux-enterprise.rules
+        mode: '0640'
+      notify: reload auditd
+
+    - name: Ensure auditd is running
+      systemd:
+        name: auditd
+        state: started
+        enabled: true
+
+    # ─── Firewall ───────────────────────────────────────────────
+    - name: Configure UFW defaults
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Allow SSH (rate-limited)
+      ufw:
+        rule: limit
+        port: ssh
+        proto: tcp
+
+    - name: Allow OpenWhale from private networks
+      ufw:
+        rule: allow
+        port: '7777'
+        proto: tcp
+        src: "{{ item }}"
+      loop:
+        - '10.0.0.0/8'
+        - '172.16.0.0/12'
+        - '192.168.0.0/16'
+
+    - name: Block CDP port
+      ufw:
+        rule: deny
+        port: '9222'
+        proto: tcp
+
+    # ─── Fail2ban ───────────────────────────────────────────────
+    - name: Deploy fail2ban jail config
+      copy:
+        src: files/fail2ban/ainux.conf
+        dest: /etc/fail2ban/jail.d/ainux.conf
+        mode: '0644'
+      notify: restart fail2ban
+
+    - name: Ensure fail2ban is running
+      systemd:
+        name: fail2ban
+        state: started
+        enabled: true
+
+    # ─── Security Configuration ─────────────────────────────────
+    - name: Deploy security configuration
+      template:
+        src: templates/security.conf.j2
+        dest: "{{ security_conf }}"
+        mode: '0644'
+
+    - name: Deploy command policy
+      copy:
+        src: files/command-policy.conf
+        dest: /etc/ainux/command-policy.conf
+        mode: '0644'
+
+    # ─── SSH Hardening ──────────────────────────────────────────
+    - name: Deploy hardened SSH config
+      copy:
+        src: files/sshd/ainux-hardened.conf
+        dest: /etc/ssh/sshd_config.d/ainux-hardened.conf
+        mode: '0644'
+      notify: restart sshd
+
+    # ─── Systemd Service Hardening ──────────────────────────────
+    - name: Deploy hardened service files
+      copy:
+        src: "files/systemd/{{ item }}"
+        dest: "/etc/systemd/system/{{ item }}"
+        mode: '0644'
+      loop:
+        - openwhale.service
+        - ainux-kernel.service
+        - ollama.service
+        - ainux-shell.service
+      notify: daemon reload
+
+    # ─── Fleet Monitoring ───────────────────────────────────────
+    - name: Install osquery
+      apt:
+        name: osquery
+        state: present
+      when: fleet_manager == "fleetdm"
+      ignore_errors: true
+
+    - name: Deploy osquery configuration
+      copy:
+        src: files/osquery/osquery.conf
+        dest: /etc/osquery/osquery.conf
+        mode: '0644'
+      when: fleet_manager == "fleetdm"
+      notify: restart osquery
+
+    # ─── Log Forwarding ─────────────────────────────────────────
+    - name: Install fluent-bit
+      apt:
+        name: fluent-bit
+        state: present
+      when: log_server != ""
+      ignore_errors: true
+
+    - name: Deploy fluent-bit config
+      template:
+        src: templates/fluent-bit.conf.j2
+        dest: /etc/fluent-bit/fluent-bit.conf
+        mode: '0644'
+      when: log_server != ""
+      notify: restart fluent-bit
+
+    # ─── TLS Certificates ──────────────────────────────────────
+    - name: Generate TLS certificates
+      command: /opt/ainux/generate-tls.sh
+      args:
+        creates: /etc/ainux/tls/server.crt
+
+    # ─── AIDE Initialization ────────────────────────────────────
+    - name: Initialize AIDE database
+      command: aideinit
+      args:
+        creates: /var/lib/aide/aide.db
+
+    - name: Copy AIDE new database
+      command: cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+      args:
+        creates: /var/lib/aide/aide.db
+
+    # ─── Unattended Security Updates ────────────────────────────
+    - name: Enable unattended security upgrades
+      copy:
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+        content: |
+          Unattended-Upgrade::Allowed-Origins {
+              "${distro_id}:${distro_codename}-security";
+          };
+          Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+          Unattended-Upgrade::MinimalSteps "true";
+          Unattended-Upgrade::Remove-Unused-Dependencies "true";
+          Unattended-Upgrade::Automatic-Reboot "false";
+        mode: '0644'
+
+    # ─── Restart Services ───────────────────────────────────────
+    - name: Restart OpenWhale
+      systemd:
+        name: openwhale
+        state: restarted
+        daemon_reload: true
+
+    # ─── Verification ───────────────────────────────────────────
+    - name: Verify services are running
+      command: "systemctl is-active {{ item }}"
+      loop:
+        - openwhale
+        - ainux-kernel
+        - ollama
+        - apparmor
+        - auditd
+        - fail2ban
+      register: service_status
+      failed_when: service_status.rc != 0
+      ignore_errors: true
+
+    - name: Print verification results
+      debug:
+        msg: "{{ item.item }}: {{ 'RUNNING' if item.rc == 0 else 'NOT RUNNING' }}"
+      loop: "{{ service_status.results }}"
+
+  handlers:
+    - name: reload apparmor
+      systemd:
+        name: apparmor
+        state: reloaded
+
+    - name: reload auditd
+      command: augenrules --load
+
+    - name: restart fail2ban
+      systemd:
+        name: fail2ban
+        state: restarted
+
+    - name: restart sshd
+      systemd:
+        name: ssh
+        state: restarted
+
+    - name: daemon reload
+      systemd:
+        daemon_reload: true
+
+    - name: restart osquery
+      systemd:
+        name: osqueryd
+        state: restarted
+      ignore_errors: true
+
+    - name: restart fluent-bit
+      systemd:
+        name: fluent-bit
+        state: restarted
+      ignore_errors: true

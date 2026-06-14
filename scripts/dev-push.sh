@@ -58,26 +58,30 @@ if ! sshpass -p "$VM_PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
 fi
 echo "   ✓ Connected"
 
-# Copy QML files
-echo "2️⃣  Pushing QML files..."
+# Copy QML, JS, MJS, C++ and SH files
+echo "2️⃣  Pushing files..."
 sshpass -p "$VM_PASS" scp -o StrictHostKeyChecking=no -r \
-    "${LOCAL_QML_DIR}/"*.qml "${LOCAL_QML_DIR}/"*.js \
+    "${LOCAL_QML_DIR}/"*.qml "${LOCAL_QML_DIR}/"*.js "${LOCAL_QML_DIR}/"*.mjs "${LOCAL_QML_DIR}/"*.h "${LOCAL_QML_DIR}/"*.cpp "${LOCAL_QML_DIR}/"*.sh \
     "${VM_USER}@${VM_IP}:/tmp/whaleos-qml/" 2>/dev/null || {
     # Create remote temp dir first
     sshpass -p "$VM_PASS" ssh -o StrictHostKeyChecking=no \
         "${VM_USER}@${VM_IP}" "mkdir -p /tmp/whaleos-qml"
     sshpass -p "$VM_PASS" scp -o StrictHostKeyChecking=no \
-        "${LOCAL_QML_DIR}/"*.qml "${LOCAL_QML_DIR}/"*.js \
+        "${LOCAL_QML_DIR}/"*.qml "${LOCAL_QML_DIR}/"*.js "${LOCAL_QML_DIR}/"*.mjs "${LOCAL_QML_DIR}/"*.h "${LOCAL_QML_DIR}/"*.cpp "${LOCAL_QML_DIR}/"*.sh \
         "${VM_USER}@${VM_IP}:/tmp/whaleos-qml/"
 }
 
-# Move files into place (needs sudo) and restart compositor
-echo "3️⃣  Installing & restarting compositor..."
+# Move files into place (needs sudo), build and restart compositor & services
+echo "3️⃣  Installing, rebuilding & restarting compositor and services..."
 sshpass -p "$VM_PASS" ssh -o StrictHostKeyChecking=no \
     "${VM_USER}@${VM_IP}" "
     echo '$VM_PASS' | sudo -S cp /tmp/whaleos-qml/* ${REMOTE_QML_DIR}/ 2>/dev/null
-    echo '$VM_PASS' | sudo -S pkill -f 'openwhale.*whaleos' 2>/dev/null || true
-    echo '   ✓ Compositor restarted'
+    echo '$VM_PASS' | sudo -S chmod +x ${REMOTE_QML_DIR}/*.sh 2>/dev/null
+    echo '$VM_PASS' | sudo -S bash ${REMOTE_QML_DIR}/patch-gui-service.sh
+    echo '$VM_PASS' | sudo -S bash /opt/ainux/whaleos/build.sh
+    echo '$VM_PASS' | sudo -S systemctl restart whaleos-gui.service
+    echo '$VM_PASS' | sudo -S systemctl restart clipboard-sync.service
+    echo '   ✓ Compositor and services rebuilt and restarted'
 "
 
 echo ""

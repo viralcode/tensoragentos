@@ -22,11 +22,28 @@ Environment=AINUX_DATA=/home/ainux/.ainux
 Environment=OPENWHALE_PORT=7777
 Environment=CDP_PORT=9222
 
-# Security hardening
-NoNewPrivileges=false
+# ─── Security Hardening (Enterprise) ─────────────────────────────
+NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/home/ainux/.ainux /opt/ainux/openwhale /tmp
 PrivateTmp=true
+ProtectHome=tmpfs
+ProtectProc=invisible
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+MemoryDenyWriteExecute=false
+RestrictNamespaces=true
+PrivateDevices=true
+RemoveIPC=true
 
 # Logging
 StandardOutput=journal

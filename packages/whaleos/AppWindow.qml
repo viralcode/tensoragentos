@@ -6,13 +6,23 @@ Rectangle {
     id: appWindow
     x: initialX
     y: initialY
+
+    readonly property bool isDialog: toplevelObj !== null && toplevelObj.parentToplevel !== null
+    property real defaultWidth: Math.round(700 * root.sf)
+    property real defaultHeight: Math.round(450 * root.sf)
+    property bool centeredOnce: false
+
     // width/height set once in Component.onCompleted — NOT live-bound to windowArea
-    // so chat panel expanding/collapsing never resizes open windows
-    width: Math.round(700 * root.sf)
-    height: Math.round(450 * root.sf)
+    // so chat panel expanding/collapsing never resizes open windows. For dialogs, wrap content.
+    width: isDialog ? (surfaceItem.width > 0 ? surfaceItem.width : Math.round(400 * root.sf)) : defaultWidth
+    height: isDialog ? (surfaceItem.height > 0 ? surfaceItem.height : Math.round(250 * root.sf)) : defaultHeight
+
+    onWidthChanged: centerDialog()
+    onHeightChanged: centerDialog()
+
     radius: root.radiusLg
-    color: root.bgSurface
-    border.color: Qt.rgba(0.0, 0.90, 1.0, 0.10)
+    color: isDialog ? "transparent" : Qt.rgba(1, 1, 1, 0.92)
+    border.color: isDialog ? "transparent" : Qt.rgba(0, 0, 0, 0.08)
     border.width: 1
     clip: true
     z: 10
@@ -59,16 +69,43 @@ Rectangle {
     // Set initial size + launch native app in one onCompleted handler
     // (QML only allows ONE Component.onCompleted per component)
     Component.onCompleted: {
+        console.log("WhaleOS AppWindow completed loading. appId:", appId, "title:", windowTitle, "visible:", visible, "x:", x, "y:", y, "width:", width, "height:", height);
         if (windowArea) {
             // Native apps get a larger window
             var initW = isNative ? Math.round(900 * root.sf) : Math.round(700 * root.sf);
             var initH = isNative ? Math.round(600 * root.sf) : Math.round(450 * root.sf);
-            appWindow.width  = Math.min(initW, windowArea.width  - Math.round(20 * root.sf));
-            appWindow.height = Math.min(initH, windowArea.height - Math.round(20 * root.sf));
+            var wAreaW = windowArea.width > 0 ? windowArea.width : root.width;
+            var wAreaH = windowArea.height > 0 ? windowArea.height : (root.height - Math.round(44 * root.sf));
+            defaultWidth  = Math.min(initW, wAreaW  - Math.round(20 * root.sf));
+            defaultHeight = Math.min(initH, wAreaH - Math.round(20 * root.sf));
         }
-        if (isNative && nativeCmd.length > 0) {
-            nativeLauncher.start();
+    }
+
+    function centerDialog() {
+        if (!isDialog || centeredOnce || !surfaceItem || surfaceItem.width <= 0 || surfaceItem.height <= 0) return;
+        var parentWinItem = findParentWindowItem();
+        if (parentWinItem) {
+            appWindow.x = parentWinItem.x + (parentWinItem.width - appWindow.width) / 2;
+            appWindow.y = parentWinItem.y + (parentWinItem.height - appWindow.height) / 2;
+            centeredOnce = true;
+            console.log("WhaleOS: Centered dialog over parent window:", parentWinItem.windowTitle, "x:", appWindow.x, "y:", appWindow.y);
+        } else if (windowArea && windowArea.width > 0) {
+            appWindow.x = windowArea.x + (windowArea.width - appWindow.width) / 2;
+            appWindow.y = windowArea.y + (windowArea.height - appWindow.height) / 2;
+            centeredOnce = true;
+            console.log("WhaleOS: Centered dialog over windowArea (fallback) x:", appWindow.x, "y:", appWindow.y);
         }
+    }
+
+    function findParentWindowItem() {
+        if (!toplevelObj || !toplevelObj.parentToplevel || !parent) return null;
+        for (var i = 0; i < parent.children.length; i++) {
+            var child = parent.children[i];
+            if (child !== appWindow && child.toplevelObj === toplevelObj.parentToplevel) {
+                return child;
+            }
+        }
+        return null;
     }
 
     property string nativeWinId: ""
@@ -112,6 +149,7 @@ Rectangle {
     // (the area below WhaleOS's title bar)
     onShellSurfaceChanged: {
         if (shellSurface && toplevelObj) {
+            console.log("WhaleOS Debug for", windowTitle, ": toplevelObj =", toplevelObj, "parentToplevel =", toplevelObj.parentToplevel);
             surfaceConfigureTimer.restart();
         }
         focusNativeSurface();
@@ -127,11 +165,17 @@ Rectangle {
         interval: 150; repeat: false
         onTriggered: {
             if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
-                var sz = Qt.size(contentArea.width, contentArea.height);
-                // sendMaximized tells Chrome to fill the given size
-                // WhaleOS provides the title bar (SSD), so Chrome won't draw its own
-                if (typeof toplevelObj.sendMaximized === "function") {
-                    toplevelObj.sendMaximized(sz);
+                if (isDialog) {
+                    // Tell the client dialog to choose its own size (0, 0 geometry suggestion)
+                    if (typeof toplevelObj.sendConfigure === "function") {
+                        toplevelObj.sendConfigure(Qt.size(0, 0), []);
+                    }
+                } else {
+                    var sz = Qt.size(contentArea.width, contentArea.height);
+                    // sendMaximized tells client to fill the given size
+                    if (typeof toplevelObj.sendMaximized === "function") {
+                        toplevelObj.sendMaximized(sz);
+                    }
                 }
             }
         }
@@ -139,28 +183,22 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1
-        color: "transparent"; border.color: Qt.rgba(0, 0, 0, 0.5); border.width: 2; z: -1
+        color: "transparent"; border.color: isDialog ? "transparent" : Qt.rgba(0, 0, 0, 0.12); border.width: 1; z: -1
     }
 
-    // ── Title Bar (always shown — compositor provides window controls) ──
+    // ── Title Bar ──
     Rectangle {
         id: titleBar
+        visible: !isDialog
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-        height: Math.round(40 * root.sf)
-        color: Qt.rgba(0.04, 0.06, 0.14, 0.95); radius: root.radiusLg
+        height: visible ? Math.round(38 * root.sf) : 0
+        color: Qt.rgba(0.96, 0.96, 0.97, 0.98); radius: root.radiusLg
 
         Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: parent.radius; color: parent.color }
-        // Neon gradient accent line
+        // Subtle bottom border
         Rectangle {
             anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.2; color: Qt.rgba(0.0, 0.90, 1.0, 0.3) }
-                GradientStop { position: 0.5; color: Qt.rgba(0.70, 0.53, 1.0, 0.4) }
-                GradientStop { position: 0.8; color: Qt.rgba(1.0, 0.25, 0.51, 0.3) }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
+            color: Qt.rgba(0, 0, 0, 0.06)
         }
 
         MouseArea {
@@ -176,41 +214,42 @@ Rectangle {
         }
 
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: Math.round(14 * root.sf); anchors.rightMargin: Math.round(8 * root.sf); spacing: Math.round(8 * root.sf)
+            anchors.fill: parent; anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
 
+            // ── Traffic Light Buttons (Left) ──
+            Row {
+                spacing: Math.round(7 * root.sf)
+                Layout.alignment: Qt.AlignVCenter
+
+                // Close
+                Rectangle {
+                    width: Math.round(12 * root.sf); height: Math.round(12 * root.sf); radius: width / 2
+                    color: closeHover.containsMouse ? "#ef4444" : "#d1d5db"
+                    border.color: closeHover.containsMouse ? "#dc2626" : Qt.rgba(0,0,0,0.08); border.width: 0.5
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    MouseArea { id: closeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: closeWindow() }
+                }
+                // Maximize
+                Rectangle {
+                    visible: !isDialog
+                    width: Math.round(12 * root.sf); height: Math.round(12 * root.sf); radius: width / 2
+                    color: maxHover.containsMouse ? "#22c55e" : "#d1d5db"
+                    border.color: maxHover.containsMouse ? "#16a34a" : Qt.rgba(0,0,0,0.08); border.width: 0.5
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    MouseArea { id: maxHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: toggleMaximize() }
+                }
+            }
+
+            // ── Title (centered) ──
             Text {
                 text: appWindow.windowTitle
-                font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold
+                font.pixelSize: Math.round(12.5 * root.sf); font.weight: Font.DemiBold
                 color: root.textPrimary; Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
             }
 
-            // ── Maximize Button ──
-            Item {
-                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
-                Layout.alignment: Qt.AlignVCenter
-
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
-                    color: maxHover.containsMouse ? "#00e676" : Qt.rgba(0.0, 0.90, 0.46, 0.3)
-                    border.color: Qt.rgba(0.0, 0.90, 0.46, 0.5); border.width: 0.5
-                }
-                MouseArea { id: maxHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: toggleMaximize() }
-            }
-
-            // ── Close Button ──
-            Item {
-                width: Math.round(28 * root.sf); height: Math.round(28 * root.sf)
-                Layout.alignment: Qt.AlignVCenter
-
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: width / 2
-                    color: closeHover.containsMouse ? "#ff1744" : Qt.rgba(1.0, 0.09, 0.27, 0.3)
-                    border.color: Qt.rgba(1.0, 0.09, 0.27, 0.5); border.width: 0.5
-                }
-                MouseArea { id: closeHover; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: closeWindow() }
-            }
+            // Spacer to balance traffic lights
+            Item { width: Math.round(31 * root.sf) }
         }
     }
 
@@ -219,7 +258,7 @@ Rectangle {
     Item {
         id: contentArea
         clip: true  // Prevent native app surface from overflowing
-        anchors.top: titleBar.bottom; anchors.left: parent.left
+        anchors.top: isDialog ? parent.top : titleBar.bottom; anchors.left: parent.left
         anchors.right: parent.right; anchors.bottom: parent.bottom
 
         // Re-send configure when window is resized so native app fills properly
@@ -252,7 +291,7 @@ Rectangle {
         // Embedded Wayland surface (rendered by compositor)
         ShellSurfaceItem {
             id: surfaceItem
-            anchors.fill: parent
+            anchors.fill: isDialog ? undefined : parent
             visible: shellSurface !== null
             shellSurface: appWindow.shellSurface
             autoCreatePopupItems: true
@@ -288,7 +327,7 @@ Rectangle {
                 Repeater {
                     model: 3
                     Rectangle {
-                        width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#00e5ff"
+                        width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: root.accentBlue
                         SequentialAnimation on opacity {
                             running: isNative && shellSurface === null; loops: Animation.Infinite
                             PauseAnimation { duration: index * 200 }
@@ -321,25 +360,18 @@ Rectangle {
         }
     }
 
-    // ── Native App Launch ──
-    Timer {
-        id: nativeLauncher
-        interval: 200; running: false; repeat: false
-        onTriggered: {
-            if (!isNative || nativeCmd.length === 0) return;
-            sysManager.launchNativeApp(nativeCmd);
-        }
-    }
+
 
 
     function closeWindow() {
+        // Hide immediately so user sees it vanish
+        appWindow.visible = false;
+
         // Send close to Wayland surface if applicable
         if (toplevelObj) {
-            // XdgToplevel has sendClose(), WlShellSurface does not
             if (typeof toplevelObj.sendClose === "function") {
                 toplevelObj.sendClose();
             } else if (shellSurface) {
-                // WlShell fallback: destroy the surface's client connection
                 try {
                     var surf = shellSurface.surface || shellSurface;
                     if (surf && surf.client) {
@@ -351,31 +383,48 @@ Rectangle {
             }
         }
 
-        // Remove from openWindows list (lives on desktopRoot in main.qml)
-        try {
-            // Walk up parent chain to find the component with openWindows
-            var target = parent;
-            while (target && typeof target.openWindows === "undefined") {
-                target = target.parent;
-            }
-            if (target && target.openWindows) {
-                var wins = target.openWindows;
-                var newWins = [];
-                for (var i = 0; i < wins.length; i++) {
-                    if (wins[i].appId !== appId) newWins.push(wins[i]);
-                }
-                target.openWindows = newWins;
-            }
-        } catch(e) {
-            console.log("WhaleOS: openWindows cleanup: " + e);
-        }
+        // Defer openWindows cleanup so the Repeater model isn't mutated
+        // while QML is still inside this delegate's execution context
+        closeCleanupTimer.start();
+    }
 
-        // Hide immediately — QML Repeater will destroy when removed from openWindows
-        root.visible = false;
+    Timer {
+        id: closeCleanupTimer
+        interval: 50; running: false; repeat: false
+        onTriggered: {
+            try {
+                console.log("WhaleOS: closeCleanupTimer for " + appWindow.appId + " triggered. root: " + (typeof root) + ", parent: " + appWindow.parent);
+                var target = null;
+                if (typeof root !== "undefined" && typeof root.openWindows !== "undefined") {
+                    target = root;
+                } else {
+                    var p = appWindow.parent;
+                    while (p && typeof p.openWindows === "undefined") {
+                        p = p.parent;
+                    }
+                    if (p && typeof p.openWindows !== "undefined") {
+                        target = p;
+                    }
+                }
+                console.log("WhaleOS: target: " + (target ? "found" : "null") + ", target.openWindows: " + (target ? typeof target.openWindows : "n/a"));
+                if (target && target.openWindows) {
+                    var wins = target.openWindows;
+                    var newWins = [];
+                    for (var i = 0; i < wins.length; i++) {
+                        if (wins[i].appId !== appWindow.appId) newWins.push(wins[i]);
+                    }
+                    console.log("WhaleOS: old wins length: " + wins.length + ", new wins length: " + newWins.length);
+                    target.openWindows = newWins;
+                }
+            } catch(e) {
+                console.log("WhaleOS: openWindows cleanup error: " + e);
+            }
+        }
     }
 
     // ── Resize Handle ──
     MouseArea {
+        visible: !isDialog
         width: Math.round(16 * root.sf); height: Math.round(16 * root.sf)
         anchors.right: parent.right; anchors.bottom: parent.bottom
         cursorShape: Qt.SizeFDiagCursor

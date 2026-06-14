@@ -18,6 +18,7 @@
 #include <QMouseEvent>
 #include <QQmlListProperty>
 #include <QtWaylandCompositor/QWaylandQuickCompositor>
+#include <QScreen>
 #include "systemmanager.h"
 #include "ptyprocess.h"
 #include "terminalemulator.h"
@@ -200,7 +201,44 @@ int main(int argc, char *argv[]) {
     QQuickWindow *mainWindow = root ? root->findChild<QQuickWindow *>() : nullptr;
     if (mainWindow) {
         sysManager.setMainWindow(mainWindow);
-        qDebug() << "TensorAgent OS: Main window WId:" << mainWindow->winId();
+        // Defer geometry setting by 500ms to allow Qt's XCB platform plugin to initialize screen size
+        QTimer::singleShot(500, [mainWindow]() {
+            QScreen *screen = QGuiApplication::primaryScreen();
+            if (screen) {
+                QRect geom = screen->geometry();
+                if (geom.width() > 320 && geom.height() > 240) {
+                    mainWindow->setGeometry(geom);
+                    mainWindow->showFullScreen();
+                    qDebug() << "TensorAgent OS: Geometry set from primary screen to:" << geom;
+                    return;
+                }
+            }
+
+            QByteArray envW = qgetenv("SCREEN_WIDTH");
+            QByteArray envH = qgetenv("SCREEN_HEIGHT");
+            if (!envW.isEmpty() && !envH.isEmpty()) {
+                int w = envW.toInt();
+                int h = envH.toInt();
+                if (w > 0 && h > 0) {
+                    mainWindow->setGeometry(0, 0, w, h);
+                    mainWindow->showFullScreen();
+                    qDebug() << "TensorAgent OS: Geometry set from env SCREEN_WIDTH/HEIGHT to:" << w << "x" << h;
+                    return;
+                }
+            }
+
+            if (screen) {
+                QRect geom = screen->geometry();
+                if (geom.width() > 0 && geom.height() > 0) {
+                    mainWindow->setGeometry(geom);
+                    mainWindow->showFullScreen();
+                    qDebug() << "TensorAgent OS: Deferred main window geometry set to fallback:" << geom;
+                } else {
+                    qWarning() << "TensorAgent OS: Screen geometry is still empty in deferred timer";
+                }
+            }
+        });
+        qDebug() << "TensorAgent OS: Main window WId:" << mainWindow->winId() << "initial geometry:" << mainWindow->geometry();
     }
 
     qDebug() << "TensorAgent OS: Desktop shell loaded successfully";

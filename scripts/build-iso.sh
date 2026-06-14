@@ -183,6 +183,24 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     # Python & AI tools
     apt-get install -y -qq python3 python3-pip python3-venv sqlite3
 
+    # ── Enterprise Security Packages ─────────────────────────────
+    echo "  → Installing enterprise security packages..."
+    apt-get install -y -qq \
+        apparmor apparmor-utils apparmor-profiles \
+        auditd audispd-plugins \
+        ufw \
+        fail2ban \
+        aide \
+        rkhunter \
+        libpam-pwquality \
+        2>/dev/null || echo "  ⚠ Some security packages unavailable"
+
+    # SSSD for enterprise identity (AD/LDAP) — installed but not enabled
+    apt-get install -y -qq \
+        sssd sssd-tools sssd-ldap sssd-ad \
+        realmd adcli krb5-user libnss-sss libpam-sss \
+        2>/dev/null || echo "  ⚠ SSSD packages unavailable (install manually for AD/LDAP)"
+
     # Multimedia & utilities
     apt-get install -y -qq \
         ffmpeg mousepad galculator \
@@ -311,20 +329,203 @@ echo "[5/8] Creating default user..."
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     if ! id ainux 2>/dev/null; then
         useradd -m -s /bin/bash -G sudo,video,audio,input,render,systemd-journal ainux
+        # Set a temporary password — first-boot wizard will force a change
         echo "ainux:ainux" | chpasswd
     fi
-    # Always ensure passwordless sudo
+    # Temporary sudo for first-boot setup — first-boot wizard will harden this
     echo "ainux ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/ainux
-    echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/nopasswd
-    chmod 440 /etc/sudoers.d/ainux /etc/sudoers.d/nopasswd
+    chmod 440 /etc/sudoers.d/ainux
 
-    # Enable SSH password auth for remote deploys (Debian defaults to no)
+    # SSH hardened defaults
     mkdir -p /etc/ssh/sshd_config.d
-    echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/ainux.conf
-    echo "PermitRootLogin no" >> /etc/ssh/sshd_config.d/ainux.conf
+    cat > /etc/ssh/sshd_config.d/ainux-hardened.conf << SSHEOF
+# TensorAgent OS — SSH Security Defaults
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+MaxAuthTries 5
+ClientAliveInterval 300
+ClientAliveCountMax 2
+X11Forwarding no
+AllowAgentForwarding no
+PrintMotd no
+Banner /etc/issue.net
+SSHEOF
+
+    # Password quality enforcement
+    if [ -f /etc/security/pwquality.conf ]; then
+        cat > /etc/security/pwquality.conf << PWEOF
+# TensorAgent OS — Password Policy
+minlen = 8
+minclass = 2
+maxrepeat = 3
+enforcing = 1
+retry = 3
+PWEOF
+    fi
 '
 
-echo "  ✓ User created (ainux/ainux)"
+echo "  ✓ User created (temporary credentials — first-boot wizard will secure)"
+
+# ─── Deploy Enterprise Security Infrastructure ────────────────
+echo "  → Deploying enterprise security infrastructure..."
+
+# Deploy AppArmor profiles
+if [ -d "${AINUX_ROOT}/rootfs-overlay/etc/apparmor.d" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/apparmor.d"
+    sudo cp -v "${AINUX_ROOT}/rootfs-overlay/etc/apparmor.d/"* "${ROOTFS_DIR}/etc/apparmor.d/" 2>/dev/null || true
+    echo "  ✓ AppArmor profiles deployed"
+fi
+
+# Deploy audit rules
+if [ -d "${AINUX_ROOT}/rootfs-overlay/etc/audit/rules.d" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/audit/rules.d"
+    sudo cp -v "${AINUX_ROOT}/rootfs-overlay/etc/audit/rules.d/"* "${ROOTFS_DIR}/etc/audit/rules.d/" 2>/dev/null || true
+    echo "  ✓ Enterprise audit rules deployed"
+fi
+
+# Deploy security configuration
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/ainux/security.conf" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/ainux"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/ainux/security.conf" "${ROOTFS_DIR}/etc/ainux/security.conf"
+    echo "  ✓ Security configuration deployed"
+fi
+
+# Deploy SSSD template
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/sssd/sssd.conf.example" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/sssd"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/sssd/sssd.conf.example" "${ROOTFS_DIR}/etc/sssd/sssd.conf.example"
+    echo "  ✓ SSSD identity template deployed"
+fi
+
+# Deploy first-boot wizard
+if [ -f "${AINUX_ROOT}/rootfs-overlay/opt/ainux/first-boot-setup.sh" ]; then
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/opt/ainux/first-boot-setup.sh" "${ROOTFS_DIR}/opt/ainux/first-boot-setup.sh"
+    sudo chmod +x "${ROOTFS_DIR}/opt/ainux/first-boot-setup.sh"
+    echo "  ✓ First-boot wizard deployed"
+fi
+
+# Deploy firewall script
+if [ -f "${AINUX_ROOT}/rootfs-overlay/opt/ainux/configure-firewall.sh" ]; then
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/opt/ainux/configure-firewall.sh" "${ROOTFS_DIR}/opt/ainux/configure-firewall.sh"
+    sudo chmod +x "${ROOTFS_DIR}/opt/ainux/configure-firewall.sh"
+    echo "  ✓ Firewall configuration script deployed"
+fi
+
+# Deploy first-boot service
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/systemd/system/ainux-first-boot.service" ]; then
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/systemd/system/ainux-first-boot.service" \
+        "${ROOTFS_DIR}/etc/systemd/system/ainux-first-boot.service"
+    echo "  ✓ First-boot service deployed"
+fi
+
+# Enable security services in chroot
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    # Enable AppArmor
+    systemctl enable apparmor 2>/dev/null || true
+    echo "  ✓ AppArmor enabled"
+
+    # Enable audit daemon
+    systemctl enable auditd 2>/dev/null || true
+    echo "  ✓ Audit daemon enabled"
+
+    # Enable fail2ban
+    systemctl enable fail2ban 2>/dev/null || true
+    echo "  ✓ Fail2ban enabled"
+
+    # Enable first-boot wizard
+    systemctl enable ainux-first-boot.service 2>/dev/null || true
+    echo "  ✓ First-boot wizard enabled"
+
+    # Configure firewall (UFW defaults)
+    ufw default deny incoming 2>/dev/null || true
+    ufw default allow outgoing 2>/dev/null || true
+    # Do not enable UFW yet — first-boot script handles activation
+    echo "  ✓ Firewall defaults configured"
+
+    # Set login banner
+    cat > /etc/issue.net << BANNEREOF
+***************************************************************************
+*                     TensorAgent OS — Enterprise                         *
+*                                                                         *
+*  WARNING: Unauthorized access to this system is prohibited.             *
+*  All connections and activities are monitored and recorded.             *
+*  By accessing this system, you consent to monitoring.                   *
+*                                                                         *
+*  Disconnect IMMEDIATELY if you are not an authorized user.              *
+***************************************************************************
+BANNEREOF
+    echo "  ✓ Security banner configured"
+'
+
+# ─── Deploy Additional Enterprise Components ─────────────────────
+echo "  → Deploying enterprise security components..."
+
+# Fail2ban jails and filters
+for SUBDIR in jail.d filter.d; do
+    SRC="${AINUX_ROOT}/rootfs-overlay/etc/fail2ban/${SUBDIR}"
+    if [ -d "$SRC" ]; then
+        sudo mkdir -p "${ROOTFS_DIR}/etc/fail2ban/${SUBDIR}"
+        sudo cp "$SRC"/* "${ROOTFS_DIR}/etc/fail2ban/${SUBDIR}/" 2>/dev/null || true
+    fi
+done
+echo "  ✓ Fail2ban jails and filters deployed"
+
+# osquery fleet config
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/osquery/osquery.conf" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/osquery"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/osquery/osquery.conf" "${ROOTFS_DIR}/etc/osquery/"
+    echo "  ✓ osquery fleet configuration deployed"
+fi
+
+# Fluent Bit log forwarding
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/fluent-bit/fluent-bit.conf" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/fluent-bit"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/fluent-bit/fluent-bit.conf" "${ROOTFS_DIR}/etc/fluent-bit/"
+    echo "  ✓ Fluent Bit log forwarding deployed"
+fi
+
+# TLS certificate generator + AI command policy + Prometheus
+for SCRIPT in generate-tls.sh configure-firewall.sh first-boot-setup.sh; do
+    if [ -f "${AINUX_ROOT}/rootfs-overlay/opt/ainux/${SCRIPT}" ]; then
+        sudo cp "${AINUX_ROOT}/rootfs-overlay/opt/ainux/${SCRIPT}" "${ROOTFS_DIR}/opt/ainux/${SCRIPT}"
+        sudo chmod +x "${ROOTFS_DIR}/opt/ainux/${SCRIPT}"
+    fi
+done
+
+for CONF in command-policy.conf prometheus.yml; do
+    if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/ainux/${CONF}" ]; then
+        sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/ainux/${CONF}" "${ROOTFS_DIR}/etc/ainux/${CONF}"
+    fi
+done
+
+if [ -d "${AINUX_ROOT}/rootfs-overlay/etc/ainux/prometheus-rules" ]; then
+    sudo mkdir -p "${ROOTFS_DIR}/etc/ainux/prometheus-rules"
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/ainux/prometheus-rules/"* "${ROOTFS_DIR}/etc/ainux/prometheus-rules/" 2>/dev/null || true
+    echo "  ✓ Prometheus alert rules deployed"
+fi
+
+# Installer + update manager
+for TOOL in tensoragent-install.sh ainux-update.sh; do
+    if [ -f "${AINUX_ROOT}/scripts/${TOOL}" ]; then
+        DEST_NAME="${TOOL%.sh}"
+        sudo cp "${AINUX_ROOT}/scripts/${TOOL}" "${ROOTFS_DIR}/usr/local/bin/${DEST_NAME}"
+        sudo chmod +x "${ROOTFS_DIR}/usr/local/bin/${DEST_NAME}"
+        echo "  ✓ ${DEST_NAME} installed to PATH"
+    fi
+done
+
+# AIDE + unattended upgrades
+sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    command -v aide &>/dev/null && { aideinit 2>/dev/null || true; [ -f /var/lib/aide/aide.db.new ] && cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db 2>/dev/null; echo "  ✓ AIDE initialized"; }
+    cat > /etc/apt/apt.conf.d/20auto-upgrades << AUTOUP
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+AUTOUP
+    echo "  ✓ Unattended security updates enabled"
+'
+
+echo "  ✓ All enterprise components deployed"
 
 # Fix home directory ownership (useradd -m with existing dir leaves root:root)
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
@@ -435,7 +636,14 @@ echo "  ✓ OpenWhale + WhaleOS installed"
 echo "[7/8] Configuring systemd services..."
 
 # OpenWhale service
-sudo tee "${ROOTFS_DIR}/etc/systemd/system/openwhale.service" > /dev/null << 'OWSERVICE'
+# Deploy the hardened service file from rootfs-overlay instead of inline
+if [ -f "${AINUX_ROOT}/rootfs-overlay/etc/systemd/system/openwhale.service" ]; then
+    sudo cp "${AINUX_ROOT}/rootfs-overlay/etc/systemd/system/openwhale.service" \
+        "${ROOTFS_DIR}/etc/systemd/system/openwhale.service"
+    echo "  ✓ Hardened OpenWhale service deployed (from rootfs-overlay)"
+else
+    # Fallback: write hardened service inline
+    sudo tee "${ROOTFS_DIR}/etc/systemd/system/openwhale.service" > /dev/null << 'OWSERVICE'
 [Unit]
 Description=OpenWhale AI Platform
 After=network.target
@@ -443,32 +651,37 @@ After=network.target
 [Service]
 Type=simple
 User=ainux
+Group=ainux
 WorkingDirectory=/opt/ainux/openwhale
-
-# Kill any process squatting on port 7777 before we start.
-# Prevents EADDRINUSE on systemd restart after a crash that orphaned a Node process.
 ExecStartPre=/bin/sh -c "fuser -k 7777/tcp 2>/dev/null; sleep 0.5; exit 0"
-
 ExecStart=/usr/bin/node openwhale.mjs
 Environment=NODE_ENV=production PORT=7777 HOME=/home/ainux AINUX_MODE=true
-
-# on-failure: don't restart on clean exit (avoids port-contention restart loops)
+Environment=OPENWHALE_SANDBOX=true OPENWHALE_REQUIRE_APPROVAL=true
 Restart=on-failure
 RestartSec=5
 StartLimitBurst=5
 StartLimitIntervalSec=120
-
-# Kill the entire cgroup on stop — ensures tsx/node sub-processes don't outlive the unit
 KillMode=control-group
 KillSignal=SIGTERM
 TimeoutStopSec=10
-
-# Security
-NoNewPrivileges=false
-ProtectSystem=false
-ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp /home/ainux/Works
-
-# Logging
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ainux /opt/ainux/openwhale/data /tmp /home/ainux/Works
+PrivateTmp=true
+ProtectHome=tmpfs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+PrivateDevices=true
+RemoveIPC=true
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=openwhale
@@ -476,6 +689,7 @@ SyslogIdentifier=openwhale
 [Install]
 WantedBy=multi-user.target
 OWSERVICE
+fi
 
 # WhaleOS helper service (port 7778 — system exec for QML)
 sudo tee "${ROOTFS_DIR}/etc/systemd/system/whaleos-helper.service" > /dev/null << 'HELPERSERVICE'

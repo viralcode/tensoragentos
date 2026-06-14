@@ -7,11 +7,30 @@ Wants=network.target
 Type=simple
 User=ainux
 ExecStart=/usr/local/bin/ollama serve
-Environment=HOME=/home/ainux OLLAMA_HOST=0.0.0.0
+Environment=HOME=/home/ainux OLLAMA_HOST=127.0.0.1
 Restart=always
 RestartSec=3
 StartLimitBurst=5
 StartLimitIntervalSec=120
+
+# ─── Security Hardening (Enterprise) ─────────────────────────────
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ainux/.ollama /tmp
+PrivateTmp=true
+ProtectHome=tmpfs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RemoveIPC=true
 
 # Logging
 StandardOutput=journal

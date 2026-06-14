@@ -116,7 +116,7 @@ Rectangle {
         onScreenChanged: {
             termCanvas.requestPaint();
             cursorBlink.restart();
-            cursorVisible = true;
+            terminalApp.cursorVisible = true;
         }
 
         onTitleChanged: function(title) {

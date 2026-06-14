@@ -1,0 +1,61 @@
+# TensorAgent OS — Ansible Inventory Template
+# ansible/inventory.yml
+#
+# Define your TensorAgent OS fleet here.
+# See ansible/playbooks/fleet-deploy.yml for the deployment playbook.
+#
+
+all:
+  vars:
+    ansible_user: ainux
+    ansible_become: true
+    ansible_python_interpreter: /usr/bin/python3
+
+    # ─── Fleet Configuration ────────────────────────────────
+    ai_sandbox: true
+    require_approval: true
+    apparmor_enforce: false  # Set true after testing
+
+    # Fleet monitoring
+    fleet_manager: "standalone"  # Options: fleetdm, standalone
+
+    # Centralized logging (leave empty to disable)
+    log_server: ""
+    # log_server: "loki.yourcompany.com"
+
+  children:
+    # ─── Development / Lab ──────────────────────────────────
+    development:
+      hosts:
+        tensoragent-dev-01:
+          ansible_host: 192.168.1.100
+      vars:
+        ai_sandbox: false
+        apparmor_enforce: false
+
+    # ─── Staging ────────────────────────────────────────────
+    staging:
+      hosts:
+        tensoragent-staging-01:
+          ansible_host: 10.0.1.10
+        tensoragent-staging-02:
+          ansible_host: 10.0.1.11
+      vars:
+        ai_sandbox: true
+        apparmor_enforce: true
+
+    # ─── Production ─────────────────────────────────────────
+    production:
+      hosts:
+        tensoragent-prod-01:
+          ansible_host: 10.0.2.10
+        tensoragent-prod-02:
+          ansible_host: 10.0.2.11
+        tensoragent-prod-03:
+          ansible_host: 10.0.2.12
+      vars:
+        ai_sandbox: true
+        require_approval: true
+        apparmor_enforce: true
+        fleet_manager: "fleetdm"
+        log_server: "loki.yourcompany.com"

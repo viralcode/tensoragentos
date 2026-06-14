@@ -1,0 +1,66 @@
+# AppArmor profile for WhaleOS Desktop Shell
+# /etc/apparmor.d/opt.ainux.whaleos
+
+#include <tunables/global>
+
+/opt/ainux/whaleos/whaleos flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/X>
+  #include <abstractions/fonts>
+  #include <abstractions/dri-common>
+  #include <abstractions/mesa>
+
+  # WhaleOS binary and QML files
+  /opt/ainux/whaleos/              r,
+  /opt/ainux/whaleos/**            r,
+  /opt/ainux/whaleos/whaleos       mrix,
+  /opt/ainux/whaleos/assets/**     r,
+
+  # Qt6 libraries and QML modules
+  /usr/lib/*/qt6/**                mr,
+  /usr/share/qt6/**                r,
+  /usr/lib/qt6/**                  mr,
+
+  # DRM/GPU access (required for compositor)
+  /dev/dri/                        r,
+  /dev/dri/**                      rw,
+  /dev/fb*                         rw,
+  /dev/input/**                    r,
+  /sys/class/drm/**                r,
+  /sys/devices/**/drm/**           r,
+
+  # Wayland runtime
+  owner /run/user/*/               rw,
+  owner /run/user/*/**             rw,
+
+  # User data
+  owner /home/ainux/               r,
+  owner /home/ainux/.cache/**      rwk,
+  owner /home/ainux/.config/**     rwk,
+
+  # Temp
+  owner /tmp/**                    rw,
+
+  # Network (connects to OpenWhale API)
+  network inet stream,
+  network inet6 stream,
+  network unix stream,
+
+  # System info
+  @{PROC}/@{pid}/stat              r,
+  @{PROC}/meminfo                  r,
+  /sys/class/input/**              r,
+  /sys/devices/**/input/**         r,
+
+  # Libraries
+  /usr/lib/**                      mr,
+  /lib/**                          mr,
+  /etc/ld.so.cache                 r,
+  /etc/fonts/**                    r,
+
+  # DENY sensitive paths
+  deny /etc/shadow                 r,
+  deny /etc/gshadow                r,
+  deny /root/**                    rwx,
+  deny /boot/**                    rwx,
+}

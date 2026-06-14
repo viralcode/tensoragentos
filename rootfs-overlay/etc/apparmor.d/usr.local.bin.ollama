@@ -1,0 +1,53 @@
+# AppArmor profile for Ollama LLM Runtime
+# /etc/apparmor.d/usr.local.bin.ollama
+
+#include <tunables/global>
+
+/usr/local/bin/ollama flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  # Ollama binary
+  /usr/local/bin/ollama            mrix,
+
+  # Model storage
+  owner /home/ainux/.ollama/       rw,
+  owner /home/ainux/.ollama/**     rwk,
+
+  # Temp files (model loading)
+  owner /tmp/**                    rw,
+
+  # Network (API server, model downloads)
+  network inet stream,
+  network inet6 stream,
+  network unix stream,
+
+  # GPU access (for model inference)
+  /dev/dri/                        r,
+  /dev/dri/**                      rw,
+  /dev/nvidia*                     rw,
+  /dev/nvidiactl                   rw,
+  /sys/devices/**/drm/**           r,
+
+  # System info for hardware detection
+  @{PROC}/@{pid}/stat              r,
+  @{PROC}/@{pid}/status            r,
+  @{PROC}/meminfo                  r,
+  @{PROC}/cpuinfo                  r,
+  /sys/class/drm/**                r,
+
+  # Libraries
+  /usr/lib/**                      mr,
+  /lib/**                          mr,
+  /etc/ld.so.cache                 r,
+  /etc/resolv.conf                 r,
+  /etc/hosts                       r,
+  /etc/ssl/**                      r,
+
+  # DENY sensitive paths
+  deny /etc/shadow                 r,
+  deny /etc/gshadow                r,
+  deny /root/**                    rwx,
+  deny /boot/**                    rwx,
+  deny /etc/ssh/**                 rw,
+}

@@ -1,0 +1,123 @@
+# TensorAgent OS — Prometheus Alert Rules
+# /etc/ainux/prometheus-rules/tensoragent-alerts.yml
+
+groups:
+  - name: tensoragent_system
+    rules:
+      # ─── System Alerts ──────────────────────────────────────────
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 90% for 5 minutes (current: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 90% (current: {{ $value }}%)"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critically low on {{ $labels.instance }}"
+          description: "Root filesystem has less than 10% free (current: {{ $value }}%)"
+
+      - alert: SystemdServiceFailed
+        expr: node_systemd_unit_state{state="failed"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Systemd service {{ $labels.name }} failed on {{ $labels.instance }}"
+
+  - name: tensoragent_services
+    rules:
+      # ─── OpenWhale Alerts ───────────────────────────────────────
+      - alert: OpenWhaleDown
+        expr: up{job="openwhale"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenWhale AI Platform is down"
+          description: "OpenWhale on {{ $labels.instance }} has been unreachable for 2 minutes"
+
+      - alert: OpenWhaleHighLatency
+        expr: histogram_quantile(0.95, rate(openwhale_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenWhale p95 latency is high"
+          description: "95th percentile request latency is {{ $value }}s"
+
+      - alert: OpenWhaleAgentStall
+        expr: rate(openwhale_agent_iterations_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenWhale agent appears stalled"
+          description: "No agent iterations in the last 10 minutes"
+
+      # ─── Ollama Alerts ──────────────────────────────────────────
+      - alert: OllamaDown
+        expr: up{job="ollama"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ollama LLM runtime is down"
+
+      - alert: OllamaHighInferenceTime
+        expr: histogram_quantile(0.95, rate(ollama_inference_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ollama inference is slow (p95 > 30s)"
+
+  - name: tensoragent_security
+    rules:
+      # ─── Security Alerts ────────────────────────────────────────
+      - alert: SSHBruteForce
+        expr: rate(node_systemd_unit_state{name="fail2ban.service",state="active"}[5m]) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "fail2ban is not running — brute force protection disabled"
+
+      - alert: AppArmorDisabled
+        expr: node_systemd_unit_state{name="apparmor.service",state="active"} != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AppArmor is not active — mandatory access control disabled"
+
+      - alert: AuditdDown
+        expr: node_systemd_unit_state{name="auditd.service",state="active"} != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "auditd is not running — audit trail broken"
+
+      - alert: FirewallDisabled
+        expr: node_systemd_unit_state{name="ufw.service",state="active"} != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "UFW firewall is not active"

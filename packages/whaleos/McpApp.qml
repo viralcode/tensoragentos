@@ -186,14 +186,15 @@ Rectangle {
                 }
                 Rectangle {
                     width: Math.round(220 * root.sf); height: Math.round(32 * root.sf)
-                    radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
-                    border.color: Qt.rgba(1,1,1,0.1)
+                    radius: Math.round(8 * root.sf); color: Qt.rgba(0,0,0,0.04)
+                    border.color: root.borderColor
+                    border.width: 1
                     TextInput {
                         anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
                         font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary
                         clip: true; selectByMouse: true
                         onTextChanged: { searchText = text; filterServers() }
-                        Text { anchors.fill: parent; text: "Search apps..."; color: Qt.rgba(1,1,1,0.25); visible: !parent.text; font.pixelSize: Math.round(12 * root.sf) }
+                        Text { anchors.fill: parent; text: "Search apps..."; color: Qt.rgba(0,0,0,0.3); visible: !parent.text; font.pixelSize: Math.round(12 * root.sf) }
                     }
                 }
             }
@@ -212,8 +213,9 @@ Rectangle {
                     Rectangle {
                         width: Math.round(70 * root.sf); height: Math.round(28 * root.sf)
                         radius: Math.round(14 * root.sf)
-                        color: activeFilter === modelData.key ? "#6366f1" : Qt.rgba(1,1,1,0.06)
-                        border.color: activeFilter === modelData.key ? "#818cf8" : Qt.rgba(1,1,1,0.1)
+                        color: activeFilter === modelData.key ? root.accentBlue : Qt.rgba(0,0,0,0.04)
+                        border.color: activeFilter === modelData.key ? root.accentBlue : root.borderColor
+                        border.width: 1
                         Text {
                             anchors.centerIn: parent; text: modelData.label
                             font.pixelSize: Math.round(11 * root.sf); font.bold: activeFilter === modelData.key
@@ -239,8 +241,8 @@ Rectangle {
                     Rectangle {
                         width: Math.round(300 * root.sf); height: Math.round(160 * root.sf)
                         radius: Math.round(12 * root.sf)
-                        color: Qt.rgba(1,1,1,0.04)
-                        border.color: modelData.running ? Qt.rgba(0.39, 0.82, 0.38, 0.4) : Qt.rgba(1,1,1,0.08)
+                        color: root.bgCard
+                        border.color: modelData.running ? Qt.rgba(0.39, 0.82, 0.38, 0.4) : root.borderColor
                         border.width: modelData.running ? 2 : 1
 
                         Rectangle {
@@ -276,7 +278,7 @@ Rectangle {
                                 Rectangle {
                                     width: Math.round(10 * root.sf); height: Math.round(10 * root.sf)
                                     radius: width / 2
-                                    color: modelData.running ? "#22c55e" : Qt.rgba(1,1,1,0.2)
+                                    color: modelData.running ? "#22c55e" : Qt.rgba(0,0,0,0.15)
                                 }
                             }
 
@@ -310,12 +312,13 @@ Rectangle {
                                     visible: modelData.envVars.length > 0
                                     width: Math.round(80 * root.sf); height: Math.round(26 * root.sf)
                                     radius: Math.round(6 * root.sf)
-                                    color: cfgMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
-                                    border.color: Qt.rgba(1,1,1,0.15)
+                                    color: cfgMouse.containsMouse ? Qt.rgba(0,0,0,0.06) : Qt.rgba(0,0,0,0.03)
+                                    border.color: root.borderColor
+                                    border.width: 1
                                     Behavior on color { ColorAnimation { duration: 150 } }
                                     Text {
                                         anchors.centerIn: parent; text: "⚙ Config"
-                                        font.pixelSize: Math.round(10 * root.sf); color: "#94a3b8"
+                                        font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary
                                     }
                                     MouseArea {
                                         id: cfgMouse; anchors.fill: parent
@@ -388,8 +391,8 @@ Rectangle {
             anchors.centerIn: parent
             width: Math.round(400 * root.sf); height: configDialogCol.height + Math.round(40 * root.sf)
             radius: Math.round(16 * root.sf)
-            color: Qt.rgba(0.1, 0.1, 0.14, 0.95)
-            border.color: Qt.rgba(1,1,1,0.15)
+            color: root.bgElevated
+            border.color: root.borderColor; border.width: 1
 
             MouseArea { anchors.fill: parent }
 
@@ -418,25 +421,26 @@ Rectangle {
                             color: root.textSecondary; font.bold: true
                         }
                         Rectangle {
-                            width: parent.width; height: Math.round(34 * root.sf)
-                            radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
-                            border.color: Qt.rgba(1,1,1,0.12)
-                            TextInput {
-                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
-                                font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary
-                                clip: true; selectByMouse: true; echoMode: TextInput.Password
-                                onTextChanged: {
-                                    var cv = configValues;
-                                    cv[modelData] = text;
-                                    configValues = cv;
-                                }
-                                Text {
-                                    anchors.fill: parent; text: "Enter value..."
-                                    color: Qt.rgba(1,1,1,0.2); visible: !parent.text
-                                    font.pixelSize: Math.round(12 * root.sf)
-                                }
-                            }
-                        }
+                                            width: parent.width; height: Math.round(34 * root.sf)
+                                            radius: Math.round(8 * root.sf); color: Qt.rgba(0,0,0,0.04)
+                                            border.color: root.borderColor
+                                            border.width: 1
+                                            TextInput {
+                                                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
+                                                font.pixelSize: Math.round(12 * root.sf); color: root.textPrimary
+                                                clip: true; selectByMouse: true; echoMode: TextInput.Password
+                                                onTextChanged: {
+                                                    var cv = configValues;
+                                                    cv[modelData] = text;
+                                                    configValues = cv;
+                                                }
+                                                Text {
+                                                    anchors.fill: parent; text: "Enter value..."
+                                                    color: Qt.rgba(0,0,0,0.3); visible: !parent.text;
+                                                    font.pixelSize: Math.round(12 * root.sf)
+                                                }
+                                            }
+                                        }
                     }
                 }
 
@@ -445,16 +449,17 @@ Rectangle {
                     Item { Layout.fillWidth: true }
                     Rectangle {
                         width: Math.round(80 * root.sf); height: Math.round(30 * root.sf)
-                        radius: Math.round(8 * root.sf); color: Qt.rgba(1,1,1,0.06)
+                        radius: Math.round(8 * root.sf); color: Qt.rgba(0,0,0,0.04)
+                        border.color: root.borderColor; border.width: 1
                         Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: showConfigDialog = false }
                     }
                     Rectangle {
                         width: Math.round(120 * root.sf); height: Math.round(30 * root.sf)
-                        radius: Math.round(8 * root.sf); color: "#6366f1"
+                        radius: Math.round(8 * root.sf); color: root.accentBlue
                         Text { anchors.centerIn: parent; text: "Save & Start"; font.pixelSize: Math.round(11 * root.sf); font.bold: true; color: "white" }
                         MouseArea {
-                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor;
                             onClicked: {
                                 configureServer(configServerId, configValues);
                                 showConfigDialog = false;

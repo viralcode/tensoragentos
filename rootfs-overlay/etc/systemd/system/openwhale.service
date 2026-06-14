@@ -38,11 +38,52 @@ Environment=NODE_ENV=production
 Environment=PORT=7777
 Environment=AINUX_MODE=true
 Environment=HOME=/home/ainux
+# Enterprise: AI sandbox enabled by default
+Environment=OPENWHALE_SANDBOX=true
+Environment=OPENWHALE_REQUIRE_APPROVAL=true
 
-# Allow OpenWhale to execute commands and access files
-NoNewPrivileges=false
-ProtectSystem=false
-ReadWritePaths=/home/ainux /opt/ainux/openwhale /tmp /home/ainux/Works
+# ─── Security Hardening (Enterprise) ─────────────────────────────
+# Prevent child processes from gaining new privileges via execve()
+NoNewPrivileges=true
+# Mount /usr, /boot, /efi as read-only; /etc as read-only
+ProtectSystem=strict
+# Explicitly allow writes only to these paths
+ReadWritePaths=/home/ainux /opt/ainux/openwhale/data /tmp /home/ainux/Works
+# Private /tmp so tools can't access other services' temp files
+PrivateTmp=true
+# Protect /home from access (except our ReadWritePaths override)
+ProtectHome=tmpfs
+# Hide /proc from other users' processes
+ProtectProc=invisible
+# Prevent access to kernel variables via /proc/sys, etc.
+ProtectKernelTunables=true
+# Prevent loading kernel modules
+ProtectKernelModules=true
+# Prevent access to kernel logs
+ProtectKernelLogs=true
+# Prevent changing the system clock
+ProtectClock=true
+# Restrict the set of allowed system calls
+SystemCallArchitectures=native
+# Drop all capabilities except what's needed for network binding
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+AmbientCapabilities=
+# Restrict address families to IPv4, IPv6, and Unix sockets
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# Prevent writes to /usr, /boot, /efi
+ProtectControlGroups=true
+# Lock down personality (no 32-bit compat, etc.)
+LockPersonality=true
+# Restrict realtime scheduling
+RestrictRealtime=true
+# Prevent memory mappings that are both writable and executable
+MemoryDenyWriteExecute=false
+# Restrict namespace creation
+RestrictNamespaces=true
+# No access to raw devices
+PrivateDevices=true
+# Remove SUID/SGID bits from files
+RemoveIPC=true
 
 # Logging
 StandardOutput=journal

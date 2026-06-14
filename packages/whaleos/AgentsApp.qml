@@ -128,8 +128,8 @@ Rectangle {
                 // Coordination Button
                 Rectangle {
                     width: coordBtnRow.width + 28; height: Math.round(36 * root.sf); radius: Math.round(8 * root.sf)
-                    color: coordBtnMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                    border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                    color: coordBtnMa.containsMouse ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(0, 0, 0, 0.02)
+                    border.color: root.borderColor; border.width: 1
 
                     Row {
                         id: coordBtnRow; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
@@ -196,7 +196,7 @@ Rectangle {
 
                     Text {
                         text: "Multi-Agent Coordination"
-                        font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                        font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary
                     }
 
                     Text {
@@ -214,8 +214,8 @@ Rectangle {
                         // Auto button
                         Rectangle {
                             width: Math.round(80 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm
-                            color: coordMode === "auto" ? root.accentBlue : Qt.rgba(1, 1, 1, 0.06)
-                            border.color: coordMode === "auto" ? root.accentBlue : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                            color: coordMode === "auto" ? root.accentBlue : Qt.rgba(0, 0, 0, 0.04)
+                            border.color: coordMode === "auto" ? root.accentBlue : root.borderColor; border.width: 1
 
                             Text { anchors.centerIn: parent; text: "Auto"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: coordMode === "auto" ? "#fff" : root.textSecondary }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: coordMode = "auto" }
@@ -224,8 +224,8 @@ Rectangle {
                         // Manual button
                         Rectangle {
                             width: Math.round(80 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm
-                            color: coordMode === "manual" ? root.accentBlue : Qt.rgba(1, 1, 1, 0.06)
-                            border.color: coordMode === "manual" ? root.accentBlue : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                            color: coordMode === "manual" ? root.accentBlue : Qt.rgba(0, 0, 0, 0.04)
+                            border.color: coordMode === "manual" ? root.accentBlue : root.borderColor; border.width: 1
 
                             Text { anchors.centerIn: parent; text: "Manual"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: coordMode === "manual" ? "#fff" : root.textSecondary }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: coordMode = "manual" }
@@ -263,7 +263,7 @@ Rectangle {
                                 Row { spacing: Math.round(8 * root.sf)
                                     Text {
                                         text: modelData.name || "Agent"
-                                        font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff"
+                                        font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary
                                     }
                                     // DEFAULT badge
                                     Rectangle {
@@ -284,7 +284,7 @@ Rectangle {
                             // Toggle switch
                             Rectangle {
                                 width: Math.round(44 * root.sf); height: Math.round(24 * root.sf); radius: 12
-                                color: modelData.enabled ? root.accentBlue : Qt.rgba(1, 1, 1, 0.15)
+                                color: modelData.enabled ? root.accentBlue : Qt.rgba(0, 0, 0, 0.15)
 
                                 Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -327,8 +327,8 @@ Rectangle {
 
                                 Rectangle {
                                     width: capText.width + 14; height: Math.round(22 * root.sf); radius: 4
-                                    color: Qt.rgba(1, 1, 1, 0.06)
-                                    border.color: Qt.rgba(1, 1, 1, 0.08); border.width: 1
+                                    color: Qt.rgba(0, 0, 0, 0.03)
+                                    border.color: root.borderColor; border.width: 1
 
                                     Text {
                                         id: capText; anchors.centerIn: parent
@@ -347,8 +347,8 @@ Rectangle {
 
                             Rectangle {
                                 width: delRow.width + 16; height: Math.round(26 * root.sf); radius: root.radiusSm
-                                color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1, 1, 1, 0.04)
-                                border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
+                                color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(0, 0, 0, 0.03)
+                                border.color: root.borderColor; border.width: 1
 
                                 Row {
                                     id: delRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
@@ -386,7 +386,19 @@ Rectangle {
                         var ctx = getContext("2d");
                         ctx.clearRect(0, 0, width, height);
                         ctx.fillStyle = "#666";
-                        ctx.beginPath(); ctx.roundRect(8, 10, 32, 28, [6]); ctx.fill();
+                        var rx = 8, ry = 10, rw = 32, rh = 28, rr = 6;
+                        ctx.beginPath();
+                        ctx.moveTo(rx + rr, ry);
+                        ctx.lineTo(rx + rw - rr, ry);
+                        ctx.arcTo(rx + rw, ry, rx + rw, ry + rr, rr);
+                        ctx.lineTo(rx + rw, ry + rh - rr);
+                        ctx.arcTo(rx + rw, ry + rh, rx + rw - rr, ry + rh, rr);
+                        ctx.lineTo(rx + rr, ry + rh);
+                        ctx.arcTo(rx, ry + rh, rx, ry + rh - rr, rr);
+                        ctx.lineTo(rx, ry + rr);
+                        ctx.arcTo(rx, ry, rx + rr, ry, rr);
+                        ctx.closePath();
+                        ctx.fill();
                         ctx.fillStyle = "#1f1f1f";
                         ctx.beginPath(); ctx.arc(18, 22, 4, 0, Math.PI * 2); ctx.fill();
                         ctx.beginPath(); ctx.arc(30, 22, 4, 0, Math.PI * 2); ctx.fill();
@@ -440,8 +452,8 @@ Rectangle {
             width: Math.min(parent.width - Math.round(48 * root.sf), Math.round(400 * root.sf))
             height: dlgCol.height + Math.round(40 * root.sf)
             radius: root.radiusLg
-            color: Qt.rgba(0.08, 0.08, 0.13, 0.98)
-            border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+            color: root.bgElevated
+            border.color: root.borderColor; border.width: 1
 
             MouseArea { anchors.fill: parent } // prevent click-through
 
@@ -452,28 +464,28 @@ Rectangle {
                 // Header
                 RowLayout {
                     width: parent.width
-                    Text { text: "Create New Agent"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: "#fff"; Layout.fillWidth: true }
+                    Text { text: "Create New Agent"; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.Bold; color: root.textPrimary; Layout.fillWidth: true }
                     Rectangle {
                         width: Math.round(24 * root.sf); height: Math.round(24 * root.sf); radius: 12
-                        color: closeDlgMa.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+                        color: closeDlgMa.containsMouse ? Qt.rgba(0,0,0,0.04) : "transparent"
                         Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                         MouseArea { id: closeDlgMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showNewAgent = false }
                     }
                 }
 
-                Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
+                Rectangle { width: parent.width; height: 1; color: root.borderColor }
 
                 // Name *
                 Column { width: parent.width; spacing: Math.round(4 * root.sf)
                     Text { text: "Name *"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
                     Rectangle {
                         width: parent.width; height: Math.round(36 * root.sf); radius: root.radiusSm
-                        color: Qt.rgba(0, 0, 0, 0.3); border.color: dlgNameInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.4) : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.04); border.color: dlgNameInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
                         TextInput {
                             id: dlgNameInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true
+                            color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true
                             onTextChanged: newName = text
-                            Text { anchors.fill: parent; text: "Agent name..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
+                            Text { anchors.fill: parent; text: "Agent name..."; color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text; verticalAlignment: Text.AlignVCenter }
                         }
                     }
                 }
@@ -483,12 +495,12 @@ Rectangle {
                     Text { text: "Description"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
                     Rectangle {
                         width: parent.width; height: Math.round(60 * root.sf); radius: root.radiusSm
-                        color: Qt.rgba(0, 0, 0, 0.3); border.color: dlgDescInput.activeFocus ? Qt.rgba(0.35, 0.55, 1.0, 0.4) : Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.04); border.color: dlgDescInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
                         TextInput {
                             id: dlgDescInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignTop
-                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; wrapMode: TextInput.WrapAnywhere
+                            color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true; wrapMode: TextInput.WrapAnywhere
                             onTextChanged: newDescription = text
-                            Text { anchors.fill: parent; text: "What does this agent do?"; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                            Text { anchors.fill: parent; text: "What does this agent do?"; color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
                         }
                     }
                 }
@@ -498,15 +510,15 @@ Rectangle {
                     Text { text: "System Prompt (optional)"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
                     Rectangle {
                         width: parent.width; height: Math.round(72 * root.sf); radius: root.radiusSm
-                        color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.04); border.color: sysPromptInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
                         Flickable {
                             anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); clip: true
                             contentHeight: sysPromptInput.contentHeight
                             TextEdit {
                                 id: sysPromptInput; width: parent.width
-                                color: "#fff"; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextEdit.WrapAnywhere
+                                color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); wrapMode: TextEdit.WrapAnywhere
                                 onTextChanged: newSystemPrompt = text
-                                Text { text: "Custom system prompt..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                                Text { text: "Custom system prompt..."; color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
                             }
                         }
                     }
@@ -517,10 +529,11 @@ Rectangle {
                     Text { text: "Capabilities"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.Medium; color: root.textMuted }
                     Rectangle {
                         width: parent.width; height: Math.round(36 * root.sf); radius: root.radiusSm
-                        color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.04); border.color: dlgCapsInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
                         TextInput {
+                            id: dlgCapsInput
                             anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); verticalAlignment: TextInput.AlignVCenter
-                            color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; text: "general, code, tools"
+                            color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true; text: "general, code, tools"
                             onTextChanged: newCapabilities = text
                         }
                     }
@@ -533,8 +546,8 @@ Rectangle {
 
                     Rectangle {
                         width: Math.round(80 * root.sf); height: Math.round(34 * root.sf); radius: root.radiusSm
-                        color: cancelMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                        border.color: Qt.rgba(1, 1, 1, 0.1); border.width: 1
+                        color: cancelMa.containsMouse ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(0, 0, 0, 0.04)
+                        border.color: root.borderColor; border.width: 1
                         Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                         MouseArea { id: cancelMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: showNewAgent = false }
                     }

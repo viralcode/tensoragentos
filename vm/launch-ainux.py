@@ -49,7 +49,7 @@ else:
 # Read WhaleOS files (source + assets, recursive)
 WHALEOS_DIR = os.path.join(AINUX_ROOT, "packages", "whaleos")
 WHALEOS_FILES = {}
-WHALEOS_EXTENSIONS = ('.qml', '.js', '.cpp', '.h', '.sh', '.png', '.wav', '.jpg', '.svg', '.ttf', '.otf')
+WHALEOS_EXTENSIONS = ('.qml', '.js', '.mjs', '.cpp', '.h', '.sh', '.png', '.wav', '.jpg', '.svg', '.ttf', '.otf')
 
 if os.path.isdir(WHALEOS_DIR):
     for dirpath, dirnames, filenames in os.walk(WHALEOS_DIR):
@@ -391,7 +391,7 @@ runcmd:
     ExecStartPre=/bin/bash -c "mkdir -p /run/user/1000 && chown ainux:ainux /run/user/1000 && chmod 700 /run/user/1000"
     ExecStartPre=/bin/bash -c "DISPLAY=:0 xsetroot -cursor_name left_ptr"
     ExecStartPre=/bin/sleep 2
-    ExecStart=/opt/ainux/whaleos/whaleos
+    ExecStart=/bin/bash -c "DISPLAY=:0 xrandr --auto || true; export SCREEN_RES=$$(xdotool getdisplaygeometry 2>/dev/null || echo '1024 768'); export SCREEN_WIDTH=$$(echo $$SCREEN_RES | awk '{print $$1}'); export SCREEN_HEIGHT=$$(echo $$SCREEN_RES | awk '{print $$2}'); exec /opt/ainux/whaleos/whaleos"
     Restart=always
     RestartSec=3
     
@@ -457,15 +457,22 @@ runcmd:
     
     MOTDEOF
   
-  # ── Install Firefox from Mozilla PPA (Ubuntu snap version won't work on server) ──
+  # ── Install Firefox and Chromium from PPAs (Ubuntu snap versions won't work on server) ──
   - |
     set -e
     add-apt-repository -y ppa:mozillateam/ppa 2>/dev/null || true
+    add-apt-repository -y ppa:xtradeb/apps 2>/dev/null || true
+    
     echo 'Package: *
     Pin: release o=LP-PPA-mozillateam
     Pin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
+    
+    echo 'Package: chromium*
+    Pin: release o=LP-PPA-xtradeb-apps
+    Pin-Priority: 1001' > /etc/apt/preferences.d/xtradeb-chromium
+    
     apt-get update -qq
-    apt-get install -y firefox 2>/dev/null || true
+    apt-get install -y firefox chromium 2>/dev/null || true
     cat > /usr/local/bin/firefox-wayland << 'FFEOF'
     #!/bin/bash
     export DISPLAY=:0
@@ -486,16 +493,18 @@ runcmd:
     #!/bin/bash
     sleep 4
     export DISPLAY=:0
+    OUTPUT_NAME=$(xrandr | grep " connected" | awk '{print $1}' | head -n 1)
+    if [ -z "$OUTPUT_NAME" ]; then OUTPUT_NAME="XWAYLAND0"; fi
     xrandr --newmode "1920x1080_60.00" 173.00 1920 2048 2248 2576 1080 1083 1088 1120 -hsync +vsync 2>/dev/null
-    xrandr --addmode XWAYLAND0 "1920x1080_60.00" 2>/dev/null
+    xrandr --addmode "$OUTPUT_NAME" "1920x1080_60.00" 2>/dev/null
     xrandr --newmode "1600x900_60.00" 118.25 1600 1696 1856 2112 900 903 908 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode XWAYLAND0 "1600x900_60.00" 2>/dev/null
+    xrandr --addmode "$OUTPUT_NAME" "1600x900_60.00" 2>/dev/null
     xrandr --newmode "1440x900_60.00" 106.50 1440 1528 1672 1904 900 903 909 934 -hsync +vsync 2>/dev/null
-    xrandr --addmode XWAYLAND0 "1440x900_60.00" 2>/dev/null
+    xrandr --addmode "$OUTPUT_NAME" "1440x900_60.00" 2>/dev/null
     xrandr --newmode "1366x768_60.00" 85.25 1366 1440 1576 1784 768 771 781 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode XWAYLAND0 "1366x768_60.00" 2>/dev/null
+    xrandr --addmode "$OUTPUT_NAME" "1366x768_60.00" 2>/dev/null
     xrandr --newmode "1024x768_60.00" 63.50 1024 1072 1176 1328 768 771 775 798 -hsync +vsync 2>/dev/null
-    xrandr --addmode XWAYLAND0 "1024x768_60.00" 2>/dev/null
+    xrandr --addmode "$OUTPUT_NAME" "1024x768_60.00" 2>/dev/null
     DMEOF
   - chmod +x /opt/ainux/whaleos/add-display-modes.sh
   
@@ -506,14 +515,22 @@ runcmd:
     export DISPLAY=:0
     export WAYLAND_DISPLAY=wayland-0
     export XDG_RUNTIME_DIR=/run/user/1000
-    # Start autocutsel to persist X11 clipboard when apps close
-    autocutsel -s CLIPBOARD -fork 2>/dev/null
-    autocutsel -fork 2>/dev/null
-    LAST_X11=""
-    LAST_WL=""
+     # Start autocutsel to persist X11 clipboard when apps close
+     autocutsel -s CLIPBOARD -fork 2>/dev/null
+     autocutsel -fork 2>/dev/null
+     
+     # Start VMware user tools agent if available for host-guest sync
+     if command -v vmware-user-suid-wrapper &>/dev/null; then
+         vmware-user-suid-wrapper &
+     elif command -v vmware-user &>/dev/null; then
+         vmware-user &
+     fi
+     
+     LAST_X11=""
+     LAST_WL=""
     while true; do
-        X11_CLIP=$(xclip -selection clipboard -o 2>/dev/null) || X11_CLIP=""
-        WL_CLIP=$(wl-paste --no-newline 2>/dev/null) || WL_CLIP=""
+        X11_CLIP=$(timeout 0.2 xclip -selection clipboard -o 2>/dev/null) || X11_CLIP=""
+        WL_CLIP=$(timeout 0.2 wl-paste --no-newline 2>/dev/null) || WL_CLIP=""
         if [ -n "$X11_CLIP" ] && [ "$X11_CLIP" != "$LAST_X11" ] && [ "$X11_CLIP" != "$WL_CLIP" ]; then
             printf '%s' "$X11_CLIP" | wl-copy 2>/dev/null
             LAST_X11="$X11_CLIP"; LAST_WL="$X11_CLIP"
@@ -542,6 +559,26 @@ runcmd:
     WantedBy=multi-user.target
     CSEOF
   - systemctl enable clipboard-sync.service
+  
+  # Create WhaleOS Helper service
+  - |
+    cat > /etc/systemd/system/whaleos-helper.service << 'HELPERSERVICEEOF'
+    [Unit]
+    Description=WhaleOS Helper Service
+    After=network.target openwhale.service
+    
+    [Service]
+    Type=simple
+    ExecStart=/usr/bin/node /opt/ainux/whaleos/whaleos-helper.mjs
+    User=ainux
+    Restart=always
+    RestartSec=3
+    Environment=HOME=/home/ainux
+    
+    [Install]
+    WantedBy=multi-user.target
+    HELPERSERVICEEOF
+  - systemctl enable whaleos-helper.service
   
   # Signal completion
   - echo "AINUX_SETUP_COMPLETE" > /var/log/ainux-setup.log

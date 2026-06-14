@@ -1,0 +1,95 @@
+# TensorAgent OS — SSSD Configuration Template
+# /etc/sssd/sssd.conf.example
+#
+# This is an EXAMPLE configuration for integrating TensorAgent OS
+# with enterprise identity providers (Active Directory, LDAP, FreeIPA).
+#
+# INSTRUCTIONS:
+# 1. Copy this file to /etc/sssd/sssd.conf
+# 2. Edit the values below to match your environment
+# 3. Set permissions: chmod 600 /etc/sssd/sssd.conf
+# 4. Install required packages:
+#    sudo apt install sssd sssd-tools sssd-ldap sssd-ad realmd adcli
+# 5. Join domain (AD):
+#    sudo realm join --user=admin your-domain.com
+# 6. Restart: sudo systemctl restart sssd
+#
+
+[sssd]
+config_file_version = 2
+domains = your-domain.com
+services = nss, pam, ssh, sudo
+
+# ─── Active Directory Integration ─────────────────────────────────
+# Use this section to join an AD domain.
+# Prerequisite: sudo realm join your-domain.com
+
+[domain/your-domain.com]
+# Provider type: ad, ldap, ipa
+id_provider = ad
+auth_provider = ad
+access_provider = ad
+
+# AD domain name
+ad_domain = your-domain.com
+
+# Kerberos realm (usually UPPERCASE domain)
+krb5_realm = YOUR-DOMAIN.COM
+
+# Computer object location in AD
+# ad_computer_object_dn_base = OU=Linux Servers,DC=your-domain,DC=com
+
+# Use POSIX attributes from AD (recommended)
+ldap_id_mapping = false
+
+# Use short usernames (user@domain → user)
+use_fully_qualified_names = false
+
+# Home directory template
+fallback_homedir = /home/%u
+
+# Default shell for AD users
+default_shell = /bin/bash
+
+# Cache credentials for offline login
+cache_credentials = true
+
+# Enumerate users (set false for large directories)
+enumerate = false
+
+# Access control: restrict login to specific AD groups
+# ad_access_filter = memberOf=CN=TensorAgent-Users,OU=Groups,DC=your-domain,DC=com
+
+# ─── LDAP Integration (Alternative) ───────────────────────────────
+# Uncomment and configure this section for standalone LDAP.
+#
+# [domain/ldap.example.com]
+# id_provider = ldap
+# auth_provider = ldap
+# ldap_uri = ldaps://ldap.example.com:636
+# ldap_search_base = dc=example,dc=com
+# ldap_tls_reqcert = demand
+# ldap_tls_cacert = /etc/ssl/certs/ca-certificates.crt
+# ldap_id_mapping = false
+# cache_credentials = true
+# enumerate = false
+
+# ─── NSS Configuration ────────────────────────────────────────────
+[nss]
+filter_groups = root
+filter_users = root
+reconnection_retries = 3
+
+# ─── PAM Configuration ────────────────────────────────────────────
+[pam]
+offline_credentials_expiration = 7
+offline_failed_login_attempts = 3
+offline_failed_login_delay = 5
+
+# ─── SSH Integration ──────────────────────────────────────────────
+# Enables SSH public key lookup from the directory
+[ssh]
+
+# ─── Sudo Integration ─────────────────────────────────────────────
+# Enables sudo rule lookup from the directory
+[sudo]
