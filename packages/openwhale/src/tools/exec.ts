@@ -2,6 +2,8 @@ import { z } from "zod";
 import { spawn } from "node:child_process";
 import type { AgentTool, ToolCallContext, ToolResult } from "./base.js";
 import { checkCommand, checkPath, auditCommand, createSandboxConfig } from "./sandbox.js";
+import { checkPolicy } from "../security/command-policy.js";
+import { logSecurityEvent } from "../security/command-filter.js";
 
 const ExecParamsSchema = z.object({
     command: z.string().describe("The command to execute"),
@@ -39,6 +41,37 @@ export const execTool: AgentTool<ExecParams> = {
                     error: "Command blocked: potentially dangerous operation detected",
                 };
             }
+        }
+
+        // Check against /etc/ainux/command-policy.conf rules
+        const policyResult = checkPolicy(command);
+        if (policyResult.action === "DENY") {
+            logSecurityEvent({
+                type: "blocked",
+                command: command.slice(0, 200),
+                reason: policyResult.reason,
+                severity: "critical",
+            });
+            return {
+                success: false,
+                content: "",
+                error: `Command blocked by policy: ${policyResult.reason}`,
+            };
+        }
+
+        if (policyResult.action === "APPROVE" && context.sandboxed) {
+            // In sandbox mode, APPROVE means "needs human approval via dashboard"
+            logSecurityEvent({
+                type: "approval_required",
+                command: command.slice(0, 200),
+                reason: policyResult.reason,
+            });
+            return {
+                success: false,
+                content: "",
+                error: `Command requires approval: ${policyResult.reason}. Use the dashboard to approve this operation.`,
+                metadata: { requiresApproval: true, policyAction: "APPROVE" },
+            };
         }
 
         // Enhanced sandbox checks when sandboxed

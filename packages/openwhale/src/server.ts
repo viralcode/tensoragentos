@@ -27,6 +27,10 @@ import { initializeProviders } from "./providers/index.js";
 import { initializeChannels } from "./channels/index.js";
 import { toolRegistry } from "./tools/index.js";
 import { apiRateLimiter, authRateLimiter } from "./security/rate-limit.js";
+import { generateMetrics, getMetricsJSON, incrementCounter, observeHistogram } from "./security/metrics.js";
+import { getPolicyStats } from "./security/command-policy.js";
+import { readFileSync, existsSync } from "node:fs";
+import { createServer as createHttpsServer } from "node:https";
 
 const log = createLogger("server");
 
@@ -100,13 +104,54 @@ export async function startServer(port?: number): Promise<{ port: number; app: H
         credentials: config.security.cors.credentials,
     }));
 
-    // Health check (public)
+    // Request counting middleware for metrics
+    app.use("*", async (c, next) => {
+        incrementCounter("http_requests_total");
+        const start = Date.now();
+        await next();
+        const duration = (Date.now() - start) / 1000;
+        observeHistogram("http_request_duration_seconds", duration);
+        if (c.res.status >= 400) {
+            incrementCounter("http_errors_total");
+        }
+    });
+
+    // Health check (public, enhanced)
     app.get("/health", (c) => c.json({
         status: "ok",
-        version: "0.1.0",
+        version: "0.3.0",
         timestamp: new Date().toISOString(),
-        providers: config.providers?.length ?? 0,
+        uptime: process.uptime(),
+        memory: {
+            rss: process.memoryUsage().rss,
+            heapUsed: process.memoryUsage().heapUsed,
+        },
+        providers: Object.keys(config.providers ?? {}).length,
+        security: {
+            sandbox: process.env.OPENWHALE_SANDBOX === "true",
+            requireApproval: process.env.OPENWHALE_REQUIRE_APPROVAL === "true",
+            policyRules: getPolicyStats().rulesLoaded,
+        },
     }));
+
+    // Alias for Prometheus scraping
+    app.get("/api/health", (c) => c.json({
+        status: "ok",
+        version: "0.3.0",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+    }));
+
+    // Prometheus metrics endpoint (public — for node_exporter/Prometheus scraping)
+    app.get("/api/metrics", (c) => {
+        const accept = c.req.header("Accept") || "";
+        if (accept.includes("application/json")) {
+            return c.json(getMetricsJSON());
+        }
+        return c.text(generateMetrics(), 200, {
+            "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+        });
+    });
 
     // Public auth routes with rate limiting
     const auth = new Hono();
@@ -147,17 +192,40 @@ export async function startServer(port?: number): Promise<{ port: number; app: H
         );
     });
 
-    // Start server
-    log.info(`🐋 OpenWhale listening on http://0.0.0.0:${serverPort}`);
-    log.info(`   Health: http://localhost:${serverPort}/health`);
-    log.info(`   Dashboard: http://localhost:${serverPort}/dashboard`);
-    log.info(`   API: http://localhost:${serverPort}/api`);
+    // TLS support
+    const tlsCert = process.env.OPENWHALE_TLS_CERT || "/etc/ainux/tls/server.crt";
+    const tlsKey = process.env.OPENWHALE_TLS_KEY || "/etc/ainux/tls/server.key";
+    const useTLS = existsSync(tlsCert) && existsSync(tlsKey);
 
-    serverInstance = serve({
-        fetch: app.fetch,
-        port: serverPort,
-        hostname: config.gateway.host,
-    });
+    if (useTLS) {
+        log.info(`🔒 TLS enabled — loading cert from ${tlsCert}`);
+        const httpsServer = createHttpsServer({
+            cert: readFileSync(tlsCert),
+            key: readFileSync(tlsKey),
+        });
+
+        serverInstance = serve({
+            fetch: app.fetch,
+            port: serverPort,
+            hostname: config.gateway.host,
+            createServer: () => httpsServer as any,
+        });
+
+        log.info(`🐋 OpenWhale listening on https://0.0.0.0:${serverPort}`);
+    } else {
+        serverInstance = serve({
+            fetch: app.fetch,
+            port: serverPort,
+            hostname: config.gateway.host,
+        });
+
+        log.info(`🐋 OpenWhale listening on http://0.0.0.0:${serverPort}`);
+    }
+
+    log.info(`   Health:    http://localhost:${serverPort}/health`);
+    log.info(`   Metrics:   http://localhost:${serverPort}/api/metrics`);
+    log.info(`   Dashboard: http://localhost:${serverPort}/dashboard`);
+    log.info(`   API:       http://localhost:${serverPort}/api`);
 
     return { port: serverPort, app };
 }

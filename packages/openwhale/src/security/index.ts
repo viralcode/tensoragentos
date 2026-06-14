@@ -42,3 +42,19 @@ export {
     type SandboxConfig,
     type SandboxResult,
 } from "./sandbox.js";
+
+export {
+    loadPolicy,
+    checkPolicy,
+    getPolicyStats,
+    getPolicyRules,
+    type PolicyRule,
+    type PolicyCheckResult,
+} from "./command-policy.js";
+
+export {
+    generateMetrics,
+    getMetricsJSON,
+    incrementCounter,
+    observeHistogram,
+} from "./metrics.js";
