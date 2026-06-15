@@ -60,21 +60,16 @@ Rectangle {
         root.showToast(label + " launching...", "info");
     }
 
+    // Execute a shell command via the compositor's SystemManager (no external service needed)
     function helperExec(cmd, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/exec");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    var resp = JSON.parse(xhr.responseText);
-                    if (callback) callback(resp.stdout || "");
-                } catch(e) { if (callback) callback(""); }
-            } else if (xhr.readyState === 4) {
-                if (callback) callback("");
-            }
-        };
-        xhr.send(JSON.stringify({ command: cmd }));
+        try {
+            var resultJson = sysManager.runCommand(cmd, "/tmp");
+            var parsed = JSON.parse(resultJson);
+            if (callback) callback(parsed.stdout || "");
+        } catch(e) {
+            console.log("helperExec error: " + e + " for cmd: " + cmd);
+            if (callback) callback("");
+        }
     }
 
     function refreshInstalled() {

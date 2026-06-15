@@ -129,35 +129,27 @@ Rectangle {
         interval: 150; repeat: false
         onTriggered: {
             if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
-                // Suggest a size without forcing maximized state.
-                // GTK dialogs will ignore this and use their natural size.
-                // Main app windows will typically fill the suggested size.
                 var sz = Qt.size(contentArea.width, contentArea.height);
-                if (typeof toplevelObj.sendUnmaximized === "function") {
-                    toplevelObj.sendUnmaximized(sz);
-                } else if (typeof toplevelObj.sendConfigure === "function") {
-                    toplevelObj.sendConfigure(sz, []);
+                // Explicitly opened native apps: maximize to fill the content area
+                if (typeof toplevelObj.sendMaximized === "function") {
+                    toplevelObj.sendMaximized(sz);
                 }
             }
         }
     }
 
-    // Resize AppWindow to fit the native surface's actual size
+    // For auto-created windows (dialogs), shrink the AppWindow to fit the surface
     Connections {
         target: (shellSurface && shellSurface.surface) ? shellSurface.surface : null
         function onSizeChanged() {
             if (!shellSurface || !shellSurface.surface) return;
+            // Only resize auto-created windows (dialogs/popups)
+            if (appWindow.appId.indexOf("native-auto-") !== 0) return;
             var surfW = shellSurface.surface.size.width;
             var surfH = shellSurface.surface.size.height;
             if (surfW > 0 && surfH > 0) {
-                var newW = surfW + 2;
-                var newH = surfH + titleBar.height + 2;
-                // Only shrink if the surface is smaller than current window
-                // (don't grow beyond the initial window size for dialogs)
-                if (newW < appWindow.width || newH < appWindow.height) {
-                    appWindow.width = Math.min(newW, appWindow.width);
-                    appWindow.height = Math.min(newH, appWindow.height);
-                }
+                appWindow.width = surfW + 2;
+                appWindow.height = surfH + titleBar.height + 2;
             }
         }
     }
