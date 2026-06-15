@@ -129,11 +129,21 @@ Rectangle {
         interval: 150; repeat: false
         onTriggered: {
             if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
-                var sz = Qt.size(contentArea.width, contentArea.height);
-                // sendMaximized tells Chrome to fill the given size
-                // WhaleOS provides the title bar (SSD), so Chrome won't draw its own
-                if (typeof toplevelObj.sendMaximized === "function") {
-                    toplevelObj.sendMaximized(sz);
+                // Only maximize explicitly-opened windows, not auto-created dialogs
+                if (appWindow.appId.indexOf("native-auto-") !== 0) {
+                    var sz = Qt.size(contentArea.width, contentArea.height);
+                    if (typeof toplevelObj.sendMaximized === "function") {
+                        toplevelObj.sendMaximized(sz);
+                    }
+                }
+                // Auto-created windows (dialogs) — resize AppWindow to fit surface
+                else if (shellSurface && shellSurface.surface) {
+                    var surfW = shellSurface.surface.size.width;
+                    var surfH = shellSurface.surface.size.height;
+                    if (surfW > 0 && surfH > 0) {
+                        appWindow.width = surfW + 2;  // +2 for border
+                        appWindow.height = surfH + titleBar.height + 2;
+                    }
                 }
             }
         }
