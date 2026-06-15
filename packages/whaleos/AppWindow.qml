@@ -129,21 +129,34 @@ Rectangle {
         interval: 150; repeat: false
         onTriggered: {
             if (toplevelObj && contentArea.width > 0 && contentArea.height > 0) {
-                // Only maximize explicitly-opened windows, not auto-created dialogs
-                if (appWindow.appId.indexOf("native-auto-") !== 0) {
-                    var sz = Qt.size(contentArea.width, contentArea.height);
-                    if (typeof toplevelObj.sendMaximized === "function") {
-                        toplevelObj.sendMaximized(sz);
-                    }
+                // Suggest a size without forcing maximized state.
+                // GTK dialogs will ignore this and use their natural size.
+                // Main app windows will typically fill the suggested size.
+                var sz = Qt.size(contentArea.width, contentArea.height);
+                if (typeof toplevelObj.sendUnmaximized === "function") {
+                    toplevelObj.sendUnmaximized(sz);
+                } else if (typeof toplevelObj.sendConfigure === "function") {
+                    toplevelObj.sendConfigure(sz, []);
                 }
-                // Auto-created windows (dialogs) — resize AppWindow to fit surface
-                else if (shellSurface && shellSurface.surface) {
-                    var surfW = shellSurface.surface.size.width;
-                    var surfH = shellSurface.surface.size.height;
-                    if (surfW > 0 && surfH > 0) {
-                        appWindow.width = surfW + 2;  // +2 for border
-                        appWindow.height = surfH + titleBar.height + 2;
-                    }
+            }
+        }
+    }
+
+    // Resize AppWindow to fit the native surface's actual size
+    Connections {
+        target: (shellSurface && shellSurface.surface) ? shellSurface.surface : null
+        function onSizeChanged() {
+            if (!shellSurface || !shellSurface.surface) return;
+            var surfW = shellSurface.surface.size.width;
+            var surfH = shellSurface.surface.size.height;
+            if (surfW > 0 && surfH > 0) {
+                var newW = surfW + 2;
+                var newH = surfH + titleBar.height + 2;
+                // Only shrink if the surface is smaller than current window
+                // (don't grow beyond the initial window size for dialogs)
+                if (newW < appWindow.width || newH < appWindow.height) {
+                    appWindow.width = Math.min(newW, appWindow.width);
+                    appWindow.height = Math.min(newH, appWindow.height);
                 }
             }
         }
