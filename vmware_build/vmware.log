@@ -1323,3 +1323,10 @@
 2026-06-15T01:13:19.522Z In(05) vcpu-0 GuestInfo: HostinfoDetailedDataHeader version: 1
 2026-06-15T01:13:19.522Z No(00) vcpu-0 ConfigDB: Setting guestInfo.detailed.data = <not printed>
 2026-06-15T01:45:29.000Z In(05) vmx DISKLIB-LIB   : numIOs = 50000 numMergedIOs = 16431 numSplitIOs = 567
+2026-06-15T02:05:32.007Z In(05) vmx USB: New set of 2 USB devices.
+2026-06-15T02:05:32.007Z In(05) vmx USB: Found device [name:Logitech\ Brio\ 100 vid:046d pid:094c path:48/1 speed:high family:audio,video serialnum:2508AP76H858 arbRuntimeKey:4 version:5]
+2026-06-15T02:05:32.008Z In(05) vmx USB: Found device [name:Apple\ USB-C\ Digital\ AV\ Multiport\ Adapter vid:05ac pid:1460 path:0/1/2 speed:low family:other serialnum:DLC7476012CG2KQAP arbRuntimeKey:3 version:5]
+2026-06-15T02:05:32.036Z In(05) host-39358774 VNET: MACVNetPortVirtApiPrimaryIfaceChanged: Global state callback for adapter: 0, primary if: en1
+2026-06-15T02:05:32.036Z In(05) vmx VNET: MACVNetLinkStateEventHandler: event, up:1, adapter:0
+2026-06-15T02:05:32.062Z In(05) host-39358774 VNET: MACVNetPortVirtApiPrimaryIfaceChanged: Global state callback for adapter: 0, primary if: en1
+2026-06-15T02:05:32.062Z In(05) vmx VNET: MACVNetLinkStateEventHandler: event, up:1, adapter:0

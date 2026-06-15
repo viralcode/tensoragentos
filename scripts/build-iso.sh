@@ -152,9 +152,9 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     # Core system + build tools
     apt-get install -y -qq \
         build-essential pkg-config g++ \
-        linux-image-'"$KERNEL_ARCH"' grub-efi-'"$DEB_ARCH"' \
+        linux-image-generic grub-efi \
         systemd-boot linux-firmware \
-        2>/dev/null || apt-get install -y -qq build-essential pkg-config g++ linux-image-'"$KERNEL_ARCH"' grub-efi
+        2>/dev/null || apt-get install -y -qq build-essential pkg-config g++ linux-image-generic grub-efi
 
     # Graphics & Wayland
     apt-get install -y -qq \
@@ -216,10 +216,11 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         evince \
         2>/dev/null || echo "  [SKIP] Some office/PDF packages unavailable"
 
-    # Chromium — preinstalled web browser via snap (native .deb not available on Ubuntu 24.04 ARM64)
-    snap install chromium 2>/dev/null \
-        || apt-get install -y -qq chromium-browser 2>/dev/null \
-        || echo "  ⚠ Chromium not available for this architecture"
+    # Chromium — preinstalled web browser
+    # snap does not work in chroot/CI environments, use apt packages
+    apt-get install -y -qq chromium-browser 2>/dev/null \
+        || apt-get install -y -qq chromium 2>/dev/null \
+        || echo "  ⚠ Chromium not available for this architecture, install manually after first boot"
 
     # Preinstalled native apps — all apps shown in NativeAppsLauncher
     apt-get install -y -qq \
@@ -300,29 +301,34 @@ NMRES
 
 echo "  ✓ Dependencies installed"
 
-# ── Patch Qt 6.4.2 Wayland Compositor binary ──────────────────────
+# ── Patch Qt 6.4.2 Wayland Compositor binary (ARM64 ONLY) ─────────
 # Qt 6.4's libQt6WaylandCompositor has stub implementations for critical
 # Wayland protocol functions that print "Not implemented" and cause
 # Chrome/Chromium to crash on right-click (context menu popups).
 # We patch these stubs to ARM64 'ret' (immediate return, no-op).
 # This must happen OUTSIDE the chroot using the rootfs path from the host.
-QT_SO=$(find "${ROOTFS_DIR}/usr/lib" -name "libQt6WaylandCompositor.so.6.4.2" -type f 2>/dev/null | head -1)
-if [ -n "$QT_SO" ] && [ -f "$QT_SO" ]; then
-    echo "  Patching Qt Wayland Compositor: $QT_SO"
-    RET='\xc0\x03\x5f\xd6'  # ARM64: ret instruction
-    # xdg_popup_destroy (0xada78) + thunk (0xadb14)
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xada78)) conv=notrunc 2>/dev/null
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadb14)) conv=notrunc 2>/dev/null
-    # xdg_popup_grab (0xadbb0) + thunk (0xadc4c)
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadbb0)) conv=notrunc 2>/dev/null
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadc4c)) conv=notrunc 2>/dev/null
-    # subsurface_set_desync (0xc5050)
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc5050)) conv=notrunc 2>/dev/null
-    # subsurface_set_sync (0xc4f50)
-    printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc4f50)) conv=notrunc 2>/dev/null
-    echo "  ✓ Qt Wayland stubs patched (xdg_popup_destroy/grab, subsurface sync/desync)"
+# NOTE: The offsets and instruction are ARM64-specific — skip on x86.
+if [ "$ARCH" = "aarch64" ]; then
+    QT_SO=$(find "${ROOTFS_DIR}/usr/lib" -name "libQt6WaylandCompositor.so.6.4.2" -type f 2>/dev/null | head -1)
+    if [ -n "$QT_SO" ] && [ -f "$QT_SO" ]; then
+        echo "  Patching Qt Wayland Compositor: $QT_SO"
+        RET='\xc0\x03\x5f\xd6'  # ARM64: ret instruction
+        # xdg_popup_destroy (0xada78) + thunk (0xadb14)
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xada78)) conv=notrunc 2>/dev/null
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadb14)) conv=notrunc 2>/dev/null
+        # xdg_popup_grab (0xadbb0) + thunk (0xadc4c)
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadbb0)) conv=notrunc 2>/dev/null
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xadc4c)) conv=notrunc 2>/dev/null
+        # subsurface_set_desync (0xc5050)
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc5050)) conv=notrunc 2>/dev/null
+        # subsurface_set_sync (0xc4f50)
+        printf "$RET" | dd of="$QT_SO" bs=1 seek=$((0xc4f50)) conv=notrunc 2>/dev/null
+        echo "  ✓ Qt Wayland stubs patched (xdg_popup_destroy/grab, subsurface sync/desync)"
+    else
+        echo "  ⚠ libQt6WaylandCompositor.so.6.4.2 not found in rootfs, skipping patch"
+    fi
 else
-    echo "  ⚠ libQt6WaylandCompositor.so.6.4.2 not found in rootfs, skipping patch"
+    echo "  ⏭ Qt Wayland patch skipped (x86_64 — ARM64-specific offsets)"
 fi
 
 # ─── Create User ───────────────────────────────────────────────
