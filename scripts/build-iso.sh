@@ -241,7 +241,12 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
     # Verify native app binaries
     echo "  Verifying native app binaries..."
-    for bin in chromium mousepad galculator evince libreoffice; do
+    # Ensure 'chromium' command exists — Ubuntu installs as 'chromium-browser'
+    if which chromium-browser 2>/dev/null && ! which chromium 2>/dev/null; then
+        ln -sf "$(which chromium-browser)" /usr/local/bin/chromium
+        echo "    ✓ Created symlink: chromium → chromium-browser"
+    fi
+    for bin in chromium chromium-browser mousepad galculator evince libreoffice; do
         if which "$bin" 2>/dev/null; then
             echo "    ✓ $bin found: $(which $bin)"
         fi
