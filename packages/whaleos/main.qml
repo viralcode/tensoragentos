@@ -199,10 +199,10 @@ ClipboardCompositor {
                 }
 
                 // Second: auto-create an AppWindow for this surface
-                // Skip empty/clipboard surfaces that have no title or appId
+                // If title/appId are empty, defer — GTK apps set them after surface creation
                 if (!appTitle && !appId) {
-                    console.log("WhaleOS: Ignoring empty WlShell surface (likely clipboard/system)");
-                    return true; // consume but don't create a window
+                    console.log("WhaleOS: Surface has no title/appId yet — deferring match");
+                    return false; // queue for deferred matching
                 }
                 root.autoSurfaceCounter++;
                 var windowTitle = appTitle || appId || "App";

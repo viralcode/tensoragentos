@@ -1487,3 +1487,4 @@
 2026-06-15T00:38:57.267Z No(00) vcpu-0 ConfigDB: Setting guestInfo.detailed.data = <not printed>
 2026-06-15T00:38:57.758Z In(05) vmx SOCKET 7 (160) recv detected remote shutdown
 2026-06-15T00:38:57.758Z In(05) vmx Vix: [mainDispatch.c:2814]: VMAutomation: Connection Error (4) on connection 3.
+2026-06-15T00:56:11.396Z In(05) vmx DISKLIB-LIB   : numIOs = 100000 numMergedIOs = 20970 numSplitIOs = 216
