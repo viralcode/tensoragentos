@@ -1,0 +1,717 @@
+2026-06-15T00:02:12.224Z In(05) vmx Log for VMware Fusion pid=73275 version=13.6.4 build=build-24832108 option=Release
+2026-06-15T00:02:12.224Z In(05) vmx The host is 64-bit Arm.
+2026-06-15T00:02:12.224Z In(05) vmx Host codepage=UTF-8 encoding=UTF-8
+2026-06-15T00:02:12.224Z In(05) vmx Host is macOS 26.5 (25F71) Darwin 25.5.0
+2026-06-15T00:02:12.224Z In(05) vmx Host offset from UTC is -04:00.
+2026-06-15T00:02:12.214Z In(05) vmx VTHREAD 8295161472 "vmx" tid 39132228
+2026-06-15T00:02:12.216Z In(05) vmx Msg_SetLocaleEx: HostLocale=UTF-8 UserLocale=en
+2026-06-15T00:02:12.216Z In(05) vmx DictionaryLoad: Cannot open file "/Applications/VMware Fusion.app/Contents/Library/messages/en/vmware.vmsg": No such file or directory.
+2026-06-15T00:02:12.216Z In(05) vmx DictionaryLoad: Cannot open file "/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.216Z In(05) vmx Msg_Reset:
+2026-06-15T00:02:12.216Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.216Z In(05) vmx ----------------------------------------
+2026-06-15T00:02:12.216Z In(05) vmx ConfigDB: Failed to load /Library/Preferences/VMware Fusion/config
+2026-06-15T00:02:12.216Z In(05) vmx DictionaryLoad: Cannot open file "/dev/null/Non-existing DEFAULT_LIBDIRECTORY/config": Not a directory.
+2026-06-15T00:02:12.216Z In(05) vmx Msg_Reset:
+2026-06-15T00:02:12.216Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/dev/null/Non-existing DEFAULT_LIBDIRECTORY/config": Not a directory.
+2026-06-15T00:02:12.216Z In(05) vmx ----------------------------------------
+2026-06-15T00:02:12.216Z In(05) vmx ConfigDB: Failed to load /dev/null/Non-existing DEFAULT_LIBDIRECTORY/config
+2026-06-15T00:02:12.216Z In(05) vmx DictionaryLoad: Cannot open file "/dev/null/Non-existing DEFAULT_LIBDIRECTORY/settings": Not a directory.
+2026-06-15T00:02:12.216Z In(05) vmx Msg_Reset:
+2026-06-15T00:02:12.216Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/dev/null/Non-existing DEFAULT_LIBDIRECTORY/settings": Not a directory.
+2026-06-15T00:02:12.216Z In(05) vmx ----------------------------------------
+2026-06-15T00:02:12.216Z In(05) vmx ConfigDB: Failed to load /dev/null/Non-existing DEFAULT_LIBDIRECTORY/settings
+2026-06-15T00:02:12.216Z In(05) vmx DictionaryLoad: Cannot open file "/Users/jijojohn/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.216Z In(05) vmx Msg_Reset:
+2026-06-15T00:02:12.216Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Users/jijojohn/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.216Z In(05) vmx ----------------------------------------
+2026-06-15T00:02:12.216Z In(05) vmx ConfigDB: Failed to load ~/Library/Preferences/VMware Fusion/config
+2026-06-15T00:02:12.222Z In(05) vmx OBJLIB-LIB: Objlib initialized.
+2026-06-15T00:02:12.222Z In(05) vmx DictionaryLoad: Cannot open file "/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx PREF Optional preferences file not found at /Library/Preferences/VMware Fusion/config. Using default values.
+2026-06-15T00:02:12.222Z In(05) vmx DictionaryLoad: Cannot open file "/Applications/VMware Fusion.app/Contents/Library/settings": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Applications/VMware Fusion.app/Contents/Library/settings": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx PREF Optional preferences file not found at /Applications/VMware Fusion.app/Contents/Library/settings. Using default values.
+2026-06-15T00:02:12.222Z In(05) vmx DictionaryLoad: Cannot open file "/Applications/VMware Fusion.app/Contents/Library/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Applications/VMware Fusion.app/Contents/Library/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx PREF Optional preferences file not found at /Applications/VMware Fusion.app/Contents/Library/config. Using default values.
+2026-06-15T00:02:12.222Z In(05) vmx DictionaryLoad: Cannot open file "/Users/jijojohn/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx [msg.dictionary.load.openFailed] Cannot open file "/Users/jijojohn/Library/Preferences/VMware Fusion/config": No such file or directory.
+2026-06-15T00:02:12.222Z In(05) vmx PREF Optional preferences file not found at /Users/jijojohn/Library/Preferences/VMware Fusion/config. Using default values.
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: OpenSSL using default provider
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: Client usage
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol list tls1.2
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol min 0x303 max 0x303
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol list tls1.2 (openssl flags 0x36000000)
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: cipher list ECDHE+AESGCM:RSA+AESGCM:ECDHE+AES:RSA+AES
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: cipher suites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: curves list prime256v1:secp384r1:secp521r1
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: Server usage
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol list tls1.2
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol min 0x303 max 0x303
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: protocol list tls1.2 (openssl flags 0x36000000)
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: cipher list ECDHE+AESGCM:RSA+AESGCM:ECDHE+AES:RSA+AES
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: cipher suites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384
+2026-06-15T00:02:12.224Z In(05) vmx lib/ssl: curves list prime256v1:secp384r1:secp521r1
+2026-06-15T00:02:12.225Z In(05) vmx Hostname=Jijos-Mac-mini.local
+2026-06-15T00:02:12.225Z In(05) vmx IP=127.0.0.1 (lo0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=::1 (lo0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::1 (lo0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::2a2d:7028:da43:5cd0 (utun0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::7f10:c8a1:cea1:a11b (utun1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::d7:b5c1:1293:9c05 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=192.168.1.74 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fd76:ff4e:a436:f3e1:4ee:a356:5eb8:f204 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:c2d:17a8:7dc9:a847 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:4de2:be28:af46:d77a (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:b819:a100:36d3:c5f5 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:c016:9ddb:7c83:79aa (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:8087:3f69:c133:a041 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:54c4:2251:68d8:e396 (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=2001:56b:2c20:2b00:b46c:a72e:eecf:146f (en1)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::468:7eff:fea8:8924 (awdl0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::468:7eff:fea8:8924 (llw0)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::1d88:f034:b062:da38 (utun2)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::ce81:b1c:bd2c:69e (utun3)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::7776:2b36:bfec:5eb0 (utun4)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::6f33:933b:d4f0:c94c (utun5)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::b42:6a59:371:79ce (utun6)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::4400:95ff:fe3e:59fd (en10)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::4b3:7f57:1598:4ade (en15)
+2026-06-15T00:02:12.225Z In(05) vmx IP=169.254.78.153 (en15)
+2026-06-15T00:02:12.225Z In(05) vmx IP=172.16.140.1 (bridge100)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::d011:e5ff:fe0f:5064 (bridge100)
+2026-06-15T00:02:12.225Z In(05) vmx IP=172.16.175.1 (bridge101)
+2026-06-15T00:02:12.225Z In(05) vmx IP=fe80::d011:e5ff:fe0f:5065 (bridge101)
+2026-06-15T00:02:12.225Z In(05) vmx System uptime 1357966332890 us
+2026-06-15T00:02:12.225Z In(05) vmx Command line: "/Applications/VMware Fusion.app/Contents/Library/vmware-vmx" "-E" "en" "-s" "vmx.stdio.keep=TRUE" "-#" "product=64;name=VMware Fusion;version=13.6.4;buildnumber=24832108;licensename=VMware Fusion for Mac OS;licenseversion=13.0;" "-@" "duplex=3;msgs=ui" "-D" "4" "/Users/jijojohn/Desktop/ainux/vmware_build/TensorAgentOS.vmx"
+2026-06-15T00:02:12.225Z In(05) vmx Msg_SetLocaleEx: HostLocale=UTF-8 UserLocale=en
+2026-06-15T00:02:12.225Z In(05) vmx DictionaryLoad: Cannot open file "/Applications/VMware Fusion.app/Contents/Library/messages/en/vmware.vmsg": No such file or directory.
+2026-06-15T00:02:12.269Z In(05) vmx Duplex socket: 3
+2026-06-15T00:02:12.277Z In(05) vmx WQPoolAllocPoll : pollIx = 1, signalHandle = 16
+2026-06-15T00:02:12.277Z In(05) vmx WQPoolAllocPoll : pollIx = 2, signalHandle = 19
+2026-06-15T00:02:12.277Z In(05) vmx VigorTransport listening on fd 20
+2026-06-15T00:02:12.277Z In(05) vmx Vigor_Init 1
+2026-06-15T00:02:12.277Z In(05) vmx Connecting 'ui' to fd '3' with user '(null)'
+2026-06-15T00:02:12.277Z In(05) vmx VmdbAddConnection: cnxPath=/db/connection/#1/, cnxIx=1
+2026-06-15T00:02:12.278Z In(05) vmx /Users/jijojohn/Desktop/ainux/vmware_build/TensorAgentOS.vmx: Setup symlink /var/run/vmware/9dc6d5806582acb8e61f724c50fbf27bc6709be18938f01cd3f46b34015e3ba5 -> /var/run/vmware/501/1357966376596_73275
+2026-06-15T00:02:12.278Z In(05) vmx Vix: [mainDispatch.c:489]: VMAutomation: Initializing VMAutomation.
+2026-06-15T00:02:12.278Z In(05) vmx Vix: [mainDispatch.c:741]: VMAutomationOpenListenerSocket() listening
+2026-06-15T00:02:12.279Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=0, newAppState=1870, success=1 additionalError=0
+2026-06-15T00:02:12.279Z In(05) vmx Transitioned vmx/execState/val to poweredOff
+2026-06-15T00:02:12.279Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=1, newAppState=1873, success=1 additionalError=0
+2026-06-15T00:02:12.279Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=2, newAppState=1877, success=1 additionalError=0
+2026-06-15T00:02:12.279Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=3, newAppState=1881, success=1 additionalError=0
+2026-06-15T00:02:12.285Z In(05) vmx Services_Init: Successfully opened the services.
+2026-06-15T00:02:12.285Z In(05) vmx FeatureCompat: No EVC masks.
+2026-06-15T00:02:12.285Z In(05) vmx UTIL: Current file descriptor limit: soft 10496, hard 4294967295.
+2026-06-15T00:02:12.285Z In(05) vmx Using 24000000 Hz
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: RefClockToPTSC 0 @ 24000000Hz -> 0 @ 24000000Hz
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: RefClockToPTSC ((x * 2147483648) >> 31) + 0
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: tscOffset 0
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: using user-level reference clock
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: hardware TSCs are synchronized.
+2026-06-15T00:02:12.285Z In(05) vmx PTSC: current PTSC=32591193426282
+2026-06-15T00:02:12.286Z In(05) vmx WQPoolAllocPoll : pollIx = 3, signalHandle = 26
+2026-06-15T00:02:12.287Z In(05) vmx Current Display Settings:
+2026-06-15T00:02:12.287Z In(05) vmx    Display: 0 size: 3440x1440 pixelSize: 3440x1440 position: (0, 0) Primary
+2026-06-15T00:02:12.287Z In(05) vmx [10283C000-1036C8000): /Applications/VMware Fusion.app/Contents/Library/vmware-vmx
+2026-06-15T00:02:12.295Z In(05) vmx ConfigCheck: No rules file found. Checks are disabled.
+2026-06-15T00:02:12.295Z In(05) vmx changing directory to /Users/jijojohn/Desktop/ainux/vmware_build/.
+2026-06-15T00:02:12.295Z In(05) vmx Config file: /Users/jijojohn/Desktop/ainux/vmware_build/TensorAgentOS.vmx
+2026-06-15T00:02:12.295Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=1, newAppState=1873, success=1 additionalError=0
+2026-06-15T00:02:12.295Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=2, newAppState=1878, success=1 additionalError=0
+2026-06-15T00:02:12.295Z In(05) vmx LogRotation: Rotating to a new log file (keepOld 3) took 0.000070 seconds.
+2026-06-15T00:02:12.295Z No(00) vmx LogVMXReplace: Successful switching from temporary to permanent log file took 0.000251 seconds.
+2026-06-15T00:02:12.299Z No(00) vmx ConfigDB: Setting sound.fileName = "-1"
+2026-06-15T00:02:12.300Z No(00) vmx ConfigDB: Setting virtualHW.productCompatibility = "hosted"
+2026-06-15T00:02:12.313Z Wa(03) vmx PowerOn
+2026-06-15T00:02:12.313Z In(05) vmx VMX_PowerOn: VMX build 24832108, UI build 24832108
+2026-06-15T00:02:12.313Z In(05) vmx Processor affinity not supported on this host OS
+2026-06-15T00:02:12.315Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=0, newAppState=1871, success=1 additionalError=0
+2026-06-15T00:02:12.315Z No(00) vmx ConfigDB: Setting vmxstats.filename = "TensorAgentOS.scoreboard"
+2026-06-15T00:02:12.315Z In(05) vmx STATSFILE: StatsFile '/Users/jijojohn/Desktop/ainux/vmware_build/TensorAgentOS.scoreboard' created
+2026-06-15T00:02:12.315Z In(05) vmx HOST sysname Darwin, nodename Jijos-Mac-mini.local, release 25.5.0, version Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:26 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T8132, machine arm64
+2026-06-15T00:02:12.315Z In(05) vmx DICT --- GLOBAL SETTINGS /Applications/VMware Fusion.app/Contents/Library/settings
+2026-06-15T00:02:12.315Z In(05) vmx DICT --- NON PERSISTENT (null)
+2026-06-15T00:02:12.315Z In(05) vmx DICT --- USER PREFERENCES /Users/jijojohn/Library/Preferences/VMware Fusion/preferences
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.dataCollectionEnabled.epoch = ""
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.dataCollectionEnabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.vmHotKey.enabled = "FALSE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.vmHotKey.count = "0"
+2026-06-15T00:02:12.315Z In(05) vmx DICT   pref.lastUpdateCheckSec = "1781481601"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.defaultProfileKey = "5216881e-efdf-0655-1bc8-05c0e4afc039"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.maxProfiles = "4"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.profileKey = "5216881e-efdf-0655-1bc8-05c0e4afc039"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.profileName = "Profile"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.profileType = "standard"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.enableOSShortcuts = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.enableKeyMappings = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.languageSpecificKeyMappingsEnabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.selectedLanguage = ""
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.cmdKeyFilterType = "none"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.maxMappings = "23"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping0.mappingKey = "0"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping0.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping0.fromHost = "GUI Z"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping0.toGuest = "CONTROL Z"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping1.mappingKey = "1"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping1.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping1.fromHost = "GUI X"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping1.toGuest = "CONTROL X"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping2.mappingKey = "2"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping2.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping2.fromHost = "GUI C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping2.toGuest = "CONTROL C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping3.mappingKey = "3"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping3.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping3.fromHost = "GUI V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping3.toGuest = "CONTROL V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping4.mappingKey = "4"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping4.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping4.fromHost = "GUI P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping4.toGuest = "CONTROL P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping5.mappingKey = "5"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping5.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping5.fromHost = "GUI A"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping5.toGuest = "CONTROL A"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping6.mappingKey = "6"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping6.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping6.fromHost = "GUI S"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping6.toGuest = "CONTROL S"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping7.mappingKey = "7"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping7.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping7.fromHost = "GUI F"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping7.toGuest = "0x03d"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping8.mappingKey = "8"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping8.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping8.fromHost = "GUI W"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping8.toGuest = "ALT 0x03e"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping9.mappingKey = "9"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping9.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping9.fromHost = "CONTROL ALT 0xe"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping9.toGuest = "CONTROL ALT 0x153"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping10.mappingKey = "10"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping10.enabled = "FALSE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping10.fromHost = "0x11c"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping10.toGuest = "0x138"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping11.mappingKey = "11"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping11.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping11.fromHost = "Mouse1 Control"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping11.toGuest = "Mouse2"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping12.mappingKey = "12"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping12.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping12.fromHost = "Mouse1 GUI"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping12.toGuest = "Mouse3"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping13.mappingKey = "13"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping13.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping13.fromHost = "GUI CONTROL"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping13.toGuest = "Ungrab"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping14.mappingKey = "14"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping14.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping14.fromHost = "GUI CONTROL F"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping14.toGuest = "Fullscreen"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping15.mappingKey = "15"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping15.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping15.fromHost = "GUI CONTROL S"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping15.toGuest = "SingleWindow"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping16.mappingKey = "16"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping16.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping16.fromHost = "GUI 0x029"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping16.toGuest = "CycleWindow"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping17.mappingKey = "17"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping17.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping17.fromHost = "GUI SHIFT 0x029"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping17.toGuest = "CycleWindowReverse"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping18.mappingKey = "18"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping18.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping18.fromHost = "GUI H"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping18.toGuest = "HideApplication"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping19.mappingKey = "19"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping19.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping19.fromHost = "GUI M"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping19.toGuest = "MinimizeWindow"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping20.mappingKey = "20"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping20.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping20.fromHost = "GUI Q"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping20.toGuest = "Quit"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping21.mappingKey = "21"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping21.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping21.fromHost = "GUI SHIFT M"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping21.toGuest = "ToggleHideMenu"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping22.mappingKey = "22"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping22.enabled = "FALSE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping22.fromHost = "GUI E"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile0.mapping22.toGuest = "Settings"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.profileKey = "521c108b-6eba-77f0-ff2f-175a5c59f18d"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.profileName = "Windows 8 Profile"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.profileType = "windows8"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.enableOSShortcuts = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.enableKeyMappings = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.languageSpecificKeyMappingsEnabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.selectedLanguage = ""
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.cmdKeyFilterType = "none"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.maxMappings = "32"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping0.mappingKey = "0"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping0.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping0.fromHost = "GUI Z"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping0.toGuest = "CONTROL Z"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping1.mappingKey = "1"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping1.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping1.fromHost = "GUI X"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping1.toGuest = "CONTROL X"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping2.mappingKey = "2"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping2.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping2.fromHost = "GUI C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping2.toGuest = "CONTROL C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping3.mappingKey = "3"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping3.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping3.fromHost = "GUI V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping3.toGuest = "CONTROL V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping4.mappingKey = "4"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping4.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping4.fromHost = "GUI P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping4.toGuest = "CONTROL P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping5.mappingKey = "5"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping5.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping5.fromHost = "GUI A"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping5.toGuest = "CONTROL A"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping6.mappingKey = "6"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping6.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping6.fromHost = "GUI S"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping6.toGuest = "CONTROL S"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping7.mappingKey = "7"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping7.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping7.fromHost = "GUI F"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping7.toGuest = "0x03d"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping8.mappingKey = "8"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping8.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping8.fromHost = "GUI W"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping8.toGuest = "ALT 0x03e"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping9.mappingKey = "9"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping9.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping9.fromHost = "CONTROL ALT 0xe"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping9.toGuest = "CONTROL ALT 0x153"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping10.mappingKey = "10"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping10.enabled = "FALSE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping10.fromHost = "0x11c"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping10.toGuest = "0x138"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping11.mappingKey = "11"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping11.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping11.fromHost = "GUI SHIFT C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping11.toGuest = "GUI C"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping12.mappingKey = "12"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping12.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping12.fromHost = "GUI SHIFT H"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping12.toGuest = "GUI H"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping13.mappingKey = "13"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping13.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping13.fromHost = "GUI SHIFT M"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping13.toGuest = "GUI M"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping14.mappingKey = "14"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping14.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping14.fromHost = "GUI SHIFT P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping14.toGuest = "GUI P"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping15.mappingKey = "15"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping15.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping15.fromHost = "GUI SHIFT F"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping15.toGuest = "GUI Q"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping16.mappingKey = "16"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping16.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping16.fromHost = "GUI SHIFT V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping16.toGuest = "GUI V"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping17.mappingKey = "17"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping17.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping17.fromHost = "GUI SHIFT W"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping17.toGuest = "GUI W"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping18.mappingKey = "18"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping18.enabled = "TRUE"
+2026-06-15T00:02:12.315Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping18.fromHost = "GUI SHIFT X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping18.toGuest = "GUI X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping19.mappingKey = "19"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping19.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping19.fromHost = "GUI SHIFT Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping19.toGuest = "GUI Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping20.mappingKey = "20"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping20.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping20.fromHost = "Mouse1 Control"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping20.toGuest = "Mouse2"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping21.mappingKey = "21"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping21.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping21.fromHost = "Mouse1 GUI"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping21.toGuest = "Mouse3"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping22.mappingKey = "22"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping22.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping22.fromHost = "GUI CONTROL"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping22.toGuest = "Ungrab"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping23.mappingKey = "23"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping23.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping23.fromHost = "GUI CONTROL F"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping23.toGuest = "Fullscreen"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping24.mappingKey = "24"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping24.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping24.fromHost = "GUI CONTROL S"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping24.toGuest = "SingleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping25.mappingKey = "25"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping25.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping25.fromHost = "GUI 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping25.toGuest = "CycleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping26.mappingKey = "26"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping26.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping26.fromHost = "GUI SHIFT 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping26.toGuest = "CycleWindowReverse"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping27.mappingKey = "27"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping27.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping27.fromHost = "GUI H"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping27.toGuest = "HideApplication"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping28.mappingKey = "28"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping28.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping28.fromHost = "GUI M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping28.toGuest = "MinimizeWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping29.mappingKey = "29"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping29.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping29.fromHost = "GUI Q"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping29.toGuest = "Quit"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping30.mappingKey = "30"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping30.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping30.fromHost = "GUI ALT SHIFT M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping30.toGuest = "ToggleHideMenu"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping31.mappingKey = "31"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping31.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping31.fromHost = "GUI E"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile1.mapping31.toGuest = "Settings"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.profileKey = "52adf569-8674-2391-b31b-48910c0973df"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.profileName = "Mac Profile"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.profileType = "mac"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.enableOSShortcuts = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.enableKeyMappings = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.languageSpecificKeyMappingsEnabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.selectedLanguage = ""
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.cmdKeyFilterType = "none"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.maxMappings = "12"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping0.mappingKey = "0"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping0.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping0.fromHost = "Mouse1 Control"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping0.toGuest = "Mouse2"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping1.mappingKey = "1"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping1.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping1.fromHost = "Mouse1 GUI"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping1.toGuest = "Mouse3"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping2.mappingKey = "2"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping2.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping2.fromHost = "GUI CONTROL"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping2.toGuest = "Ungrab"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping3.mappingKey = "3"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping3.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping3.fromHost = "GUI CONTROL F"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping3.toGuest = "Fullscreen"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping4.mappingKey = "4"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping4.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping4.fromHost = "GUI CONTROL S"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping4.toGuest = "SingleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping5.mappingKey = "5"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping5.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping5.fromHost = "GUI 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping5.toGuest = "CycleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping6.mappingKey = "6"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping6.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping6.fromHost = "GUI SHIFT 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping6.toGuest = "CycleWindowReverse"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping7.mappingKey = "7"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping7.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping7.fromHost = "GUI H"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping7.toGuest = "HideApplication"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping8.mappingKey = "8"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping8.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping8.fromHost = "GUI M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping8.toGuest = "MinimizeWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping9.mappingKey = "9"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping9.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping9.fromHost = "GUI Q"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping9.toGuest = "Quit"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping10.mappingKey = "10"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping10.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping10.fromHost = "GUI SHIFT M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping10.toGuest = "ToggleHideMenu"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping11.mappingKey = "11"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping11.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping11.fromHost = "GUI E"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile2.mapping11.toGuest = "Settings"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.profileKey = "52d5c711-e580-32f7-8175-2747d9d371e6"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.profileName = "Windows 10 Profile"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.profileType = "windows9"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.enableOSShortcuts = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.enableKeyMappings = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.languageSpecificKeyMappingsEnabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.selectedLanguage = ""
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.cmdKeyFilterType = "none"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.maxMappings = "29"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping0.mappingKey = "0"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping0.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping0.fromHost = "GUI Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping0.toGuest = "CONTROL Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping1.mappingKey = "1"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping1.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping1.fromHost = "GUI X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping1.toGuest = "CONTROL X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping2.mappingKey = "2"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping2.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping2.fromHost = "GUI C"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping2.toGuest = "CONTROL C"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping3.mappingKey = "3"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping3.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping3.fromHost = "GUI V"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping3.toGuest = "CONTROL V"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping4.mappingKey = "4"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping4.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping4.fromHost = "GUI P"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping4.toGuest = "CONTROL P"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping5.mappingKey = "5"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping5.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping5.fromHost = "GUI A"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping5.toGuest = "CONTROL A"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping6.mappingKey = "6"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping6.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping6.fromHost = "GUI S"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping6.toGuest = "CONTROL S"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping7.mappingKey = "7"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping7.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping7.fromHost = "GUI F"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping7.toGuest = "0x03d"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping8.mappingKey = "8"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping8.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping8.fromHost = "GUI W"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping8.toGuest = "ALT 0x03e"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping9.mappingKey = "9"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping9.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping9.fromHost = "CONTROL ALT 0xe"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping9.toGuest = "CONTROL ALT 0x153"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping10.mappingKey = "10"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping10.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping10.fromHost = "0x11c"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping10.toGuest = "0x138"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping11.mappingKey = "11"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping11.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping11.fromHost = "GUI SHIFT H"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping11.toGuest = "GUI H"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping12.mappingKey = "12"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping12.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping12.fromHost = "GUI SHIFT M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping12.toGuest = "GUI M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping13.mappingKey = "13"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping13.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping13.fromHost = "GUI SHIFT P"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping13.toGuest = "GUI P"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping14.mappingKey = "14"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping14.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping14.fromHost = "GUI SHIFT V"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping14.toGuest = "GUI V"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping15.mappingKey = "15"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping15.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping15.fromHost = "GUI SHIFT X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping15.toGuest = "GUI X"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping16.mappingKey = "16"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping16.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping16.fromHost = "GUI SHIFT Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping16.toGuest = "GUI Z"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping17.mappingKey = "17"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping17.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping17.fromHost = "Mouse1 Control"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping17.toGuest = "Mouse2"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping18.mappingKey = "18"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping18.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping18.fromHost = "Mouse1 GUI"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping18.toGuest = "Mouse3"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping19.mappingKey = "19"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping19.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping19.fromHost = "GUI CONTROL"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping19.toGuest = "Ungrab"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping20.mappingKey = "20"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping20.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping20.fromHost = "GUI CONTROL F"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping20.toGuest = "Fullscreen"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping21.mappingKey = "21"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping21.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping21.fromHost = "GUI CONTROL S"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping21.toGuest = "SingleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping22.mappingKey = "22"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping22.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping22.fromHost = "GUI 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping22.toGuest = "CycleWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping23.mappingKey = "23"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping23.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping23.fromHost = "GUI SHIFT 0x029"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping23.toGuest = "CycleWindowReverse"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping24.mappingKey = "24"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping24.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping24.fromHost = "GUI H"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping24.toGuest = "HideApplication"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping25.mappingKey = "25"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping25.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping25.fromHost = "GUI M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping25.toGuest = "MinimizeWindow"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping26.mappingKey = "26"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping26.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping26.fromHost = "GUI Q"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping26.toGuest = "Quit"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping27.mappingKey = "27"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping27.enabled = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping27.fromHost = "GUI ALT SHIFT M"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping27.toGuest = "ToggleHideMenu"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping28.mappingKey = "28"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping28.enabled = "FALSE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping28.fromHost = "GUI E"
+2026-06-15T00:02:12.316Z In(05) vmx DICT pref.keyboardAndMouse.profile3.mapping28.toGuest = "Settings"
+2026-06-15T00:02:12.316Z In(05) vmx DICT         vmWizard.guestKey = "arm-debian12-64"
+2026-06-15T00:02:12.316Z In(05) vmx DICT     prefvmx.defaultVMPath = "/Users/jijojohn/Desktop"
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- USER DEFAULTS /Users/jijojohn/Library/Preferences/VMware Fusion/config
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- HOST DEFAULTS /Library/Preferences/VMware Fusion/config
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- SITE DEFAULTS /Applications/VMware Fusion.app/Contents/Library/config
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- NONPERSISTENT
+2026-06-15T00:02:12.316Z In(05) vmx DICT            vmx.stdio.keep = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT             gui.available = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- COMMAND LINE
+2026-06-15T00:02:12.316Z In(05) vmx DICT            vmx.stdio.keep = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT             gui.available = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- RECORDING
+2026-06-15T00:02:12.316Z In(05) vmx DICT            vmx.stdio.keep = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT             gui.available = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- CONFIGURATION /Users/jijojohn/Desktop/ainux/vmware_build/TensorAgentOS.vmx 
+2026-06-15T00:02:12.316Z In(05) vmx DICT            config.version = "8"
+2026-06-15T00:02:12.316Z In(05) vmx DICT         virtualHW.version = "21"
+2026-06-15T00:02:12.316Z In(05) vmx DICT               displayName = "TensorAgent OS"
+2026-06-15T00:02:12.316Z In(05) vmx DICT                   guestOS = "arm-ubuntu-64"
+2026-06-15T00:02:12.316Z In(05) vmx DICT                  numvcpus = "6"
+2026-06-15T00:02:12.316Z In(05) vmx DICT                   memsize = "8192"
+2026-06-15T00:02:12.316Z In(05) vmx DICT                  firmware = "efi"
+2026-06-15T00:02:12.316Z In(05) vmx DICT            bios.bootOrder = "hdd"
+2026-06-15T00:02:12.316Z In(05) vmx DICT            tools.syncTime = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT  ethernet0.connectionType = "nat"
+2026-06-15T00:02:12.316Z In(05) vmx DICT      ethernet0.virtualDev = "e1000e"
+2026-06-15T00:02:12.316Z In(05) vmx DICT         ethernet0.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT  ethernet0.startConnected = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT     ethernet0.addressType = "generated"
+2026-06-15T00:02:12.316Z In(05) vmx DICT             nvme0.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT          nvme0:0.fileName = "ainux.vmdk"
+2026-06-15T00:02:12.316Z In(05) vmx DICT           nvme0:0.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT               usb.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT          usb_xhci.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT             sound.present = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT          sound.autoDetect = "TRUE"
+2026-06-15T00:02:12.316Z In(05) vmx DICT     svga.graphicsMemoryKB = "262144"
+2026-06-15T00:02:12.316Z In(05) vmx DICT            sound.fileName = "-1"
+2026-06-15T00:02:12.316Z In(05) vmx DICT virtualHW.productCompatibility = "hosted"
+2026-06-15T00:02:12.316Z In(05) vmx DICT         vmxstats.filename = "TensorAgentOS.scoreboard"
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- USER DEFAULTS ~/Library/Preferences/VMware Fusion/config 
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- HOST DEFAULTS /Library/Preferences/VMware Fusion/config 
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- SITE DEFAULTS /dev/null/Non-existing DEFAULT_LIBDIRECTORY/config 
+2026-06-15T00:02:12.316Z In(05) vmx DICT --- GLOBAL SETTINGS /dev/null/Non-existing DEFAULT_LIBDIRECTORY/settings 
+2026-06-15T00:02:12.316Z In(05) vmx Powering on guestOS 'arm-ubuntu-64' using the configuration for 'arm-ubuntu-64'.
+2026-06-15T00:02:12.316Z In(05) vmx ToolsISO: open of /Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt.sig failed: Could not find the file
+2026-06-15T00:02:12.316Z In(05) vmx ToolsISO: Unable to read signature file '/Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt.sig', ignoring.
+2026-06-15T00:02:12.316Z In(05) vmx ToolsISO: Guest 'arm-ubuntu-64' not found in Tools image map file '/Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt'
+2026-06-15T00:02:12.316Z In(05) vmx ToolsISO: Updated cached value for imageName to '(null)'.
+2026-06-15T00:02:12.316Z In(05) vmx GuestOS: GuestOS_GetToolsImageName: Failed to get Tools ISO image path.
+2026-06-15T00:02:12.316Z In(05) vmx Vix: [mainDispatch.c:4213]: VMAutomation_ReportPowerOpFinished: statevar=1, newAppState=1873, success=1 additionalError=0
+2026-06-15T00:02:12.317Z In(05) vmx DEVSWAP: GuestOS does not require LSI adapter swap.
+2026-06-15T00:02:12.317Z In(05) vmx Monitor Mode: ULM
+2026-06-15T00:02:12.320Z In(05) vmx nvmeShared size: 3752, numAdapters: 1
+2026-06-15T00:02:12.321Z In(05) vmx OvhdMem_PowerOn: initial admission: paged   171349 nonpaged    10836 anonymous     8271
+2026-06-15T00:02:12.321Z In(05) vmx VMMEM: Initial Reservation: 2975MB (MainMem=8192MB)
+2026-06-15T00:02:12.321Z In(05) vmx numa: Invalid NUMA cookie.
+2026-06-15T00:02:12.321Z No(00) vmx ConfigDB: Setting numa.autosize.cookie = "60012"
+2026-06-15T00:02:12.321Z No(00) vmx ConfigDB: Setting numa.autosize.vcpu.maxPerVirtualNode = "6"
+2026-06-15T00:02:12.321Z In(05) vmx MemSched_PowerOn: balloon minGuestSize 104857 (80% of min required size 131072)
+2026-06-15T00:02:12.322Z In(05) vmx LICENSE: Running unlicensed VMX (VMware Fusion)
+2026-06-15T00:02:12.322Z In(05) vthread-39132250 VTHREAD 6132002816 "vthread-39132250" tid 39132250
+2026-06-15T00:02:12.322Z In(05) vmx PolicyVMXFindPolicyKey: policy file does not exist.
+2026-06-15T00:02:12.322Z In(05) vmx PolicyVMXFindPolicyKey: policy file does not exist.
+2026-06-15T00:02:12.322Z In(05) vmx Host PA size: 42 bits. Guest PA size: 36 bits.
+2026-06-15T00:02:12.322Z In(05) vmx ToolsISO: open of /Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt.sig failed: Could not find the file
+2026-06-15T00:02:12.322Z In(05) vmx ToolsISO: Unable to read signature file '/Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt.sig', ignoring.
+2026-06-15T00:02:12.322Z In(05) vmx ToolsISO: Guest 'arm-ubuntu-64' not found in Tools image map file '/Applications/VMware Fusion.app/Contents/Library/isoimages/arm64/isoimages_manifest.txt'
+2026-06-15T00:02:12.322Z In(05) vmx ToolsISO: Updated cached value for imageName to '(null)'.
+2026-06-15T00:02:12.322Z In(05) vmx GuestOS: GuestOS_GetToolsImageName: Failed to get Tools ISO image path.
+2026-06-15T00:02:12.323Z In(05) deviceThread VTHREAD 6132576256 "deviceThread" tid 39132251
+2026-06-15T00:02:12.323Z In(05) deviceThread Device thread is alive
+2026-06-15T00:02:12.323Z In(05) vmx KHZEstimate 24000
+2026-06-15T00:02:12.323Z In(05) vmx MHZEstimate 24
+2026-06-15T00:02:12.323Z In(05) vmx NumVCPUs 6
+2026-06-15T00:02:12.323Z In(05) vmx UUID: Writing uuid.bios value: '56 4d fc bc 67 ce fe fd-d3 17 d3 c2 8a c8 54 56'
+2026-06-15T00:02:12.323Z No(00) vmx ConfigDB: Setting uuid.bios = "56 4d fc bc 67 ce fe fd-d3 17 d3 c2 8a c8 54 56"
+2026-06-15T00:02:12.323Z In(05) vmx UUID: Writing uuid.location value: '56 4d fc bc 67 ce fe fd-d3 17 d3 c2 8a c8 54 56'
+2026-06-15T00:02:12.323Z No(00) vmx ConfigDB: Setting uuid.location = "56 4d fc bc 67 ce fe fd-d3 17 d3 c2 8a c8 54 56"
+2026-06-15T00:02:12.323Z In(05) vmx AIOGNRC: numThreads=1 ide=0, scsi=0, passthru=0
+2026-06-15T00:02:12.323Z In(05) vmx WORKER: Creating new group with maxThreads=1 (1)
+2026-06-15T00:02:12.323Z In(05) vmx WORKER: Creating new group with maxThreads=1 (2)
+2026-06-15T00:02:12.323Z In(05) vmx MainMem: CPT Host WZ=0 PF=8192 D=0
+2026-06-15T00:02:12.323Z In(05) vmx MainMem: CPT PLS=1 PLR=0 BS=1 BlkP=8 Mult=4 W=50
+2026-06-15T00:02:12.323Z In(05) vmx MainMem: Opened paging file, 'UNNAMED' (swap).
+2026-06-15T00:02:12.323Z In(05) vmx MStat: Creating Stat vm.uptime
+2026-06-15T00:02:12.323Z In(05) vmx MStat: Creating Stat vm.suspendTime
+2026-06-15T00:02:12.323Z In(05) vmx MStat: Creating Stat vm.powerOnTimeStamp
+2026-06-15T00:02:12.323Z In(05) vmx VMXAIOMGR: Using: simple=Generic
+2026-06-15T00:02:12.324Z In(05) vmx WORKER: Creating new group with maxThreads=1 (3)
+2026-06-15T00:02:12.324Z In(05) machPoll VTHREAD 6133149696 "machPoll" tid 39132252
+2026-06-15T00:02:12.324Z In(05) vmx Guest interrupt controller is GICv3
+2026-06-15T00:02:12.324Z In(05) vmx WORKER: Creating new group with maxThreads=1 (4)
+2026-06-15T00:02:12.324Z In(05) vmx WORKER: Creating new group with maxThreads=14 (18)
+2026-06-15T00:02:12.325Z In(05) vmx FeatureCompat: No VM masks.
+2026-06-15T00:02:12.325Z In(05) vmx TimeTracker host to guest rate conversion 32591194371345 @ 24000000Hz -> 0 @ 24000000Hz
+2026-06-15T00:02:12.325Z In(05) vmx TimeTracker host to guest rate conversion ((x * 2147483648) >> 31) + -32591194371345
+2026-06-15T00:02:12.325Z In(05) vmx MKS PowerOn
+2026-06-15T00:02:12.325Z In(05) mks VTHREAD 6135296000 "mks" tid 39132253
+2026-06-15T00:02:12.325Z In(05) mks MKS thread is alive
+2026-06-15T00:02:12.325Z In(05) svga VTHREAD 6139539456 "svga" tid 39132254
+2026-06-15T00:02:12.325Z In(05) svga SVGA thread is alive
+2026-06-15T00:02:12.325Z In(05) mks MKS: SSE2=0, SSSE3=0, SSE4_1=0
+2026-06-15T00:02:12.334Z In(05) mks MKS MacOSMouse: Using event tap path.
+2026-06-15T00:02:12.334Z In(05) mouse VTHREAD 6140112896 "mouse" tid 39132256
+2026-06-15T00:02:12.334Z In(05) keyboard VTHREAD 6140686336 "keyboard" tid 39132257
+2026-06-15T00:02:12.360Z In(05) keyboard MKS MacOSKeyboard: Adding device: (0) VID:1D57 PID:FA60  (JLab Work)
+2026-06-15T00:02:12.360Z In(05) keyboard MKS MacOSKeyboard: Adding device: (1) VID:004C PID:029F <missing> (Jijo’s Magic Keyboard)
+2026-06-15T00:02:12.360Z In(05) keyboard MKS MacOSKeyboard: Adding device: (2) VID:1D57 PID:FA60  (JLab Work)
+2026-06-15T00:02:12.361Z In(05) mks MKSRenderMain: PowerOn allowed BasicOps ISB MTL 
+2026-06-15T00:02:12.361Z In(05) mks MKSRenderMain: ISB enabled by config
+2026-06-15T00:02:12.361Z In(05) mks MKSRenderMain: Collecting RenderOps caps from MTL
+2026-06-15T00:02:12.361Z In(05) mks MKSRenderMain: Starting MTL
+2026-06-15T00:02:12.367Z In(05) mks Metal Device name: Apple M4
+2026-06-15T00:02:12.367Z In(05) mks Metal Device removable: FALSE
+2026-06-15T00:02:12.367Z In(05) mks Metal Device headless: FALSE
+2026-06-15T00:02:12.367Z In(05) mks Metal Device lowPower: FALSE
+2026-06-15T00:02:12.367Z In(05) mks Metal Device maxThreadsPerThreadgroup: 1024x1024x1024
+2026-06-15T00:02:12.367Z In(05) mks Metal Device recommendedMaxWorkingSetSize: 12713115648
+2026-06-15T00:02:12.367Z In(05) mks Metal Device depth24Stencil8PixelFormatSupported: FALSE
+2026-06-15T00:02:12.367Z In(05) mks Metal Device GPU family: 2
+2026-06-15T00:02:12.367Z In(05) mks Metal Device Apple GPU family: 9
+2026-06-15T00:02:12.367Z In(05) mks Metal RW Texture Tier: 2
+2026-06-15T00:02:12.367Z In(05) mks Metal Arg Buffer Support: Tier 2
+2026-06-15T00:02:12.367Z In(05) mks Metal GPU chip: Unknown (Unknown)
+2026-06-15T00:02:12.513Z In(05) mks Metal Device: Pull Model Interpolation support: Yes
+2026-06-15T00:02:12.513Z In(05) mks Metal Shading Language: 3.0
+2026-06-15T00:02:12.520Z In(05) mks Started Shim3D
+2026-06-15T00:02:12.520Z In(05) mks MKSRenderMain: Started MTL
+2026-06-15T00:02:12.520Z In(05) mks MKSRenderMain: ISB required for 3d: clamping down renderer caps
+2026-06-15T00:02:12.520Z In(05) mks MKSRenderMain: Found Full Renderer: MTLRenderer
+2026-06-15T00:02:12.520Z In(05) mks MKSRenderMain: maxTextureSize=16384
+2026-06-15T00:02:12.520Z In(05) mks SOCKET 1 (75) creating new listening socket on port -1
+2026-06-15T00:02:12.520Z In(05) mks KHBKL: Unable to parse keystring at: ''
+2026-06-15T00:02:12.520Z In(05) mks MKSRemoteMgr: Set default display name: TensorAgent OS
+2026-06-15T00:02:12.520Z In(05) mks MKSRemoteMgr: Loading VNC Configuration from VM config file
+2026-06-15T00:02:12.520Z In(05) mks MKSRemoteMgr: Using default VNC keymap table "us"
+2026-06-15T00:02:12.520Z In(05) vmx VMXNET: send cluster threshold is 80, size = 2 recalcInterval is 20000 ticks, dontClusterSize is 128
+2026-06-15T00:02:12.521Z In(05) vmx Chipset version: 0x13
+2026-06-15T00:02:12.521Z In(05) vmx Device usb requested without secondary PCI slots available.
+2026-06-15T00:02:12.521Z No(00) vmx ConfigDB: Setting usb.pciSlotNumber = "16"
+2026-06-15T00:02:12.521Z In(05) vmx Device ethernet0 requested without secondary PCI slots available.
+2026-06-15T00:02:12.521Z No(00) vmx ConfigDB: Setting ethernet0.pciSlotNumber = "21"
+2026-06-15T00:02:12.521Z In(05) vmx Device usb_xhci requested without secondary PCI slots available.
+2026-06-15T00:02:12.521Z No(00) vmx ConfigDB: Setting usb_xhci.pciSlotNumber = "22"
+2026-06-15T00:02:12.521Z In(05) vmx Device nvme0 requested without secondary PCI slots available.
+2026-06-15T00:02:12.521Z No(00) vmx ConfigDB: Setting nvme0.pciSlotNumber = "23"
+2026-06-15T00:02:12.523Z Wa(03) vmx Devices: es1371 is not valid device type for sound.
+2026-06-15T00:02:12.523Z In(05) vmx Msg_Post: Error
+2026-06-15T00:02:12.523Z In(05) vmx [msg.devicePowerOn.invalidDT] The device type "es1371" specified for "sound" is not supported by VMware Fusion 13.6.4.
+2026-06-15T00:02:12.523Z In(05) vmx ----------------------------------------
+2026-06-15T00:02:12.558Z In(05) vmx Vix: [mainDispatch.c:4664]: VMAutomationProcessMessage: Postpone the command. VM not running (opcode 151)

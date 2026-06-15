@@ -26,29 +26,6 @@
 
 ---
 
-> ## ⚠️ Early Version — Here Be Dragons
->
-> **TensorAgent OS is in very early development.**
->
-Expect:
->
-> - **The x86_64 build is not ready.** Only the ARM64 path (UTM / QEMU on
->   Apple Silicon) is currently usable end-to-end. The `build-iso.sh` x86_64
->   pipeline runs but produces an ISO that does not boot cleanly yet.
-> - Boot failures on certain hosts / firmware combinations.
-> - The QML shell crashing, freezing, or rendering blank windows.
-> - OpenWhale agent runs that hang, leak memory, or silently fail.
-> - Cloud-init that gets stuck on first boot for several minutes (or forever).
-> - Cross-arch (ARM64 ↔ x86_64) builds breaking without warning.
-> - Half-written features behind menu entries that do nothing.
-> - Breaking changes between commits with no migration path.
->
-> If you’re looking for something stable, this isn’t it — yet. If you want to
-> hack on an AI-first OS and don’t mind a broken build now and then, welcome.
-> Please file issues with logs (`journalctl -u openwhale -u ainux-gui -b`).
-
----
-
 ## What is TensorAgent OS?
 
 TensorAgent OS is a bootable Linux-based OS where an **AI agent is the
