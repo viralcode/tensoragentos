@@ -55,6 +55,7 @@ Rectangle {
     property string nativeCmd: ""
     property string nativeSearchName: ""
     property int launchCountdown: 60
+    property bool _launched: false  // Guard: prevent re-launch when Repeater rebuilds
 
     // Set initial size + launch native app in one onCompleted handler
     // (QML only allows ONE Component.onCompleted per component)
@@ -66,7 +67,9 @@ Rectangle {
             appWindow.width  = Math.min(initW, windowArea.width  - Math.round(20 * root.sf));
             appWindow.height = Math.min(initH, windowArea.height - Math.round(20 * root.sf));
         }
-        if (isNative && nativeCmd.length > 0) {
+        // Only launch if this is the FIRST time AND no surface already assigned
+        if (isNative && nativeCmd.length > 0 && !_launched && !shellSurface) {
+            _launched = true;
             nativeLauncher.start();
         }
     }
@@ -99,7 +102,6 @@ Rectangle {
 
             if (comp.defaultSeat && wlSurface) {
                 comp.defaultSeat.keyboardFocus = wlSurface;
-                console.log("WhaleOS: keyboard focus SET for " + appWindow.windowTitle);
             } else {
                 console.log("WhaleOS: keyboard focus SKIP — seat:" + !!comp.defaultSeat + " surface:" + !!wlSurface);
             }
@@ -326,7 +328,7 @@ Rectangle {
         id: nativeLauncher
         interval: 200; running: false; repeat: false
         onTriggered: {
-            if (!isNative || nativeCmd.length === 0) return;
+            if (!isNative || nativeCmd.length === 0 || shellSurface) return;
             sysManager.launchNativeApp(nativeCmd);
         }
     }
