@@ -22,7 +22,18 @@
 
 ---
 
-> - 📧 **Contact / inquiries:** [jijojohnx@outlook.com](mailto:jijojohnx@outlook.com)
+## ⬇️ Downloads
+
+| Architecture | ISO | VM Image |
+|-------------|-----|----------|
+| **x86_64** (Intel/AMD PCs) | [tensoragent-os-x86_64.iso.xz](https://github.com/viralcode/tensoragentos/releases/latest/download/tensoragent-os-x86_64.iso.xz) | — |
+| **ARM64** (Apple Silicon, RPi) | [tensoragent-os-aarch64.iso.xz](https://github.com/viralcode/tensoragentos/releases/latest/download/tensoragent-os-aarch64.iso.xz) | [Pre-built VM](https://github.com/viralcode/tensoragentos/releases/tag/v0.1.0-preview) |
+
+> **Flash to USB:** `sudo dd if=tensoragent-os-x86_64.iso of=/dev/sdX bs=4M status=progress`
+>
+> **Boot in VM:** Use VirtualBox, VMware, UTM, or QEMU.
+>
+> **Default login:** `ainux` / `ainux`
 
 ---
 
@@ -109,11 +120,9 @@ so any local changes are picked up on the next boot.
 
 ## Build a Bootable ISO from Source (Linux x86_64 host)
 
-> ⚠️ **Heads up: the x86_64 build is not ready.** The script runs to
-> completion but the resulting ISO currently fails to boot reliably (GRUB /
-> initrd / service-ordering issues). Use the ARM64 UTM or QEMU path above
-> for anything you actually want to run. The instructions below are kept
-> for contributors who want to help fix the x86_64 pipeline.
+> ISOs are built automatically by GitHub Actions for both x86_64 and ARM64.
+> Download the latest from the [Releases](https://github.com/viralcode/tensoragentos/releases) page,
+> or build from source using the instructions below.
 
 Reproducible from-scratch ISO build. **Linux x86_64 host required**, ~16 GB
 RAM and ~150 GB free disk recommended (less if you skip Chromium).
@@ -255,8 +264,8 @@ Change them before exposing the VM to anything other than `localhost`.
 
 A non-exhaustive list — please add to it via GitHub issues:
 
-- **x86_64 ISO does not boot cleanly.** The full `build-iso.sh` pipeline is
-  incomplete — only ARM64 (UTM / QEMU on macOS) is currently usable.
+- **Live ISO only.** The ISO currently boots live; persistence is whatever
+  the underlying VM disk gives you. No installer yet.
 - **First-boot cloud-init can hang.** If you don't see the desktop after
   ~10 minutes, SSH in on `2222` and run `cloud-init status --long`.
 - **WhaleOS shell crash on resize.** Resizing the QEMU/UTM window can take

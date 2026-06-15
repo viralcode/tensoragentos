@@ -38,3 +38,4 @@ vmware_build/*.vmdk
 *.vmdk
 *.xz.part*
 vmware_build/
+pxe-server/

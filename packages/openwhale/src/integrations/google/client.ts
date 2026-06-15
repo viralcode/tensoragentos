@@ -57,12 +57,12 @@ export function initializeGoogleAuth(): Auth.OAuth2Client | null {
             client_id,
             client_secret,
             redirectUri
-        );
+        ) as any as Auth.OAuth2Client;
 
         // Try to load existing tokens
         if (existsSync(TOKEN_PATH)) {
             const tokens = JSON.parse(readFileSync(TOKEN_PATH, "utf-8"));
-            oauth2Client.setCredentials(tokens);
+            oauth2Client!.setCredentials(tokens);
             isAuthenticated = true;
             console.log("[Google] Loaded existing tokens");
         }

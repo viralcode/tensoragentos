@@ -79,7 +79,7 @@ function parsePolicy(content: string): PolicyRule[] {
                 line: i + 1,
             });
         } catch (e) {
-            log.warn(`Invalid regex from pattern on line ${i + 1}: ${pattern}`, e);
+            log.warn(`Invalid regex from pattern on line ${i + 1}: ${pattern}`, e as Record<string, unknown>);
         }
     }
 
@@ -113,7 +113,7 @@ export function loadPolicy(customPath?: string): void {
 
                 return;
             } catch (e) {
-                log.warn(`Failed to read policy file ${path}:`, e);
+                log.warn(`Failed to read policy file ${path}:`, e as Record<string, unknown>);
             }
         }
     }
