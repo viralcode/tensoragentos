@@ -359,11 +359,7 @@ Rectangle {
                         MouseArea {
                             id: iMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; z: 0
                             onClicked: {
-                                if (modelData.cmd && modelData.cmd.length > 0) {
-                                    nativeAppsLauncher.launchNativeViaHelper(modelData.cmd, modelData.label);
-                                } else {
-                                    root.openAppWindow(modelData.appId, modelData.label, modelData.iconType || "generic", modelData.searchName || modelData.pkg, modelData.cmd);
-                                }
+                                root.openAppWindow(modelData.appId, modelData.label, modelData.iconType || "generic", modelData.searchName || modelData.pkg, modelData.cmd || "");
                             }
                         }
 

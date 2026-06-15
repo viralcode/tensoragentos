@@ -925,9 +925,8 @@ public:
         QString home = pw ? QString::fromUtf8(pw->pw_dir) : "/home/ainux";
         QString runtimeDir = QString("/run/user/%1").arg(uid);
 
-        // WhaleOS compositor socket (see main.qml socketName: "whaleos-0")
-        // Native apps MUST connect here, not to Cage's wayland-0
-        QString waylandDisplay = "whaleos-0";
+        // WhaleOS compositor socket (see main.qml socketName: "wayland-0")
+        QString waylandDisplay = "wayland-0";
 
         // Check if our compositor socket exists
         QString socketPath = runtimeDir + "/" + waylandDisplay;
