@@ -351,21 +351,14 @@ Rectangle {
             }
         }
 
-        // Remove from openWindows list (lives on desktopRoot in main.qml)
+        // Remove from openWindows list on root
         try {
-            // Walk up parent chain to find the component with openWindows
-            var target = parent;
-            while (target && typeof target.openWindows === "undefined") {
-                target = target.parent;
+            var wins = root.openWindows;
+            var newWins = [];
+            for (var i = 0; i < wins.length; i++) {
+                if (wins[i].appId !== appId) newWins.push(wins[i]);
             }
-            if (target && target.openWindows) {
-                var wins = target.openWindows;
-                var newWins = [];
-                for (var i = 0; i < wins.length; i++) {
-                    if (wins[i].appId !== appId) newWins.push(wins[i]);
-                }
-                target.openWindows = newWins;
-            }
+            root.openWindows = newWins;
         } catch(e) {
             console.log("WhaleOS: openWindows cleanup: " + e);
         }
