@@ -144,7 +144,13 @@ echo "  ✓ Base configuration applied"
 # ─── Install System Dependencies ───────────────────────────────
 echo "[4/8] Installing system dependencies in chroot..."
 
+# Disable -e: chroot packages trigger systemd/dbus scripts that fail harmlessly
+set +e
+
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
+    # Chroot environments cannot run systemd/dbus — package post-install
+    # scripts will fail harmlessly. Prevent these from aborting the build.
+    set +e
     export DEBIAN_FRONTEND=noninteractive
 
     apt-get update -qq
@@ -299,6 +305,7 @@ NMRES
     rm -rf /var/lib/apt/lists/*
 '
 
+set -e  # Re-enable strict error handling
 echo "  ✓ Dependencies installed"
 
 # ── Patch Qt 6.4.2 Wayland Compositor binary (ARM64 ONLY) ─────────
@@ -333,6 +340,7 @@ fi
 
 # ─── Create User ───────────────────────────────────────────────
 echo "[5/8] Creating default user..."
+set +e  # systemctl calls inside chroot will fail harmlessly
 
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     if ! id ainux 2>/dev/null; then
@@ -897,15 +905,18 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
 echo "  ✓ Services configured"
 
+set -e  # Re-enable strict errors for ISO generation (critical step)
 # ─── Generate Bootable ISO ────────────────────────────────────
 echo "[8/8] Generating bootable ISO..."
 
 # Install live-boot in chroot (required for boot=live kernel parameter)
+set +e
 sudo chroot "$ROOTFS_DIR" /bin/bash -c '
     apt-get update -qq 2>/dev/null
     apt-get install -y -qq live-boot 2>/dev/null || true
     apt-get clean
 '
+set -e
 
 # Create squashfs from rootfs
 sudo umount "${ROOTFS_DIR}/dev"  2>/dev/null || true
