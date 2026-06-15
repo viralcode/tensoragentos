@@ -18,7 +18,7 @@ Rectangle {
     property var userInstalledApps: []
 
     property var nativeApps: [
-        { appId: "native-chromium", label: "Chromium", desc: "Web browser", cmd: "chromium --ozone-platform=wayland 2>/dev/null || chromium-browser --ozone-platform=wayland", searchName: "Chromium", iconType: "chromium", accent: "#4285f4", pkg: "chromium", builtIn: true },
+        { appId: "native-firefox", label: "Firefox", desc: "Web browser", cmd: "firefox --display=:0", searchName: "firefox", iconType: "chromium", accent: "#ff6611", pkg: "firefox", builtIn: true },
         { appId: "native-mousepad", label: "Editor", desc: "Text editor", cmd: "mousepad", searchName: "Mousepad", iconType: "editor", accent: "#4ade80", pkg: "mousepad", builtIn: true },
         { appId: "native-galculator", label: "Calculator", desc: "Desktop calculator", cmd: "galculator", searchName: "galculator", iconType: "calculator", accent: "#c084fc", pkg: "galculator", builtIn: true },
         { appId: "native-libreoffice-writer", label: "Writer", desc: "Word processor", cmd: "libreoffice --writer", searchName: "libreoffice", iconType: "office-writer", accent: "#2563eb", pkg: "libreoffice-writer", builtIn: true },
