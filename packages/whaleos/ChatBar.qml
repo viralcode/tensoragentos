@@ -1106,6 +1106,7 @@ Rectangle {
             TextInput {
                 id: chatInput
                 Layout.fillWidth: true
+                clip: true
                 verticalAlignment: TextInput.AlignVCenter
                 color: "#e4e4e7"; font.pixelSize: Math.round(14 * root.sf)
 
