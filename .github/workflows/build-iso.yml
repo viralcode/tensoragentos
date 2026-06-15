@@ -47,6 +47,7 @@ jobs:
 
       - name: Compress ISO
         run: |
+          sudo chown $(id -u):$(id -g) tensoragent-os-x86_64.iso
           ls -lh tensoragent-os-x86_64.iso
           xz -T0 -6 tensoragent-os-x86_64.iso
           ls -lh tensoragent-os-x86_64.iso.xz
@@ -100,6 +101,7 @@ jobs:
 
       - name: Compress ISO
         run: |
+          sudo chown $(id -u):$(id -g) tensoragent-os-aarch64.iso
           ls -lh tensoragent-os-aarch64.iso
           xz -T0 -6 tensoragent-os-aarch64.iso
           ls -lh tensoragent-os-aarch64.iso.xz

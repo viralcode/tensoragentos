@@ -1330,3 +1330,4 @@
 2026-06-15T02:05:32.036Z In(05) vmx VNET: MACVNetLinkStateEventHandler: event, up:1, adapter:0
 2026-06-15T02:05:32.062Z In(05) host-39358774 VNET: MACVNetPortVirtApiPrimaryIfaceChanged: Global state callback for adapter: 0, primary if: en1
 2026-06-15T02:05:32.062Z In(05) vmx VNET: MACVNetLinkStateEventHandler: event, up:1, adapter:0
+2026-06-15T02:35:53.193Z In(05) vmx DISKLIB-LIB   : numIOs = 100000 numMergedIOs = 19809 numSplitIOs = 946

@@ -286,7 +286,7 @@ NMCONF
     systemctl enable systemd-networkd 2>/dev/null || true
     systemctl enable systemd-resolved  2>/dev/null || true
 
-    # Point /etc/resolv.conf at systemd-resolved's stub resolver.
+    # Point /etc/resolv.conf at systemd-resolved stub resolver.
     # This is a symlink — NM will not overwrite it, it manages DNS separately.
     rm -f /etc/resolv.conf
     ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
