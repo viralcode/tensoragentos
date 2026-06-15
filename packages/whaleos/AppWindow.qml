@@ -371,7 +371,7 @@ Rectangle {
         }
 
         // Hide immediately — QML Repeater will destroy when removed from openWindows
-        root.visible = false;
+        appWindow.visible = false;
     }
 
     // ── Resize Handle ──
