@@ -32,3 +32,5 @@ packages/openwhale/repo/
 
 # Include openwhale source (override node_modules exclusion)
 !packages/openwhale/src/
+vmware_build/ainux.vmdk
+vmware_build/*.vmdk
