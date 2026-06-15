@@ -72,6 +72,24 @@ Rectangle {
         }
     }
 
+    // Long-running command (apt install) — uses async execution with signal-based completion
+    property var _asyncCallbacks: ({})
+    function helperExecLong(cmd, callback) {
+        var cmdId = sysManager.runCommandAsync(cmd, "/tmp");
+        if (callback) _asyncCallbacks[cmdId] = callback;
+    }
+    Connections {
+        target: sysManager
+        function onCommandFinished(cmdId, exitCode, cwd) {
+            if (nativeAppsLauncher._asyncCallbacks[cmdId]) {
+                // Read the accumulated output (exitCode tells us success/fail)
+                var cb = nativeAppsLauncher._asyncCallbacks[cmdId];
+                delete nativeAppsLauncher._asyncCallbacks[cmdId];
+                cb(exitCode === 0 ? "ok" : "fail", exitCode);
+            }
+        }
+    }
+
     function refreshInstalled() {
         helperExec("dpkg --get-selections | grep -w install | awk '{print $1}'", function(output) {
             if (output && output.trim().length > 0) {
@@ -107,7 +125,7 @@ Rectangle {
     function searchStore(query) {
         if (!query || query.trim().length < 2) { storeResults = []; return; }
         storeLoading = true;
-        // Search by section — only show GUI apps (graphics, editors, x11, gnome, kde, games, video, sound, net, web, mail, office, utils)
+        // Search by section — only show GUI desktop apps (exclude CLI tools)
         var safeQuery = query.trim().replace(/'/g, "");
         var cmd = "awk -v query='" + safeQuery + "' '" +
             "BEGIN { IGNORECASE=1 } " +
@@ -115,7 +133,7 @@ Rectangle {
             "/^Section:/ { s=$2 } " +
             "/^Description:/ { " +
             "  d=substr($0, 14); " +
-            "  if (p && (p ~ query || d ~ query) && s ~ /(graphics|editors|x11|gnome|kde|xfce|video|sound|games|net|web|mail|office|utils|misc)/ && p !~ /^(lib|python[23]?-|gir[0-9]|r-cran|golang-)/ && p !~ /-(dev|dbg|doc|data)$/) { " +
+            "  if (p && (p ~ query || d ~ query) && s ~ /(graphics|x11|gnome|kde|xfce|video|sound|games|web|mail|office)/ && p !~ /^(lib|python[23]?-|gir[0-9]|r-cran|golang-|texlive|fonts-)/ && p !~ /-(dev|dbg|doc|data|common|core)$/) { " +
             "    print p \" - \" d " +
             "  } " +
             "} " +
@@ -158,21 +176,13 @@ Rectangle {
 
     function installPkg(pkg, desc) {
         var b = busyPkgs.slice(); b.push(pkg); busyPkgs = b;
-        busyPkgStatus = "Downloading " + pkg + "...";
-        root.showToast("Installing " + pkg + "...", "info");
+        busyPkgStatus = "Installing " + pkg + "...";
+        root.showToast("Installing " + pkg + "... (this may take a moment)", "info");
 
-        // Run apt-get install, then verify with dpkg -s
-        var cmd = "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y " + pkg + " 2>&1; echo EXIT_CODE=$?";
-        helperExec(cmd, function(output) {
+        // Use async execution — apt-get install can take 30+ seconds
+        var cmd = "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y " + pkg + " 2>&1";
+        helperExecLong(cmd, function(result, exitCode) {
             busyPkgStatus = "Verifying " + pkg + "...";
-
-            // Check if apt-get reported errors
-            if (output && (output.indexOf("E: Unable to locate") >= 0 || output.indexOf("E: Package") >= 0)) {
-                var nb = []; for (var i = 0; i < busyPkgs.length; i++) { if (busyPkgs[i] !== pkg) nb.push(busyPkgs[i]); } busyPkgs = nb;
-                busyPkgStatus = "";
-                root.showToast("Package '" + pkg + "' not found", "error");
-                return;
-            }
 
             // Verify the package is really installed
             helperExec("dpkg -s " + pkg + " 2>&1 | grep 'Status:'", function(verify) {
@@ -187,13 +197,15 @@ Rectangle {
 
                 root.showToast(pkg + " installed!", "success");
 
-                helperExec("find /usr/share/applications -name '*" + pkg + "*.desktop' -o -name '" + pkg + ".desktop' 2>/dev/null | head -1", function(desktop) {
+                // Find the .desktop file to get the proper launch command
+                helperExec("find /usr/share/applications -iname '*" + pkg + "*.desktop' 2>/dev/null | head -1", function(desktop) {
                     var launchCmd = pkg;
                     var appLabel = pkg;
                     var appDesc = desc || pkg;
 
                     if (desktop && desktop.trim().length > 0) {
-                        helperExec("grep -P '^(Exec|Name)=' '" + desktop.trim() + "' | grep -v 'Name\\[' | head -4", function(deskData) {
+                        // Parse Exec= and Name= from the .desktop file
+                        helperExec("grep -E '^(Exec|Name)=' '" + desktop.trim() + "' | grep -v 'Name\\[' | head -4", function(deskData) {
                             if (deskData) {
                                 var lines = deskData.trim().split("\n");
                                 for (var k = 0; k < lines.length; k++) {
@@ -204,6 +216,8 @@ Rectangle {
                             addUserApp(pkg, appLabel, appDesc, launchCmd);
                         });
                     } else {
+                        // No .desktop file = CLI app — wrap in xterm so it has a terminal
+                        launchCmd = "xterm -e " + pkg;
                         addUserApp(pkg, appLabel, appDesc, launchCmd);
                     }
                 });
