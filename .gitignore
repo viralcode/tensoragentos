@@ -34,3 +34,7 @@ packages/openwhale/repo/
 !packages/openwhale/src/
 vmware_build/ainux.vmdk
 vmware_build/*.vmdk
+*.qcow2.xz
+*.vmdk
+*.xz.part*
+vmware_build/

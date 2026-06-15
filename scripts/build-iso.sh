@@ -79,9 +79,10 @@ if [ -n "$MISSING" ]; then
     exit 1
 fi
 
-# Cross-compilation check for aarch64
-if [ "$ARCH" = "aarch64" ] && ! command -v qemu-aarch64-static &> /dev/null; then
-    echo "ERROR: qemu-user-static needed for aarch64 cross-builds"
+# Cross-compilation check for aarch64 (only needed when host is not ARM64)
+HOST_ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ] && [ "$HOST_ARCH" != "aarch64" ] && ! command -v qemu-aarch64-static &> /dev/null; then
+    echo "ERROR: qemu-user-static needed for aarch64 cross-builds on $HOST_ARCH"
     echo "Install: sudo apt install qemu-user-static binfmt-support"
     exit 1
 fi
@@ -1023,7 +1024,7 @@ if [ "$ARCH" = "x86_64" ]; then
         --fonts="" \
         "boot/grub/grub.cfg=${ISO_DIR}/boot/grub/grub.cfg"
 else
-    # aarch64: build inside chroot (host doesn't have arm64 grub modules)
+    # aarch64: build inside chroot (grub arm64-efi modules are in the rootfs)
     sudo cp "${ISO_DIR}/boot/grub/grub.cfg" "${ROOTFS_DIR}/tmp/grub.cfg"
     sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         grub-mkstandalone \
