@@ -88,7 +88,11 @@ Rectangle {
     }
 
     function loadFeatured() {
-        helperExec("apt-cache search --names-only 'firefox\\|gimp\\|vlc\\|inkscape\\|blender\\|audacity\\|krita\\|thunderbird\\|filezilla\\|mpv\\|geany\\|meld\\|gparted\\|keepassxc\\|shotwell\\|rhythmbox\\|supertuxkart\\|hexchat\\|htop\\|neofetch' 2>/dev/null | head -25", function(output) {
+        // Curated list of popular GUI desktop applications
+        var cmd = "apt-cache search --names-only " +
+            "'gimp\\|vlc\\|inkscape\\|blender\\|audacity\\|krita\\|thunderbird\\|filezilla\\|mpv\\|geany\\|meld\\|gparted\\|keepassxc\\|shotwell\\|rhythmbox\\|hexchat\\|drawing\\|cheese\\|gnome-maps\\|transmission-gtk\\|celluloid\\|handbrake\\|obs-studio\\|kdenlive\\|darktable' " +
+            "2>/dev/null | grep -vE '^(lib|python[23]?-|gir[0-9])' | grep -vE '(-dev |-dbg |-doc |-data )' | head -25";
+        helperExec(cmd, function(output) {
             if (!output || output.trim().length === 0) return;
             var lines = output.trim().split("\n");
             var results = [];
@@ -103,7 +107,20 @@ Rectangle {
     function searchStore(query) {
         if (!query || query.trim().length < 2) { storeResults = []; return; }
         storeLoading = true;
-        helperExec("apt-cache search '" + query.trim() + "' 2>/dev/null | head -50", function(output) {
+        // Search by section — only show GUI apps (graphics, editors, x11, gnome, kde, games, video, sound, net, web, mail, office, utils)
+        var safeQuery = query.trim().replace(/'/g, "");
+        var cmd = "awk -v query='" + safeQuery + "' '" +
+            "BEGIN { IGNORECASE=1 } " +
+            "/^Package:/ { p=$2; s=\"\"; d=\"\" } " +
+            "/^Section:/ { s=$2 } " +
+            "/^Description:/ { " +
+            "  d=substr($0, 14); " +
+            "  if (p && (p ~ query || d ~ query) && s ~ /(graphics|editors|x11|gnome|kde|xfce|video|sound|games|net|web|mail|office|utils|misc)/ && p !~ /^(lib|python[23]?-|gir[0-9]|r-cran|golang-)/ && p !~ /-(dev|dbg|doc|data)$/) { " +
+            "    print p \" - \" d " +
+            "  } " +
+            "} " +
+            "' /var/lib/apt/lists/*_Packages 2>/dev/null | head -40";
+        helperExec(cmd, function(output) {
             storeLoading = false;
             if (!output || output.trim().length === 0) { storeResults = []; return; }
             var lines = output.trim().split("\n");
