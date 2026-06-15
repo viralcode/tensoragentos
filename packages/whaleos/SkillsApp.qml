@@ -244,8 +244,8 @@ Rectangle {
             // Tab bar
             Rectangle {
                 width: tabRow.width + Math.round(6 * root.sf); height: Math.round(40 * root.sf)
-                radius: Math.round(10 * root.sf); color: Qt.rgba(0, 0, 0, 0.03)
-                border.color: root.borderColor; border.width: 1
+                radius: Math.round(10 * root.sf); color: Qt.rgba(1, 1, 1, 0.04)
+                border.color: Qt.rgba(1, 1, 1, 0.06); border.width: 1
 
                 Row {
                     id: tabRow; anchors.centerIn: parent; spacing: Math.round(4 * root.sf)
@@ -281,8 +281,7 @@ Rectangle {
                             RowLayout {
                                 width: parent.width; spacing: Math.round(10 * root.sf)
                                 Rectangle {
-                                    width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8; color: Qt.rgba(0,0,0,0.04)
-                                    border.color: root.borderColor; border.width: 1
+                                    width: Math.round(32 * root.sf); height: Math.round(32 * root.sf); radius: 8; color: Qt.rgba(1,1,1,0.06)
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.icon || "\uf0e7"
@@ -298,7 +297,7 @@ Rectangle {
                                 }
                                 Rectangle {
                                     width: statusLabel.width + 14; height: Math.round(22 * root.sf); radius: 4
-                                    color: modelData.configured ? Qt.rgba(0.13,0.77,0.37,0.15) : Qt.rgba(0,0,0,0.04)
+                                    color: modelData.configured ? Qt.rgba(0.13,0.77,0.37,0.15) : Qt.rgba(1,1,1,0.05)
                                     Text { id: statusLabel; anchors.centerIn: parent; text: modelData.configured ? "Connected" : "Not configured"; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.DemiBold; color: modelData.configured ? root.accentGreen : root.textMuted }
                                 }
                             }
@@ -306,14 +305,14 @@ Rectangle {
                                 width: parent.width; spacing: Math.round(6 * root.sf)
                                 Rectangle {
                                     Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: root.radiusSm
-                                    color: Qt.rgba(0,0,0,0.04); border.color: skillKeyInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                                    color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
                                     TextInput {
                                         id: skillKeyInput; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
                                         color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true
                                         echoMode: TextInput.Password; verticalAlignment: TextInput.AlignVCenter
                                         Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter
                                             text: modelData.configured ? "••••••••  (enter new key to update)" : "Enter API key..."
-                                            color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                                            color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
                                     }
                                 }
                                 // Connect button — only shown when not configured or has new input
@@ -376,7 +375,7 @@ Rectangle {
                             }
                             Rectangle {
                                 width: Math.round(50 * root.sf); height: Math.round(26 * root.sf); radius: root.radiusSm
-                                color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                                color: Qt.rgba(1,1,1,0.06); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
                                 Text { anchors.centerIn: parent; text: "Edit"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: openSkillEditor(modelData.path || "") }
                             }
@@ -418,7 +417,7 @@ Rectangle {
 
                 Rectangle {
                     width: parent.width; height: Math.round(36 * root.sf); radius: root.radiusSm
-                    color: Qt.rgba(0,0,0,0.04); border.color: skillNameField.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                    color: Qt.rgba(0,0,0,0.4); border.color: skillNameField.activeFocus ? root.accentBlue : Qt.rgba(1,1,1,0.12); border.width: 1
                     TextInput {
                         id: skillNameField; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf)
                         color: root.textPrimary; font.pixelSize: Math.round(13 * root.sf)
@@ -428,7 +427,7 @@ Rectangle {
                         Keys.onReturnPressed: doCreateSkill(text)
                         Keys.onEscapePressed: nameDialogOpen = false
                         Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter
-                               text: "e.g. My Custom Skill"; color: Qt.rgba(0,0,0,0.3)
+                               text: "e.g. My Custom Skill"; color: Qt.rgba(1,1,1,0.2)
                                font.pixelSize: Math.round(13 * root.sf); visible: !parent.text }
                     }
                 }
@@ -437,7 +436,7 @@ Rectangle {
                     width: parent.width; spacing: Math.round(8 * root.sf)
                     Rectangle {
                         Layout.fillWidth: true; height: Math.round(34 * root.sf); radius: root.radiusSm
-                        color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                        color: Qt.rgba(1,1,1,0.06); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
                         Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(12 * root.sf); color: root.textSecondary }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: nameDialogOpen = false }
                     }
@@ -492,7 +491,7 @@ Rectangle {
                     ]
                     Rectangle {
                         width: Math.round(32 * root.sf); height: Math.round(24 * root.sf); radius: 4
-                        color: tbMouse.containsMouse ? Qt.rgba(0,0,0,0.08) : Qt.rgba(0,0,0,0.03)
+                        color: tbMouse.containsMouse ? Qt.rgba(1,1,1,0.1) : Qt.rgba(1,1,1,0.04)
                         Text { anchors.centerIn: parent; text: modelData.label; font.pixelSize: Math.round(10 * root.sf); font.weight: Font.Bold; color: root.textSecondary; font.family: "monospace" }
                         MouseArea { id: tbMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { skillEditor.insert(skillEditor.cursorPosition, modelData.insert); } }
                     }
@@ -503,7 +502,7 @@ Rectangle {
 
             Rectangle {
                 width: parent.width; height: parent.height - 100
-                radius: root.radiusMd; color: Qt.rgba(255,255,255,0.6)
+                radius: root.radiusMd; color: Qt.rgba(0,0,0,0.5)
                 border.color: root.borderColor; border.width: 1
 
                 RowLayout {
@@ -511,9 +510,9 @@ Rectangle {
 
                     // Line numbers
                     Rectangle {
-                        Layout.fillHeight: true; width: Math.round(40 * root.sf); color: Qt.rgba(0,0,0,0.05)
+                        Layout.fillHeight: true; width: Math.round(40 * root.sf); color: Qt.rgba(0,0,0,0.3)
                         radius: root.radiusMd
-                        Rectangle { anchors.right: parent.right; width: Math.round(1 * root.sf); height: parent.height; color: root.borderColor }
+                        Rectangle { anchors.right: parent.right; width: Math.round(1 * root.sf); height: parent.height; color: Qt.rgba(1,1,1,0.06) }
 
                         Flickable {
                             id: lineNumFlick; anchors.fill: parent; anchors.margins: Math.round(4 * root.sf)
@@ -527,7 +526,7 @@ Rectangle {
                                     Text {
                                         width: parent.width; height: skillEditor.font.pixelSize + 6
                                         text: (index + 1); font.pixelSize: Math.round(11 * root.sf); font.family: "monospace"
-                                        color: root.textMuted; horizontalAlignment: Text.AlignRight
+                                        color: Qt.rgba(1,1,1,0.25); horizontalAlignment: Text.AlignRight
                                         rightPadding: 6
                                     }
                                 }

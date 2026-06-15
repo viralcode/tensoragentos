@@ -308,8 +308,8 @@ Rectangle {
                         Rectangle {
                             width: Math.round(44 * root.sf); height: Math.round(44 * root.sf); radius: Math.round(12 * root.sf)
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.2) : Qt.rgba(0, 0, 0, 0.03) }
-                                GradientStop { position: 1.0; color: ollamaOnline ? Qt.rgba(0.08, 0.5, 0.24, 0.15) : Qt.rgba(0, 0, 0, 0.01) }
+                                GradientStop { position: 0.0; color: ollamaOnline ? Qt.rgba(0.13, 0.77, 0.37, 0.2) : Qt.rgba(1, 1, 1, 0.08) }
+                                GradientStop { position: 1.0; color: ollamaOnline ? Qt.rgba(0.08, 0.5, 0.24, 0.15) : Qt.rgba(1, 1, 1, 0.03) }
                             }
 
                             Canvas {
@@ -382,8 +382,8 @@ Rectangle {
                         // Refresh button
                         Rectangle {
                             width: Math.round(34 * root.sf); height: Math.round(34 * root.sf); radius: Math.round(10 * root.sf)
-                            color: refreshMa.containsMouse ? Qt.rgba(0,0,0,0.06) : Qt.rgba(0,0,0,0.03)
-                            border.color: root.borderColor; border.width: 1
+                            color: refreshMa.containsMouse ? Qt.rgba(1,1,1,0.1) : Qt.rgba(1,1,1,0.04)
+                            border.color: Qt.rgba(1,1,1,0.06); border.width: 1
 
                             Text {
                                 anchors.centerIn: parent; text: "↻"
@@ -414,7 +414,7 @@ Rectangle {
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "Ollama service is not running"
-                                font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: root.accentRed
+                                font.pixelSize: Math.round(12 * root.sf); font.weight: Font.Medium; color: "#fca5a5"
                             }
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -428,7 +428,7 @@ Rectangle {
                     Rectangle {
                         width: parent.width; height: modelsListCol.height + Math.round(20 * root.sf)
                         radius: Math.round(10 * root.sf)
-                        color: root.bgCard; border.color: root.borderColor; border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.2); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
                         visible: ollamaOnline
 
                         Column {
@@ -448,7 +448,7 @@ Rectangle {
                             }
 
                             // Divider
-                            Rectangle { width: parent.width; height: 1; color: root.borderColor }
+                            Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.06) }
 
                             // No models
                             Column {
@@ -473,7 +473,7 @@ Rectangle {
                                 model: ollamaModels
                                 Rectangle {
                                     width: modelsListCol.width; height: Math.round(42 * root.sf); radius: Math.round(8 * root.sf)
-                                    color: modelRowMa.containsMouse ? Qt.rgba(0,0,0,0.03) : "transparent"
+                                    color: modelRowMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -490,7 +490,7 @@ Rectangle {
                                         Text {
                                             text: modelData.name
                                             font.pixelSize: Math.round(13 * root.sf)
-                                            font.weight: Font.Medium; font.family: "monospace"; color: root.textPrimary
+                                            font.weight: Font.Medium; font.family: "monospace"; color: "#ffffff"
                                             Layout.fillWidth: true
                                         }
 
@@ -540,7 +540,7 @@ Rectangle {
                                         // Delete button
                                         Rectangle {
                                             width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(8 * root.sf)
-                                            color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(0,0,0,0.03)
+                                            color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : Qt.rgba(1,1,1,0.04)
                                             border.color: delMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.2) : "transparent"; border.width: 1
 
                                             Text {
@@ -569,7 +569,7 @@ Rectangle {
                     // ── Pull New Model ──
                     Rectangle {
                         width: parent.width; height: Math.round(44 * root.sf); radius: Math.round(10 * root.sf)
-                        color: Qt.rgba(0, 0, 0, 0.04); border.color: root.borderColor; border.width: 1
+                        color: Qt.rgba(0, 0, 0, 0.2); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
                         visible: ollamaOnline
 
                         RowLayout {
@@ -577,18 +577,18 @@ Rectangle {
 
                             Rectangle {
                                 Layout.fillWidth: true; height: Math.round(32 * root.sf); radius: Math.round(8 * root.sf)
-                                color: Qt.rgba(0, 0, 0, 0.02); border.color: pullInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                                color: Qt.rgba(0, 0, 0, 0.3); border.color: Qt.rgba(1,1,1,0.06); border.width: 1
 
                                 TextInput {
                                     id: pullInput; anchors.fill: parent; anchors.leftMargin: Math.round(12 * root.sf); anchors.rightMargin: Math.round(12 * root.sf)
-                                    color: root.textPrimary; font.pixelSize: Math.round(13 * root.sf); font.family: "monospace"
+                                    color: "#fff"; font.pixelSize: Math.round(13 * root.sf); font.family: "monospace"
                                     clip: true; verticalAlignment: TextInput.AlignVCenter
                                     Keys.onReturnPressed: pullOllamaModel(pullInput.text.trim())
 
                                     Text {
                                         anchors.fill: parent; verticalAlignment: Text.AlignVCenter
                                         text: "Model name (e.g. llama3.2, mistral)"
-                                        color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf)
+                                        color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf)
                                         visible: !parent.text
                                     }
                                 }
@@ -597,7 +597,7 @@ Rectangle {
                             Rectangle {
                                 width: pullBtnRow.width + Math.round(20 * root.sf); height: Math.round(32 * root.sf)
                                 radius: Math.round(8 * root.sf)
-                                color: ollamaPulling ? Qt.rgba(0,0,0,0.03) : (pullBtnMa.containsMouse ? "#16a34a" : "#22c55e")
+                                color: ollamaPulling ? Qt.rgba(1,1,1,0.06) : (pullBtnMa.containsMouse ? "#16a34a" : "#22c55e")
                                 enabled: !ollamaPulling
 
                                 Row {
@@ -637,7 +637,7 @@ Rectangle {
                             }
                             Rectangle {
                                 width: parent.width; height: Math.round(6 * root.sf)
-                                radius: Math.round(3 * root.sf); color: Qt.rgba(0,0,0,0.06)
+                                radius: Math.round(3 * root.sf); color: Qt.rgba(1,1,1,0.08)
                                 Rectangle {
                                     width: parent.width * ollamaPullProgress
                                     height: parent.height; radius: parent.radius
@@ -675,8 +675,8 @@ Rectangle {
                                 Rectangle {
                                     width: quickCol.width + Math.round(24 * root.sf); height: Math.round(38 * root.sf)
                                     radius: Math.round(10 * root.sf)
-                                    color: quickMa.containsMouse ? Qt.rgba(0,0,0,0.05) : Qt.rgba(0,0,0,0.02)
-                                    border.color: quickMa.containsMouse ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : root.borderColor
+                                    color: quickMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.03)
+                                    border.color: quickMa.containsMouse ? Qt.rgba(0.13, 0.77, 0.37, 0.3) : Qt.rgba(1,1,1,0.08)
                                     border.width: 1
 
                                     Row {
@@ -685,7 +685,7 @@ Rectangle {
                                         Text {
                                             text: modelData.name
                                             font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold
-                                            font.family: "monospace"; color: root.textPrimary
+                                            font.family: "monospace"; color: "#e2e8f0"
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         Text {
@@ -741,7 +741,7 @@ Rectangle {
                             width: parent.width; spacing: Math.round(10 * root.sf)
                             Rectangle {
                                 width: Math.round(36 * root.sf); height: Math.round(36 * root.sf); radius: 10
-                                color: Qt.rgba(0,0,0,0.03)
+                                color: Qt.rgba(1,1,1,0.06)
 
                                 property string pType: modelData.type
                                 property color brandColor: pType === "anthropic" ? "#d97706" :
@@ -787,13 +787,13 @@ Rectangle {
                         // Model dropdown selector
                         Rectangle {
                             id: modelDropdown; width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm
-                            color: Qt.rgba(0,0,0,0.04); border.color: provCard.dropOpen ? root.accentBlue : root.borderColor; border.width: 1
+                            color: Qt.rgba(0,0,0,0.3); border.color: provCard.dropOpen ? root.accentBlue : Qt.rgba(1,1,1,0.12); border.width: 1
                             visible: modelData.models && modelData.models.length > 0
 
                             RowLayout {
                                 anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: 10
                                 Text { text: "AI Model:"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                                Text { text: provCard.selectedModel; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary; font.family: "monospace"; Layout.fillWidth: true }
+                                Text { text: provCard.selectedModel; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#ffffff"; font.family: "monospace"; Layout.fillWidth: true }
                                 Text { text: provCard.dropOpen ? "\u25B2" : "\u25BC"; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted }
                             }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: provCard.dropOpen = !provCard.dropOpen }
@@ -803,8 +803,8 @@ Rectangle {
                         Rectangle {
                             visible: provCard.dropOpen; z: 200
                             width: parent.width; height: dropdownCol.height + 8
-                            radius: root.radiusSm; color: root.bgElevated
-                            border.color: root.accentBlue; border.width: 1
+                            radius: root.radiusSm; color: "#1a1a2e"
+                            border.color: Qt.rgba(0.39,0.51,0.97,0.3); border.width: 1
 
                             Column {
                                 id: dropdownCol; anchors.left: parent.left; anchors.right: parent.right
@@ -814,11 +814,11 @@ Rectangle {
                                     model: modelData.models || []
                                     Rectangle {
                                         width: dropdownCol.width; height: Math.round(28 * root.sf); radius: 4
-                                        color: dOptMouse.containsMouse ? Qt.rgba(0,0,0,0.04) : (provCard.selectedModel === modelData ? Qt.rgba(0.39,0.51,0.97,0.12) : "transparent")
+                                        color: dOptMouse.containsMouse ? Qt.rgba(1,1,1,0.08) : (provCard.selectedModel === modelData ? Qt.rgba(0.39,0.51,0.97,0.12) : "transparent")
 
                                         RowLayout {
                                             anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: 10
-                                            Text { text: modelData; font.pixelSize: Math.round(11 * root.sf); color: root.textPrimary; font.family: "monospace"; Layout.fillWidth: true }
+                                            Text { text: modelData; font.pixelSize: Math.round(11 * root.sf); color: "#ffffff"; font.family: "monospace"; Layout.fillWidth: true }
                                             Text { text: "\u2713"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Bold; color: root.accentBlue; visible: provCard.selectedModel === modelData }
                                         }
                                         MouseArea {
@@ -835,12 +835,12 @@ Rectangle {
                             width: parent.width; spacing: Math.round(6 * root.sf)
                             Rectangle {
                                 Layout.fillWidth: true; height: Math.round(32 * root.sf); radius: root.radiusSm
-                                color: Qt.rgba(0,0,0,0.04); border.color: keyInput.activeFocus ? root.accentBlue : root.borderColor; border.width: 1
+                                color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
                                 TextInput {
                                     id: keyInput; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf)
-                                    color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true
+                                    color: "#ffffff"; font.pixelSize: Math.round(12 * root.sf); clip: true
                                     echoMode: TextInput.Password; verticalAlignment: TextInput.AlignVCenter
-                                    Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter; text: modelData.hasKey ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : "Enter API key..."; color: Qt.rgba(0,0,0,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
+                                    Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter; text: modelData.hasKey ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : "Enter API key..."; color: Qt.rgba(1,1,1,0.3); font.pixelSize: Math.round(12 * root.sf); visible: !parent.text }
                                 }
                             }
                             Rectangle {
@@ -850,8 +850,8 @@ Rectangle {
                             }
                             Rectangle {
                                 width: Math.round(44 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm
-                                color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
-                                Text { anchors.centerIn: parent; text: "Test"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
+                                color: Qt.rgba(1,1,1,0.06); border.color: Qt.rgba(1,1,1,0.08); border.width: 1
+                                Text { anchors.centerIn: parent; text: "Test"; font.pixelSize: Math.round(11 * root.sf); color: "#e0e0e0" }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: testProvider(modelData.type, keyInput.text) }
                             }
                         }
@@ -861,7 +861,7 @@ Rectangle {
                             width: parent.width; height: Math.round(32 * root.sf); radius: root.radiusSm
                             color: {
                                 if (activateMa.containsMouse) return Qt.darker("#22c55e", 1.15);
-                                return modelData.hasKey ? "#22c55e" : Qt.rgba(0,0,0,0.04);
+                                return modelData.hasKey ? "#22c55e" : Qt.rgba(1,1,1,0.08);
                             }
 
                             RowLayout {

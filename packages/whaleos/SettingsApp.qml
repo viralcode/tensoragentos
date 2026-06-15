@@ -321,11 +321,10 @@ Rectangle {
             var modeline = (cvtResult.stdout || "").trim();
             if (modeline) {
                 // Add mode then retry
-                var outputName = sysManager.getActiveOutputName();
                 sysManager[runFn](
                     "xrandr --newmode " + modeline + " 2>/dev/null; " +
-                    "xrandr --addmode " + outputName + " '" + modeName + "' 2>/dev/null; " +
-                    "xrandr --output " + outputName + " --mode '" + modeName + "' 2>/dev/null", "/"
+                    "xrandr --addmode XWAYLAND0 '" + modeName + "' 2>/dev/null; " +
+                    "xrandr --output XWAYLAND0 --mode '" + modeName + "' 2>/dev/null", "/"
                 );
                 resApplied = true;
                 revertCountdown = 15;
@@ -408,25 +407,20 @@ Rectangle {
     }
 
     RowLayout {
-        anchors.fill: parent; spacing: 0
+        anchors.fill: parent; spacing: Math.round(0 * root.sf)
         Rectangle {
-            Layout.fillHeight: true; Layout.preferredWidth: Math.round(180 * root.sf); color: Qt.rgba(0.96, 0.96, 0.97, 0.95)
-            Rectangle { anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 1; color: root.borderColor }
+            Layout.fillHeight: true; Layout.preferredWidth: Math.round(170 * root.sf); color: Qt.rgba(0,0,0,0.2)
+            Rectangle { anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: Math.round(1 * root.sf); color: root.borderColor }
             Column {
-                anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); anchors.topMargin: Math.round(14 * root.sf); spacing: Math.round(2 * root.sf)
-
-                // Section header
-                Text { text: "SETTINGS"; font.pixelSize: Math.round(9 * root.sf); font.weight: Font.Bold; color: root.textMuted; font.letterSpacing: 1.2; bottomPadding: Math.round(8 * root.sf); leftPadding: Math.round(10 * root.sf) }
-
+                anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); anchors.topMargin: Math.round(10 * root.sf); spacing: Math.round(2 * root.sf)
                 Repeater {
                     model: [{ id: "profile", icon: "\uf007", label: "Profile" }, { id: "users", icon: "\uf0c0", label: "Users" }, { id: "channels", icon: "\uf1e6", label: "Channels" }, { id: "storage", icon: "\uf07b", label: "Storage" }, { id: "display", icon: "\uf108", label: "Display" }]
                     delegate: Rectangle {
-                        width: parent ? parent.width : 150; height: Math.round(36 * root.sf); radius: root.radiusSm
-                        color: activeTab === modelData.id ? Qt.rgba(0.15, 0.39, 0.92, 0.08) : sMa.containsMouse ? Qt.rgba(0,0,0,0.04) : "transparent"
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); spacing: Math.round(10 * root.sf)
-                            Text { text: modelData.icon; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(13 * root.sf); color: activeTab === modelData.id ? root.accentBlue : root.textMuted; Behavior on color { ColorAnimation { duration: 150 } } }
-                            Text { text: modelData.label; font.pixelSize: Math.round(12.5 * root.sf); font.weight: activeTab === modelData.id ? Font.DemiBold : Font.Normal; color: activeTab === modelData.id ? root.textPrimary : root.textSecondary; Behavior on color { ColorAnimation { duration: 150 } } }
+                        width: parent ? parent.width : 150; height: Math.round(34 * root.sf); radius: root.radiusSm
+                        color: activeTab === modelData.id ? Qt.rgba(1,1,1,0.08) : sMa.containsMouse ? Qt.rgba(1,1,1,0.04) : "transparent"
+                        Row { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
+                            Text { text: modelData.icon; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(13 * root.sf); color: root.accentBlue }
+                            Text { text: modelData.label; font.pixelSize: Math.round(13 * root.sf); color: activeTab === modelData.id ? "#fff" : root.textSecondary }
                         }
                         Rectangle { visible: activeTab === modelData.id; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: Math.round(3 * root.sf); height: Math.round(18 * root.sf); radius: 2; color: root.accentBlue }
                         MouseArea { id: sMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: activeTab = modelData.id }
@@ -447,16 +441,16 @@ Rectangle {
                                 Text { anchors.centerIn: parent; text: root.currentUser.charAt(0).toUpperCase(); font.pixelSize: Math.round(20 * root.sf); font.weight: Font.Bold; color: "#fff" }
                             }
                                 Column { spacing: Math.round(2 * root.sf); Layout.fillWidth: true
-                                Text { text: root.currentUser; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                                Text { text: root.currentUser; font.pixelSize: Math.round(16 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                                 Text { text: "Administrator"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
                             }
                             }
                             Rectangle { width: parent.width; height: Math.round(1 * root.sf); color: root.borderColor }
                             Text { text: "Change Password"; font.pixelSize: Math.round(12 * root.sf); color: root.textMuted }
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
-                                Rectangle { Layout.fillWidth: true; height: Math.round(32 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.1); border.width: 1
-                                TextInput { id: pwField; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); echoMode: TextInput.Password; clip: true
-                                Text { visible: !parent.text; text: "New password..."; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle { Layout.fillWidth: true; height: Math.round(32 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                                TextInput { id: pwField; anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: "#fff"; font.pixelSize: Math.round(12 * root.sf); echoMode: TextInput.Password; clip: true
+                                Text { visible: !parent.text; text: "New password..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
                             } }
                                 Rectangle { width: Math.round(65 * root.sf); height: Math.round(32 * root.sf); radius: root.radiusSm; color: root.accentBlue
                                 Text { anchors.centerIn: parent; text: "Update"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
@@ -477,26 +471,26 @@ Rectangle {
                     }
                     Rectangle { visible: showAddUser; width: parent.width; height: aUI.height + 24; radius: root.radiusMd; color: Qt.rgba(0.13,0.77,0.37,0.08); border.color: Qt.rgba(0.13,0.77,0.37,0.2); border.width: 1
                         Column { id: aUI; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
-                            Text { text: "Create New User"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Create New User"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             RowLayout { width: parent.width; spacing: Math.round(8 * root.sf)
                                 Column { Layout.fillWidth: true; spacing: Math.round(4 * root.sf)
                                 Text { text: "Username"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                                Rectangle { width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.1); border.width: 1
-                                TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); clip: true; onTextChanged: newUsername = text
-                                Text { visible: !parent.text; text: "Username..."; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle { width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                                TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: "#fff"; font.pixelSize: Math.round(12 * root.sf); clip: true; onTextChanged: newUsername = text
+                                Text { visible: !parent.text; text: "Username..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
                             } }
                             }
                                 Column { Layout.fillWidth: true; spacing: Math.round(4 * root.sf)
                                 Text { text: "Password"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
-                                Rectangle { width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.1); border.width: 1
-                                TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); echoMode: TextInput.Password; clip: true; onTextChanged: newPassword = text
-                                Text { visible: !parent.text; text: "Password..."; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle { width: parent.width; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                                TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: "#fff"; font.pixelSize: Math.round(12 * root.sf); echoMode: TextInput.Password; clip: true; onTextChanged: newPassword = text
+                                Text { visible: !parent.text; text: "Password..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf); anchors.verticalCenter: parent.verticalCenter }
                             } }
                             }
                             }
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
                             Item { Layout.fillWidth: true }
-                                Rectangle { width: Math.round(55 * root.sf); height: Math.round(26 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                                Rectangle { width: Math.round(55 * root.sf); height: Math.round(26 * root.sf); radius: root.radiusSm; color: Qt.rgba(1,1,1,0.06)
                                 Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: showAddUser = false }
                             }
@@ -513,7 +507,7 @@ Rectangle {
                             Text { anchors.centerIn: parent; text: (modelData.username || "?").charAt(0).toUpperCase(); color: "#fff"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.Medium }
                         }
                             Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                            Text { text: modelData.username || ""; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Medium; color: root.textPrimary }
+                            Text { text: modelData.username || ""; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.Medium; color: "#fff" }
                             Text { text: modelData.role || "user"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
                         }
                             Rectangle { width: Math.round(50 * root.sf); height: Math.round(20 * root.sf); radius: 10; color: Qt.rgba(0.13,0.77,0.37,0.15)
@@ -538,7 +532,7 @@ Rectangle {
                                 Text { anchors.centerIn: parent; text: "\uf232"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#25D366" }
                             }
                                 Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                                Text { text: "WhatsApp"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                                Text { text: "WhatsApp"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                                 Row { spacing: Math.round(6 * root.sf)
                                     Rectangle { visible: waConnected; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: width / 2; color: "#22c55e"; anchors.verticalCenter: parent.verticalCenter
                                         SequentialAnimation on opacity { running: waConnected; loops: Animation.Infinite; NumberAnimation { to: 0.4; duration: 1500 } NumberAnimation { to: 1.0; duration: 1500 } }
@@ -554,14 +548,14 @@ Rectangle {
                                             Text { text: "Connected"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#22c55e" }
                                         }
                                     }
-                                    Rectangle { width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(14 * root.sf); color: waDisMa.containsMouse ? Qt.rgba(0.94,0.27,0.27,0.2) : Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                                    Rectangle { width: Math.round(28 * root.sf); height: Math.round(28 * root.sf); radius: Math.round(14 * root.sf); color: waDisMa.containsMouse ? Qt.rgba(0.94,0.27,0.27,0.2) : Qt.rgba(1,1,1,0.06)
                                         Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: Math.round(10 * root.sf); color: waDisMa.containsMouse ? "#ef4444" : root.textMuted }
                                         MouseArea { id: waDisMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { waConnected = false; root.showToast("WhatsApp disconnected", "success"); } }
                                     }
                                 }
                                 // Not connected: connect / waiting button
-                                Rectangle { visible: !waConnected; width: Math.round(70 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: waConnecting ? Qt.rgba(0,0,0,0.04) : root.accentBlue; border.color: waConnecting ? root.borderColor : "transparent"; border.width: waConnecting ? 1 : 0
-                                Text { anchors.centerIn: parent; text: waConnecting ? "Waiting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: waConnecting ? root.textSecondary : "#fff" }
+                                Rectangle { visible: !waConnected; width: Math.round(70 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: waConnecting ? Qt.rgba(1,1,1,0.08) : root.accentBlue
+                                Text { anchors.centerIn: parent; text: waConnecting ? "Waiting..." : "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: waConnecting ? root.textMuted : "#fff" }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (!waConnected && !waConnecting) connectWhatsApp() }
                             }
                             }
@@ -578,13 +572,13 @@ Rectangle {
                             Text { anchors.centerIn: parent; text: "\uf2c6"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#0088cc" }
                         }
                             Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                            Text { text: "Telegram"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Telegram"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             Text { text: "Connect with bot token"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
                         } }
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
-                            Rectangle { Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.1); border.width: 1
-                            TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(11 * root.sf); clip: true; onTextChanged: tgToken = text
-                            Text { visible: !parent.text; text: "Bot token from @BotFather..."; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(11 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle { Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                            TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: "#fff"; font.pixelSize: Math.round(11 * root.sf); clip: true; onTextChanged: tgToken = text
+                            Text { visible: !parent.text; text: "Bot token from @BotFather..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(11 * root.sf); anchors.verticalCenter: parent.verticalCenter }
                         } }
                             Rectangle { width: Math.round(65 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: root.accentBlue
                             Text { anchors.centerIn: parent; text: "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
@@ -599,13 +593,13 @@ Rectangle {
                             Text { anchors.centerIn: parent; text: "\uf11b"; font.family: root.iconFont; font.weight: Font.Black; font.pixelSize: Math.round(16 * root.sf); color: "#5865F2" }
                         }
                             Column { Layout.fillWidth: true; spacing: Math.round(2 * root.sf)
-                            Text { text: "Discord"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Discord"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             Text { text: "Connect with bot token"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
                         } }
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
-                            Rectangle { Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: Qt.rgba(0,0,0,0.1); border.width: 1
-                            TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(11 * root.sf); clip: true; onTextChanged: dcToken = text
-                            Text { visible: !parent.text; text: "Discord bot token..."; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(11 * root.sf); anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle { Layout.fillWidth: true; height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.1); border.width: 1
+                            TextInput { anchors.fill: parent; anchors.margins: Math.round(8 * root.sf); color: "#fff"; font.pixelSize: Math.round(11 * root.sf); clip: true; onTextChanged: dcToken = text
+                            Text { visible: !parent.text; text: "Discord bot token..."; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(11 * root.sf); anchors.verticalCenter: parent.verticalCenter }
                         } }
                             Rectangle { width: Math.round(65 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: root.accentBlue
                             Text { anchors.centerIn: parent; text: "Connect"; font.pixelSize: Math.round(11 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
@@ -620,7 +614,7 @@ Rectangle {
                     // ── Current Resolution Card ──
                     Rectangle { width: parent.width; height: curResCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: curResCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
-                            Text { text: "Current Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Current Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             RowLayout { width: parent.width; spacing: Math.round(16 * root.sf)
                                 Column { spacing: Math.round(2 * root.sf)
                                     Text { text: currentRes.width + " × " + currentRes.height; font.pixelSize: Math.round(22 * root.sf); font.weight: Font.Bold; color: root.accentBlue }
@@ -641,13 +635,12 @@ Rectangle {
                     Rectangle { width: parent.width; height: resPickerCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: resPickerCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
                             RowLayout { width: parent.width
-                                Text { text: "Screen Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                                Text { text: "Screen Resolution"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                                 Item { Layout.fillWidth: true }
                                 Rectangle {
                                     width: reloadText.width + Math.round(16 * root.sf); height: Math.round(24 * root.sf); radius: root.radiusSm
-                                    color: reloadMa.containsMouse ? Qt.rgba(0,0,0,0.06) : Qt.rgba(0,0,0,0.03)
-                                    border.color: root.borderColor; border.width: 1
-                                    Text { id: reloadText; anchors.centerIn: parent; text: "Refresh"; font.pixelSize: Math.round(10 * root.sf); color: root.textSecondary }
+                                    color: reloadMa.containsMouse ? Qt.rgba(1,1,1,0.08) : Qt.rgba(1,1,1,0.04)
+                                    Text { id: reloadText; anchors.centerIn: parent; text: "Refresh"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
                                     MouseArea { id: reloadMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: loadDisplayInfo() }
                                 }
                             }
@@ -660,16 +653,16 @@ Rectangle {
                                     width: resPickerCol.width; height: Math.round(36 * root.sf); radius: root.radiusSm
                                     property bool isSelected: selectedRes === (modelData.width + "x" + modelData.height)
                                     property bool isCurrent: currentRes.width === modelData.width && currentRes.height === modelData.height
-                                    color: resItemMa.containsMouse ? Qt.rgba(0,0,0,0.04) : isSelected ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
+                                    color: resItemMa.containsMouse ? Qt.rgba(1,1,1,0.06) : isSelected ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
                                     border.color: isSelected ? Qt.rgba(0.24, 0.39, 1, 0.3) : "transparent"
                                     border.width: isSelected ? 1 : 0
                                     RowLayout { anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
                                         // Radio indicator
                                         Rectangle { width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: Math.round(7 * root.sf)
-                                            color: "transparent"; border.color: isSelected ? root.accentBlue : root.borderColor; border.width: 1.5
+                                            color: "transparent"; border.color: isSelected ? root.accentBlue : Qt.rgba(1,1,1,0.2); border.width: 1.5
                                             Rectangle { anchors.centerIn: parent; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: Math.round(4 * root.sf); color: root.accentBlue; visible: isSelected }
                                         }
-                                        Text { text: modelData.width + " × " + modelData.height; font.pixelSize: Math.round(12 * root.sf); color: isSelected ? root.accentBlue : root.textPrimary; font.weight: isSelected ? Font.DemiBold : Font.Normal }
+                                        Text { text: modelData.width + " × " + modelData.height; font.pixelSize: Math.round(12 * root.sf); color: isSelected ? "#fff" : root.textPrimary; font.weight: isSelected ? Font.DemiBold : Font.Normal }
                                         Text {
                                             text: {
                                                 var ratio = modelData.width / modelData.height;
@@ -698,7 +691,7 @@ Rectangle {
                             // Apply / Revert buttons
                             RowLayout { width: parent.width; spacing: Math.round(8 * root.sf); visible: selectedRes !== (currentRes.width + "x" + currentRes.height) && !resApplied
                                 Item { Layout.fillWidth: true }
-                                Rectangle { width: Math.round(70 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                                Rectangle { width: Math.round(70 * root.sf); height: Math.round(30 * root.sf); radius: root.radiusSm; color: Qt.rgba(1,1,1,0.06)
                                     Text { anchors.centerIn: parent; text: "Cancel"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: selectedRes = currentRes.width + "x" + currentRes.height }
                                 }
@@ -711,10 +704,10 @@ Rectangle {
                             // Revert countdown bar
                             Rectangle { width: parent.width; height: revertCol.height + Math.round(16 * root.sf); radius: root.radiusSm; color: Qt.rgba(0.9, 0.6, 0.1, 0.1); border.color: Qt.rgba(0.9, 0.6, 0.1, 0.3); border.width: 1; visible: resApplied
                                 Column { id: revertCol; anchors.centerIn: parent; spacing: Math.round(6 * root.sf)
-                                    Text { text: "Keep this resolution?"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: root.accentOrange; anchors.horizontalCenter: parent.horizontalCenter }
+                                    Text { text: "Keep this resolution?"; font.pixelSize: Math.round(12 * root.sf); font.weight: Font.DemiBold; color: "#fbbf24"; anchors.horizontalCenter: parent.horizontalCenter }
                                     Text { text: "Reverting in " + revertCountdown + " seconds..."; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; anchors.horizontalCenter: parent.horizontalCenter }
                                     RowLayout { spacing: Math.round(8 * root.sf); anchors.horizontalCenter: parent.horizontalCenter
-                                        Rectangle { width: Math.round(80 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.04); border.color: root.borderColor; border.width: 1
+                                        Rectangle { width: Math.round(80 * root.sf); height: Math.round(28 * root.sf); radius: root.radiusSm; color: Qt.rgba(1,1,1,0.06)
                                             Text { anchors.centerIn: parent; text: "Revert Now"; font.pixelSize: Math.round(11 * root.sf); color: root.textSecondary }
                                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: revertResolution() }
                                         }
@@ -731,7 +724,7 @@ Rectangle {
                     // ── UI Scaling Card ──
                     Rectangle { width: parent.width; height: scaleCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: scaleCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(8 * root.sf)
-                            Text { text: "UI Scaling"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "UI Scaling"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             Text { text: "Adjust the size of text, icons, and interface elements"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted }
                             Repeater {
                                 model: [
@@ -744,15 +737,15 @@ Rectangle {
                                 delegate: Rectangle {
                                     width: scaleCol.width; height: Math.round(38 * root.sf); radius: root.radiusSm
                                     property bool isActive: Math.abs(root.userScale - modelData.scale) < 0.01
-                                    color: scaleMa.containsMouse ? Qt.rgba(0,0,0,0.04) : isActive ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
+                                    color: scaleMa.containsMouse ? Qt.rgba(1,1,1,0.06) : isActive ? Qt.rgba(0.24, 0.39, 1, 0.08) : "transparent"
                                     border.color: isActive ? Qt.rgba(0.24, 0.39, 1, 0.3) : "transparent"; border.width: isActive ? 1 : 0
                                     RowLayout { anchors.fill: parent; anchors.leftMargin: Math.round(10 * root.sf); anchors.rightMargin: Math.round(10 * root.sf); spacing: Math.round(8 * root.sf)
                                         Rectangle { width: Math.round(14 * root.sf); height: Math.round(14 * root.sf); radius: Math.round(7 * root.sf)
-                                            color: "transparent"; border.color: isActive ? root.accentBlue : Qt.rgba(0,0,0,0.2); border.width: 1.5
+                                            color: "transparent"; border.color: isActive ? root.accentBlue : Qt.rgba(1,1,1,0.2); border.width: 1.5
                                             Rectangle { anchors.centerIn: parent; width: Math.round(8 * root.sf); height: Math.round(8 * root.sf); radius: Math.round(4 * root.sf); color: root.accentBlue; visible: isActive }
                                         }
                                         Column { Layout.fillWidth: true; spacing: Math.round(1 * root.sf)
-                                            Text { text: modelData.label; font.pixelSize: Math.round(12 * root.sf); color: isActive ? root.accentBlue : root.textPrimary; font.weight: isActive ? Font.DemiBold : Font.Normal }
+                                            Text { text: modelData.label; font.pixelSize: Math.round(12 * root.sf); color: isActive ? "#fff" : root.textPrimary; font.weight: isActive ? Font.DemiBold : Font.Normal }
                                             Text { text: modelData.desc; font.pixelSize: Math.round(9 * root.sf); color: root.textMuted }
                                         }
                                         Text { text: (modelData.scale * 100).toFixed(0) + "%"; font.pixelSize: Math.round(10 * root.sf); color: root.textMuted }
@@ -766,7 +759,7 @@ Rectangle {
                     // ── GPU & Driver Info Card ──
                     Rectangle { width: parent.width; height: gpuCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: gpuCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
-                            Text { text: "Graphics & Driver Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Graphics & Driver Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             // GPU Name row
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
                                 Text { text: "GPU"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(80 * root.sf) }
@@ -806,7 +799,7 @@ Rectangle {
                     // ── Workspace Directory Card ──
                     Rectangle { width: parent.width; height: wsCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: wsCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(12 * root.sf)
-                            Text { text: "Agent Workspace Directory"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Agent Workspace Directory"; font.pixelSize: Math.round(14 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
                             Text { text: "This is the folder where OpenWhale saves all its work — files, code, projects, and artifacts created by the AI agent."; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; wrapMode: Text.Wrap; width: parent.width }
 
                             Rectangle { width: parent.width; height: 1; color: Qt.rgba(1,1,1,0.05) }
@@ -817,11 +810,11 @@ Rectangle {
                             // Path input + Save button
                             RowLayout { width: parent.width; spacing: Math.round(8 * root.sf)
                                 Rectangle { Layout.fillWidth: true; height: Math.round(36 * root.sf); radius: root.radiusSm; color: Qt.rgba(0,0,0,0.3); border.color: Qt.rgba(1,1,1,0.12); border.width: 1
-                                    TextInput { id: wsDirInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); color: root.textPrimary; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; clip: true
+                                    TextInput { id: wsDirInput; anchors.fill: parent; anchors.margins: Math.round(10 * root.sf); color: "#fff"; font.pixelSize: Math.round(12 * root.sf); font.family: "monospace"; clip: true
                                         text: workspaceDir
                                         onTextChanged: workspaceDir = text
                                     }
-                                    Text { visible: wsDirInput.text === ""; anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); text: "/home/ainux/Works"; color: Qt.rgba(0,0,0,0.25); font.pixelSize: Math.round(12 * root.sf) }
+                                    Text { visible: wsDirInput.text === ""; anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: Math.round(10 * root.sf); text: "/home/ainux/Works"; color: Qt.rgba(1,1,1,0.2); font.pixelSize: Math.round(12 * root.sf) }
                                 }
                                 Rectangle { width: Math.round(70 * root.sf); height: Math.round(36 * root.sf); radius: root.radiusSm
                                     color: wsSaveMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.35) : root.accentBlue
@@ -853,7 +846,7 @@ Rectangle {
                     // ── Storage Info Card ──
                     Rectangle { width: parent.width; height: storCol.height + Math.round(24 * root.sf); radius: root.radiusMd; color: root.bgCard; border.color: root.borderColor; border.width: 1
                         Column { id: storCol; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Math.round(12 * root.sf); spacing: Math.round(10 * root.sf)
-                            Text { text: "Storage Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: root.textPrimary }
+                            Text { text: "Storage Information"; font.pixelSize: Math.round(13 * root.sf); font.weight: Font.DemiBold; color: "#fff" }
 
                             RowLayout { width: parent.width; spacing: Math.round(6 * root.sf)
                                 Text { text: "Data directory"; font.pixelSize: Math.round(11 * root.sf); color: root.textMuted; Layout.preferredWidth: Math.round(100 * root.sf) }
