@@ -61,21 +61,15 @@ Rectangle {
 
     Component.onCompleted: { checkOwHealth(); sysManager.getTimeInfoAsync(); refreshNetworkStatus(); }
 
-    // ── Network Functions (via whaleos-helper /exec POST) ──
-    function helperExec(cmd, callback, timeout) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://127.0.0.1:7778/exec");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.timeout = timeout || 10000;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (callback) callback(xhr.status, xhr.responseText);
-            }
-        };
-        xhr.ontimeout = function() {
-            if (callback) callback(0, "");
-        };
-        xhr.send(JSON.stringify({command: cmd}));
+    // ── Network Functions (via SystemManager direct exec) ──
+    function helperExec(cmd, callback) {
+        try {
+            var resultJson = sysManager.runCommand(cmd, "/tmp");
+            var parsed = JSON.parse(resultJson);
+            if (callback) callback(parsed.stdout || "");
+        } catch(e) {
+            if (callback) callback("");
+        }
     }
 
     function refreshNetworkStatus() {
@@ -83,38 +77,38 @@ Rectangle {
             "nmcli -t -f TYPE,NAME,DEVICE connection show --active 2>/dev/null; echo '---IP---'; " +
             "ip -4 addr show | grep 'inet ' | grep -v '127.0.0.1' | head -1 | awk '{print $2}' 2>/dev/null; echo '---WIFI---'; " +
             "nmcli -t -f WIFI general 2>/dev/null",
-            function(status, body) {
-                if (status === 200) {
-                    try {
-                        var d = JSON.parse(body);
-                        var out = d.stdout || "";
-                        var parts = out.split("---IP---");
-                        var connPart = parts[0] || "";
-                        var rest = (parts[1] || "").split("---WIFI---");
-                        var ipPart = (rest[0] || "").trim();
-                        var wifiPart = (rest[1] || "").trim();
+            function(out) {
+                if (!out) return;
+                var parts = out.split("---IP---");
+                var connPart = parts[0] || "";
+                var rest = (parts[1] || "").split("---WIFI---");
+                var ipPart = (rest[0] || "").trim();
+                var wifiPart = (rest[1] || "").trim();
 
-                        currentIP = ipPart.split("/")[0] || "";
-                        wifiEnabled = (wifiPart.toLowerCase() === "enabled");
+                currentIP = ipPart.split("/")[0] || "";
+                wifiEnabled = (wifiPart.toLowerCase() === "enabled");
 
-                        // Parse active connection
-                        var lines = connPart.trim().split("\n");
-                        connectionType = "none";
-                        currentSSID = "";
-                        for (var i = 0; i < lines.length; i++) {
-                            var cols = lines[i].split(":");
-                            if (cols.length >= 2) {
-                                if (cols[0] === "802-11-wireless" || cols[0] === "wifi") {
-                                    connectionType = "wifi";
-                                    currentSSID = cols[1];
-                                } else if (cols[0] === "802-3-ethernet" || cols[0] === "ethernet") {
-                                    connectionType = "ethernet";
-                                }
-                            }
+                // Parse active connection
+                var lines = connPart.trim().split("\n");
+                connectionType = "none";
+                currentSSID = "";
+                for (var i = 0; i < lines.length; i++) {
+                    var cols = lines[i].split(":");
+                    if (cols.length >= 2) {
+                        if (cols[0] === "802-11-wireless" || cols[0] === "wifi") {
+                            connectionType = "wifi";
+                            currentSSID = cols[1];
+                        } else if (cols[0] === "802-3-ethernet" || cols[0] === "ethernet") {
+                            connectionType = "ethernet";
                         }
-                    } catch(e) {}
+                    }
                 }
-            }, 5000
+
+                // Fallback: if nmcli didn't detect ethernet but we have an IP, we're connected
+                if (connectionType === "none" && currentIP !== "") {
+                    connectionType = "ethernet";
+                }
+            }
         );
     }
 
@@ -123,44 +117,43 @@ Rectangle {
         wifiError = "";
         helperExec(
             "nmcli -t -f SSID,SIGNAL,SECURITY,ACTIVE device wifi list --rescan yes 2>/dev/null",
-            function(status, body) {
+            function(out) {
                 wifiScanning = false;
-                if (status === 200) {
-                    try {
-                        var d = JSON.parse(body);
-                        var out = d.stdout || "";
-                        var lines = out.trim().split("\n");
-                        var nets = [];
-                        var seen = {};
-                        for (var i = 0; i < lines.length; i++) {
-                            var cols = lines[i].split(":");
-                            if (cols.length >= 3 && cols[0].trim() !== "" && cols[0] !== "--") {
-                                var ssid = cols[0].trim();
-                                if (seen[ssid]) continue;
-                                seen[ssid] = true;
-                                nets.push({
-                                    ssid: ssid,
-                                    signal: parseInt(cols[1]) || 0,
-                                    security: cols[2] || "Open",
-                                    connected: (cols.length >= 4 && cols[3].trim() === "yes")
-                                });
-                            }
+                if (!out || out.trim() === "") {
+                    // Check if there's even a WiFi adapter
+                    helperExec("nmcli -t -f WIFI-HW general 2>/dev/null", function(hw) {
+                        if (hw && hw.trim().toLowerCase() === "missing") {
+                            wifiError = "No WiFi adapter — using Ethernet";
+                        } else {
+                            wifiError = "No WiFi networks found";
                         }
-                        nets.sort(function(a, b) {
-                            if (a.connected !== b.connected) return a.connected ? -1 : 1;
-                            return b.signal - a.signal;
-                        });
-                        wifiNetworks = nets;
-                        if (nets.length === 0 && out.trim() === "") {
-                            wifiError = "No WiFi adapter found (VM has ethernet only)";
-                        }
-                    } catch(e) {
-                        wifiError = "Failed to parse WiFi scan results";
-                    }
-                } else {
-                    wifiError = "WiFi scan failed. Is NetworkManager running?";
+                    });
+                    wifiNetworks = [];
+                    return;
                 }
-            }, 15000
+                var lines = out.trim().split("\n");
+                var nets = [];
+                var seen = {};
+                for (var i = 0; i < lines.length; i++) {
+                    var cols = lines[i].split(":");
+                    if (cols.length >= 3 && cols[0].trim() !== "" && cols[0] !== "--") {
+                        var ssid = cols[0].trim();
+                        if (seen[ssid]) continue;
+                        seen[ssid] = true;
+                        nets.push({
+                            ssid: ssid,
+                            signal: parseInt(cols[1]) || 0,
+                            security: cols[2] || "Open",
+                            connected: (cols.length >= 4 && cols[3].trim() === "yes")
+                        });
+                    }
+                }
+                nets.sort(function(a, b) {
+                    if (a.connected !== b.connected) return a.connected ? -1 : 1;
+                    return b.signal - a.signal;
+                });
+                wifiNetworks = nets;
+            }
         );
     }
 
@@ -171,26 +164,18 @@ Rectangle {
         var cmd = password
             ? "nmcli device wifi connect '" + ssid.replace(/'/g, "'\\''") + "' password '" + password.replace(/'/g, "'\\''") + "' 2>&1"
             : "nmcli device wifi connect '" + ssid.replace(/'/g, "'\\''") + "' 2>&1";
-        helperExec(cmd, function(status, body) {
+        helperExec(cmd, function(out) {
             wifiConnecting = false;
             wifiConnectingSSID = "";
-            if (status === 200) {
-                try {
-                    var d = JSON.parse(body);
-                    var out = (d.stdout || "").toLowerCase();
-                    if (out.indexOf("error") !== -1 || out.indexOf("failed") !== -1) {
-                        wifiError = d.stdout || "Connection failed";
-                    } else {
-                        showPasswordDialog = false;
-                        passwordInput = "";
-                        refreshNetworkStatus();
-                        scanWifi();
-                    }
-                } catch(e) {
-                    wifiError = "Connection error";
-                }
+            if (out && (out.toLowerCase().indexOf("error") !== -1 || out.toLowerCase().indexOf("failed") !== -1)) {
+                wifiError = out || "Connection failed";
+            } else {
+                showPasswordDialog = false;
+                passwordInput = "";
+                refreshNetworkStatus();
+                scanWifi();
             }
-        }, 30000);
+        });
     }
 
     function disconnectWifi() {

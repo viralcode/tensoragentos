@@ -1322,3 +1322,4 @@
 2026-06-15T01:12:55.037Z In(05) mks MKS: Failed to set Mac OS cursor (3e8)
 2026-06-15T01:13:19.522Z In(05) vcpu-0 GuestInfo: HostinfoDetailedDataHeader version: 1
 2026-06-15T01:13:19.522Z No(00) vcpu-0 ConfigDB: Setting guestInfo.detailed.data = <not printed>
+2026-06-15T01:45:29.000Z In(05) vmx DISKLIB-LIB   : numIOs = 50000 numMergedIOs = 16431 numSplitIOs = 567
