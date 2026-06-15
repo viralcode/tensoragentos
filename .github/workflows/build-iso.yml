@@ -59,11 +59,7 @@ jobs:
           path: tensoragent-os-x86_64.iso.xz
           retention-days: 30
 
-      - name: Upload to release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: tensoragent-os-x86_64.iso.xz
+
 
   # ═══════════════════════════════════════════════════════════════
   # aarch64 build — runs on native ARM64 runner (no QEMU needed)
@@ -113,11 +109,7 @@ jobs:
           path: tensoragent-os-aarch64.iso.xz
           retention-days: 30
 
-      - name: Upload to release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: tensoragent-os-aarch64.iso.xz
+
 
   # ═══════════════════════════════════════════════════════════════
   # Create GitHub Release (on tags only)
@@ -135,23 +127,40 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Split large ISOs for GitHub release
+        run: |
+          for f in *.iso.xz; do
+            size=$(stat --format=%s "$f")
+            if [ "$size" -gt 2000000000 ]; then
+              echo "Splitting $f ($size bytes > 2GB limit)..."
+              split -b 1900m "$f" "${f}.part"
+              rm "$f"
+              ls -lh ${f}.part*
+            else
+              echo "$f is under 2GB, no split needed"
+            fi
+          done
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            tensoragent-os-x86_64.iso.xz
-            tensoragent-os-aarch64.iso.xz
+            tensoragent-os-*
           generate_release_notes: true
           body: |
             ## TensorAgent OS ${{ github.ref_name }}
 
             ### Downloads
-            | Architecture | File | For |
-            |-------------|------|-----|
-            | x86_64 (Intel/AMD) | `tensoragent-os-x86_64.iso.xz` | PC, VirtualBox, VMware Workstation |
-            | aarch64 (ARM64) | `tensoragent-os-aarch64.iso.xz` | Apple Silicon, UTM, VMware Fusion |
+            | Architecture | Files | For |
+            |-------------|-------|-----|
+            | x86_64 (Intel/AMD) | `tensoragent-os-x86_64.iso.xz*` | PC, VirtualBox, VMware Workstation |
+            | aarch64 (ARM64) | `tensoragent-os-aarch64.iso.xz*` | Apple Silicon, UTM, VMware Fusion |
 
-            > **Decompress after download:** `xz -d tensoragent-os-*.iso.xz`
+            > **If the ISO was split** (files ending in `.partaa`, `.partab`):
+            > ```bash
+            > cat tensoragent-os-x86_64.iso.xz.part* > tensoragent-os-x86_64.iso.xz
+            > xz -d tensoragent-os-x86_64.iso.xz
+            > ```
 
             ### Quick Start
             ```bash
@@ -160,10 +169,6 @@ jobs:
 
             # Flash to USB
             sudo dd if=tensoragent-os-x86_64.iso of=/dev/sdX bs=4M status=progress
-
-            # VMware Fusion (Apple Silicon) — use the aarch64 ISO
-            # UTM (macOS) — use the aarch64 ISO
-            # VirtualBox / VMware Workstation — use the x86_64 ISO
             ```
 
             ### What's included
@@ -175,3 +180,4 @@ jobs:
             - 🔒 Enterprise security (AppArmor, auditd, fail2ban)
 
             **Login:** `ainux` / `ainux`
+
