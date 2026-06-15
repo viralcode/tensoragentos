@@ -216,9 +216,10 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
         evince \
         2>/dev/null || echo "  [SKIP] Some office/PDF packages unavailable"
 
-    # Firefox — preinstalled web browser (chromium-browser is snap-only on Ubuntu 24.04 ARM64)
-    apt-get install -y -qq firefox 2>/dev/null \
-        || echo "  ⚠ Firefox not available for this architecture"
+    # Chromium — preinstalled web browser via snap (native .deb not available on Ubuntu 24.04 ARM64)
+    snap install chromium 2>/dev/null \
+        || apt-get install -y -qq chromium-browser 2>/dev/null \
+        || echo "  ⚠ Chromium not available for this architecture"
 
     # Preinstalled native apps — all apps shown in NativeAppsLauncher
     apt-get install -y -qq \
@@ -232,7 +233,7 @@ sudo chroot "$ROOTFS_DIR" /bin/bash -c '
 
     # Verify native app binaries
     echo "  Verifying native app binaries..."
-    for bin in firefox mousepad galculator evince libreoffice; do
+    for bin in chromium mousepad galculator evince libreoffice; do
         if which "$bin" 2>/dev/null; then
             echo "    ✓ $bin found: $(which $bin)"
         fi

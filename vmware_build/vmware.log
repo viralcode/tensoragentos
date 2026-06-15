@@ -1320,3 +1320,5 @@
 2026-06-15T01:12:50.117Z In(05) vcpu-1 Tools: [RunningStatus] Last heartbeat value 4 (last received 0s ago)
 2026-06-15T01:12:50.497Z In(05) vmx VNET: MACVNetLinkStateTimerHandler: 'ethernet0' state from 1 to 5.
 2026-06-15T01:12:55.037Z In(05) mks MKS: Failed to set Mac OS cursor (3e8)
+2026-06-15T01:13:19.522Z In(05) vcpu-0 GuestInfo: HostinfoDetailedDataHeader version: 1
+2026-06-15T01:13:19.522Z No(00) vcpu-0 ConfigDB: Setting guestInfo.detailed.data = <not printed>
